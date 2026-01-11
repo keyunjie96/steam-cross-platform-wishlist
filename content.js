@@ -1,9 +1,9 @@
 /**
  * Steam Cross-Platform Wishlist - Content Script
  *
- * Stage 1: Injects platform availability icons into Steam wishlist rows.
+ * Injects platform availability icons into Steam wishlist rows.
  * - Extracts Steam appids from wishlist items
- * - Communicates with background service worker for platform data
+ * - Communicates with background service worker for platform data (via IGDB)
  * - Renders NS/PS/XB icons with appropriate states
  * - Handles infinite scroll with MutationObserver
  */
@@ -646,7 +646,7 @@ function setupObserver() {
  * Main initialization function.
  */
 function init() {
-  console.log(`${LOG_PREFIX} Initializing Stage 1...`);
+  console.log(`${LOG_PREFIX} Initializing...`);
 
   if (!PLATFORM_ICONS || !PLATFORM_INFO) {
     console.error(`${LOG_PREFIX} Missing icon definitions (icons.js not loaded?)`);

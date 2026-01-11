@@ -1,10 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Steam Cross-Platform Wishlist",
-  "version": "0.2.0",
-  "description": "Shows cross-platform availability (Switch/PlayStation/Xbox) on Steam wishlist pages",
+  "version": "0.3.0",
+  "description": "Shows cross-platform availability (Switch/PlayStation/Xbox) on Steam wishlist pages using IGDB data",
   "permissions": ["storage"],
-  "host_permissions": ["https://store.steampowered.com/*"],
+  "host_permissions": [
+    "https://store.steampowered.com/*",
+    "https://id.twitch.tv/*",
+    "https://api.igdb.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -15,5 +19,9 @@
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
 }

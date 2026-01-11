@@ -92,7 +92,8 @@ function isCacheValid(entry) {
 
 /**
  * Creates a cache entry for a given appid and game name.
- * For Stage 1, uses manual overrides or marks all platforms as "unknown".
+ * For Stage 1/fallback, uses manual overrides or marks all platforms as "unknown".
+ * Stage 2 uses the resolver which creates entries with IGDB data.
  *
  * @param {string} appid
  * @param {string} gameName
@@ -120,6 +121,8 @@ function createCacheEntry(appid, gameName) {
         storeUrl: StoreUrls.xbox(gameName)
       }
     },
+    source: override ? 'manual' : 'none',
+    igdbId: null,
     resolvedAt: Date.now(),
     ttlDays: DEFAULT_TTL_DAYS
   };

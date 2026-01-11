@@ -23,11 +23,18 @@
  */
 
 /**
+ * Data source for platform availability
+ * @typedef {'igdb' | 'manual' | 'fallback' | 'none'} DataSource
+ */
+
+/**
  * Cache entry for a Steam appid
  * @typedef {Object} CacheEntry
  * @property {string} appid - Steam application ID
- * @property {string} gameName - Game name (extracted from Steam)
+ * @property {string} gameName - Game name (extracted from Steam or IGDB)
  * @property {Record<Platform, PlatformData>} platforms - Platform availability data
+ * @property {DataSource} [source] - Where the data came from (Stage 2+)
+ * @property {number | null} [igdbId] - IGDB game ID if resolved via IGDB
  * @property {number} resolvedAt - Unix timestamp when data was resolved
  * @property {number} ttlDays - Time-to-live in days
  */
@@ -66,8 +73,40 @@
  */
 
 /**
+ * Request to save Twitch credentials
+ * @typedef {Object} SaveCredentialsRequest
+ * @property {'SAVE_CREDENTIALS'} type
+ * @property {string} clientId
+ * @property {string} clientSecret
+ */
+
+/**
+ * Request to test IGDB connection
+ * @typedef {Object} TestConnectionRequest
+ * @property {'TEST_CONNECTION'} type
+ */
+
+/**
+ * Request to clear credentials
+ * @typedef {Object} ClearCredentialsRequest
+ * @property {'CLEAR_CREDENTIALS'} type
+ */
+
+/**
+ * Request to get cache statistics
+ * @typedef {Object} GetCacheStatsRequest
+ * @property {'GET_CACHE_STATS'} type
+ */
+
+/**
+ * Request to clear cache
+ * @typedef {Object} ClearCacheRequest
+ * @property {'CLEAR_CACHE'} type
+ */
+
+/**
  * Generic message types
- * @typedef {GetPlatformDataRequest | UpdateCacheRequest} ExtensionMessage
+ * @typedef {GetPlatformDataRequest | UpdateCacheRequest | SaveCredentialsRequest | TestConnectionRequest | ClearCredentialsRequest | GetCacheStatsRequest | ClearCacheRequest} ExtensionMessage
  */
 
 // ============================================================================
