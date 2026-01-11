@@ -1,0 +1,165 @@
+/**
+ * Steam Cross-Platform Wishlist - Scoped Styles
+ *
+ * All styles are prefixed with 'xcpw-' to avoid conflicts with Steam's CSS.
+ * Designed to match Steam's subtle, gray aesthetic.
+ */
+
+/* Container for platform icons - positioned next to OS icons */
+.xcpw-platforms {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  color: #ffffff;
+}
+
+/* Individual platform icon button/link */
+.xcpw-platform-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  position: relative;
+  color: inherit;
+}
+
+.xcpw-platform-icon:link,
+.xcpw-platform-icon:visited {
+  color: inherit;
+}
+
+/* SVG icon styling */
+.xcpw-platform-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* Available state - normal gray, clickable */
+.xcpw-platform-icon.xcpw-available {
+  opacity: 1;
+}
+
+.xcpw-platform-icon.xcpw-available:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Unknown state - dimmed, still clickable for search */
+.xcpw-platform-icon.xcpw-unknown {
+  opacity: 1;
+}
+
+.xcpw-platform-icon.xcpw-unknown:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Unavailable state - very dim, not interactive */
+.xcpw-platform-icon.xcpw-unavailable {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Tooltip styling - native tooltip enhancement */
+.xcpw-platform-icon[title] {
+  /* Use native title attribute for tooltips */
+}
+
+/* Custom tooltip (optional enhancement) */
+.xcpw-platform-icon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.9);
+  color: #c6d4df;
+  font-size: 11px;
+  white-space: nowrap;
+  border-radius: 3px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+  z-index: 1000;
+  margin-bottom: 4px;
+}
+
+.xcpw-platform-icon:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Hide custom tooltip if no data-tooltip attribute */
+.xcpw-platform-icon:not([data-tooltip])::after {
+  display: none;
+}
+
+/* Loading state animation */
+.xcpw-platform-icon.xcpw-loading {
+  animation: xcpw-pulse 1s ease-in-out infinite;
+}
+
+@keyframes xcpw-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* Separator line between Steam icons and our icons */
+.xcpw-separator {
+  width: 1px;
+  height: 12px;
+  background: #3d4450;
+  margin: 0 3px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Focus states for accessibility */
+.xcpw-platform-icon:focus {
+  outline: 1px solid #66c0f4;
+  outline-offset: 2px;
+}
+
+.xcpw-platform-icon:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .xcpw-platform-icon.xcpw-available {
+    opacity: 1;
+  }
+
+  .xcpw-platform-icon.xcpw-unknown {
+    opacity: 0.6;
+  }
+
+  .xcpw-platform-icon.xcpw-unavailable {
+    opacity: 0.3;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .xcpw-platform-icon {
+    transition: none;
+  }
+
+  .xcpw-platform-icon.xcpw-loading {
+    animation: none;
+    opacity: 0.4;
+  }
+}
