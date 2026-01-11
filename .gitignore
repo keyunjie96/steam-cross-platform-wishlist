@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.zip
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code / Codex
+.claude/
+.codex/
+CLAUDE.local.md
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Chrome Extension development
+*.pem
+*.crx

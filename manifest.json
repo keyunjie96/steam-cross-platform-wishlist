@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Steam Cross-Platform Wishlist",
+  "version": "0.1.0",
+  "description": "Shows cross-platform availability (Switch/PlayStation/Xbox) on Steam wishlist pages",
+  "permissions": ["storage"],
+  "host_permissions": ["https://store.steampowered.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://store.steampowered.com/wishlist/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
