@@ -1,0 +1,23 @@
+{
+  "name": "cross-platform-steam-wishlist",
+  "version": "0.5.0",
+  "description": "Chrome extension that adds platform availability icons to Steam wishlist",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest tests/unit --coverage",
+    "test:integration": "jest tests/integration --testTimeout=300000",
+    "test:integration:quick": "node tests/run-integration-test.js --quick",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --reporters=default --reporters=jest-junit"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "undici": "^7.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

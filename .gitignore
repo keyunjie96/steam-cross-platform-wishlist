@@ -32,3 +32,4 @@ CLAUDE.local.md
 # Chrome Extension development
 *.pem
 *.crx
+coverage/
