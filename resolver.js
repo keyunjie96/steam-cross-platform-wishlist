@@ -10,94 +10,43 @@
  */
 
 const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
-const RESOLVER_DEBUG = false; // Set to true for verbose debugging
+const RESOLVER_DEBUG = false;
+
+const PLATFORMS = ['nintendo', 'playstation', 'xbox'];
 
 /**
- * Gets the store URLs helper from types.js
- * @returns {Object}
+ * Checks if a string looks like a Wikidata QID (e.g., "Q123456")
+ * @param {string} str
+ * @returns {boolean}
  */
-function getStoreUrls() {
-  return globalThis.XCPW_StoreUrls;
+function isWikidataQID(str) {
+  return /^Q\d+$/.test(str);
 }
 
 /**
- * Converts Wikidata result to cache entry format
- * @param {string} appid
- * @param {string} gameName
- * @param {Object} wikidataResult - Result from Wikidata client
- * @returns {import('./types.js').CacheEntry}
+ * Gets platform status from Wikidata result
+ * @param {boolean} available
+ * @param {boolean} foundInWikidata
+ * @returns {'available' | 'unavailable' | 'unknown'}
  */
-function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
-  const StoreUrls = getStoreUrls();
-  const WikidataClient = globalThis.XCPW_WikidataClient;
-
-  /**
-   * Determines platform status from Wikidata result
-   * @param {boolean} available
-   * @param {boolean} foundInWikidata
-   * @returns {'available' | 'unavailable' | 'unknown'}
-   */
-  function getStatus(available, foundInWikidata) {
-    if (!foundInWikidata) {
-      return 'unknown';
-    }
-    return available ? 'available' : 'unavailable';
+function getPlatformStatus(available, foundInWikidata) {
+  if (!foundInWikidata) {
+    return 'unknown';
   }
+  return available ? 'available' : 'unavailable';
+}
 
-  /**
-   * Checks if a string looks like a Wikidata QID (e.g., "Q123456")
-   * @param {string} str
-   * @returns {boolean}
-   */
-  function isWikidataQID(str) {
-    return /^Q\d+$/.test(str);
+/**
+ * Creates a platform data object for all platforms
+ * @param {function(string): {status: string, storeUrl: string}} platformMapper
+ * @returns {Record<string, {status: string, storeUrl: string}>}
+ */
+function createPlatformsObject(platformMapper) {
+  const platforms = {};
+  for (const platform of PLATFORMS) {
+    platforms[platform] = platformMapper(platform);
   }
-
-  /**
-   * Gets the best URL for a platform
-   * @param {string} platform
-   * @param {boolean} available
-   * @param {Object} storeIds
-   * @param {string} name
-   * @returns {string}
-   */
-  function getUrl(platform, available, storeIds, name) {
-    // Try to get official store URL from Wikidata
-    const officialUrl = WikidataClient.getStoreUrl(platform, storeIds);
-    if (officialUrl) {
-      return officialUrl;
-    }
-    // Fall back to search URL
-    return StoreUrls[platform](name);
-  }
-
-  // Use Wikidata game name only if it's not a QID (fallback for missing labels)
-  // Always prefer Steam's game name for URLs since it's more reliable
-  const wikidataName = wikidataResult.gameName;
-  const displayName = (wikidataName && !isWikidataQID(wikidataName)) ? wikidataName : gameName;
-
-  return {
-    appid,
-    gameName: displayName,
-    platforms: {
-      nintendo: {
-        status: getStatus(wikidataResult.platforms.nintendo, wikidataResult.found),
-        storeUrl: getUrl('nintendo', wikidataResult.platforms.nintendo, wikidataResult.storeIds, displayName)
-      },
-      playstation: {
-        status: getStatus(wikidataResult.platforms.playstation, wikidataResult.found),
-        storeUrl: getUrl('playstation', wikidataResult.platforms.playstation, wikidataResult.storeIds, displayName)
-      },
-      xbox: {
-        status: getStatus(wikidataResult.platforms.xbox, wikidataResult.found),
-        storeUrl: getUrl('xbox', wikidataResult.platforms.xbox, wikidataResult.storeIds, displayName)
-      }
-    },
-    source: wikidataResult.found ? 'wikidata' : 'fallback',
-    wikidataId: wikidataResult.wikidataId,
-    resolvedAt: Date.now(),
-    ttlDays: 7
-  };
+  return platforms;
 }
 
 /**
@@ -108,30 +57,108 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
  * @returns {import('./types.js').CacheEntry}
  */
 function createFallbackEntry(appid, gameName) {
-  const StoreUrls = getStoreUrls();
+  const StoreUrls = globalThis.XCPW_StoreUrls;
 
   return {
     appid,
     gameName,
-    platforms: {
-      nintendo: {
-        status: 'unknown',
-        storeUrl: StoreUrls.nintendo(gameName)
-      },
-      playstation: {
-        status: 'unknown',
-        storeUrl: StoreUrls.playstation(gameName)
-      },
-      xbox: {
-        status: 'unknown',
-        storeUrl: StoreUrls.xbox(gameName)
-      }
-    },
+    platforms: createPlatformsObject((platform) => ({
+      status: 'unknown',
+      storeUrl: StoreUrls[platform](gameName)
+    })),
     source: 'fallback',
     wikidataId: null,
     resolvedAt: Date.now(),
     ttlDays: 7
   };
+}
+
+/**
+ * Creates a cache entry from manual override data
+ * @param {string} appid
+ * @param {string} gameName
+ * @param {Object} override
+ * @returns {import('./types.js').CacheEntry}
+ */
+function createManualOverrideEntry(appid, gameName, override) {
+  const StoreUrls = globalThis.XCPW_StoreUrls;
+
+  return {
+    appid,
+    gameName,
+    platforms: createPlatformsObject((platform) => ({
+      status: override[platform] || 'unknown',
+      storeUrl: StoreUrls[platform](gameName)
+    })),
+    source: 'manual',
+    wikidataId: null,
+    resolvedAt: Date.now(),
+    ttlDays: 7
+  };
+}
+
+/**
+ * Converts Wikidata result to cache entry format
+ * @param {string} appid
+ * @param {string} gameName
+ * @param {Object} wikidataResult - Result from Wikidata client
+ * @returns {import('./types.js').CacheEntry}
+ */
+function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
+  const StoreUrls = globalThis.XCPW_StoreUrls;
+  const WikidataClient = globalThis.XCPW_WikidataClient;
+
+  // Use Wikidata game name only if it's not a QID (fallback for missing labels)
+  const wikidataName = wikidataResult.gameName;
+  const displayName = (wikidataName && !isWikidataQID(wikidataName)) ? wikidataName : gameName;
+
+  /**
+   * Gets the best URL for a platform - official store URL or search fallback
+   * @param {string} platform
+   * @returns {string}
+   */
+  function getUrl(platform) {
+    const officialUrl = WikidataClient.getStoreUrl(platform, wikidataResult.storeIds);
+    return officialUrl || StoreUrls[platform](displayName);
+  }
+
+  return {
+    appid,
+    gameName: displayName,
+    platforms: createPlatformsObject((platform) => ({
+      status: getPlatformStatus(wikidataResult.platforms[platform], wikidataResult.found),
+      storeUrl: getUrl(platform)
+    })),
+    source: wikidataResult.found ? 'wikidata' : 'fallback',
+    wikidataId: wikidataResult.wikidataId,
+    resolvedAt: Date.now(),
+    ttlDays: 7
+  };
+}
+
+/**
+ * Updates cache entry with new game name if changed
+ * @param {import('./types.js').CacheEntry} cached
+ * @param {string} gameName
+ * @returns {Promise<import('./types.js').CacheEntry>}
+ */
+async function updateCachedEntryIfNeeded(cached, gameName) {
+  if (cached.gameName === gameName) {
+    return cached;
+  }
+
+  const StoreUrls = globalThis.XCPW_StoreUrls;
+  const Cache = globalThis.XCPW_Cache;
+
+  cached.gameName = gameName;
+  // Update search URLs for unknown status only (don't override official URLs)
+  for (const platform of PLATFORMS) {
+    if (cached.platforms[platform].status === 'unknown') {
+      cached.platforms[platform].storeUrl = StoreUrls[platform](gameName);
+    }
+  }
+  await Cache.saveToCache(cached);
+  return cached;
 }
 
 /**
@@ -148,7 +175,6 @@ async function resolvePlatformData(appid, gameName) {
   const Cache = globalThis.XCPW_Cache;
   const WikidataClient = globalThis.XCPW_WikidataClient;
 
-  // Verify dependencies are loaded
   if (!Cache) {
     console.error(`${RESOLVER_LOG_PREFIX} CRITICAL: XCPW_Cache not available!`);
     throw new Error('Cache module not loaded');
@@ -163,19 +189,8 @@ async function resolvePlatformData(appid, gameName) {
   const cached = await Cache.getFromCache(appid);
   if (cached) {
     if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache HIT for appid ${appid}`);
-    // Update game name if changed
-    if (cached.gameName !== gameName) {
-      cached.gameName = gameName;
-      const StoreUrls = getStoreUrls();
-      // Update search URLs for unknown status (don't override official URLs)
-      for (const platform of ['nintendo', 'playstation', 'xbox']) {
-        if (cached.platforms[platform].status === 'unknown') {
-          cached.platforms[platform].storeUrl = StoreUrls[platform](gameName);
-        }
-      }
-      await Cache.saveToCache(cached);
-    }
-    return { entry: cached, fromCache: true };
+    const entry = await updateCachedEntryIfNeeded(cached, gameName);
+    return { entry, fromCache: true };
   }
 
   if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache MISS for appid ${appid}, checking manual overrides`);
@@ -183,20 +198,7 @@ async function resolvePlatformData(appid, gameName) {
   // 2. Check for manual overrides
   const override = Cache.MANUAL_OVERRIDES?.[appid];
   if (override) {
-    const StoreUrls = getStoreUrls();
-    const entry = {
-      appid,
-      gameName,
-      platforms: {
-        nintendo: { status: override.nintendo || 'unknown', storeUrl: StoreUrls.nintendo(gameName) },
-        playstation: { status: override.playstation || 'unknown', storeUrl: StoreUrls.playstation(gameName) },
-        xbox: { status: override.xbox || 'unknown', storeUrl: StoreUrls.xbox(gameName) }
-      },
-      source: 'manual',
-      wikidataId: null,
-      resolvedAt: Date.now(),
-      ttlDays: 7
-    };
+    const entry = createManualOverrideEntry(appid, gameName, override);
     await Cache.saveToCache(entry);
     console.log(`${RESOLVER_LOG_PREFIX} Using manual override for appid ${appid}`);
     return { entry, fromCache: false };
@@ -213,24 +215,22 @@ async function resolvePlatformData(appid, gameName) {
       platforms: wikidataResult?.platforms
     });
 
+    const entry = wikidataResultToCacheEntry(appid, gameName, wikidataResult);
+
     if (wikidataResult.found) {
-      const entry = wikidataResultToCacheEntry(appid, gameName, wikidataResult);
       await Cache.saveToCache(entry);
       console.log(`${RESOLVER_LOG_PREFIX} Resolved via Wikidata: ${appid}`);
-      return { entry, fromCache: false };
     } else {
       // Game genuinely not in Wikidata - cache this result so we don't keep querying
       if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata found no match for appid ${appid}`);
-      const entry = createFallbackEntry(appid, gameName);
       await Cache.saveToCache(entry);
-      return { entry, fromCache: false };
     }
+    return { entry, fromCache: false };
   } catch (error) {
     // Wikidata query failed (network error, 429, etc.)
     // DON'T cache - allow retry on next page load
     console.warn(`${RESOLVER_LOG_PREFIX} Wikidata query failed for ${appid}, will retry later:`, error.message);
     const entry = createFallbackEntry(appid, gameName);
-    // Return without caching so next page load can retry
     return { entry, fromCache: false };
   }
 }
@@ -270,20 +270,7 @@ async function batchResolvePlatformData(games) {
   for (const { appid, gameName } of uncached) {
     const override = Cache.MANUAL_OVERRIDES?.[appid];
     if (override) {
-      const StoreUrls = getStoreUrls();
-      const entry = {
-        appid,
-        gameName,
-        platforms: {
-          nintendo: { status: override.nintendo || 'unknown', storeUrl: StoreUrls.nintendo(gameName) },
-          playstation: { status: override.playstation || 'unknown', storeUrl: StoreUrls.playstation(gameName) },
-          xbox: { status: override.xbox || 'unknown', storeUrl: StoreUrls.xbox(gameName) }
-        },
-        source: 'manual',
-        wikidataId: null,
-        resolvedAt: Date.now(),
-        ttlDays: 7
-      };
+      const entry = createManualOverrideEntry(appid, gameName, override);
       await Cache.saveToCache(entry);
       results.set(appid, { entry, fromCache: false });
     } else {
@@ -302,28 +289,21 @@ async function batchResolvePlatformData(games) {
 
     for (const { appid, gameName } of needsResolution) {
       const wikidataResult = wikidataResults.get(appid);
+      const entry = wikidataResult?.found
+        ? wikidataResultToCacheEntry(appid, gameName, wikidataResult)
+        : createFallbackEntry(appid, gameName);
 
-      if (wikidataResult?.found) {
-        const entry = wikidataResultToCacheEntry(appid, gameName, wikidataResult);
-        await Cache.saveToCache(entry);
-        results.set(appid, { entry, fromCache: false });
-      } else {
-        // Fallback for not found
-        const entry = createFallbackEntry(appid, gameName);
-        await Cache.saveToCache(entry);
-        results.set(appid, { entry, fromCache: false });
-      }
+      await Cache.saveToCache(entry);
+      results.set(appid, { entry, fromCache: false });
     }
 
     console.log(`${RESOLVER_LOG_PREFIX} Wikidata batch resolved ${needsResolution.length} games`);
   } catch (error) {
-    // Batch Wikidata query failed (network error, 429, etc.)
-    // DON'T cache - allow retry on next page load
+    // Batch Wikidata query failed - DON'T cache to allow retry
     console.warn(`${RESOLVER_LOG_PREFIX} Batch Wikidata resolution failed, will retry later:`, error.message);
     for (const { appid, gameName } of needsResolution) {
       if (!results.has(appid)) {
         const entry = createFallbackEntry(appid, gameName);
-        // Return without caching so next page load can retry
         results.set(appid, { entry, fromCache: false });
       }
     }
@@ -339,13 +319,8 @@ async function batchResolvePlatformData(games) {
  * @returns {Promise<{entry: import('./types.js').CacheEntry, fromCache: boolean}>}
  */
 async function forceRefresh(appid, gameName) {
-  const Cache = globalThis.XCPW_Cache;
-
-  // Remove from cache first
   const cacheKey = `xcpw_cache_${appid}`;
   await chrome.storage.local.remove(cacheKey);
-
-  // Resolve fresh
   return resolvePlatformData(appid, gameName);
 }
 

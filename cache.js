@@ -7,64 +7,39 @@
 
 const CACHE_KEY_PREFIX = 'xcpw_cache_';
 const DEFAULT_TTL_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const PLATFORMS = ['nintendo', 'playstation', 'xbox'];
+
+/**
+ * Creates a platform availability object
+ * @param {Object} options
+ * @param {boolean} [options.allAvailable] - Set all platforms to available
+ * @param {string[]} [options.unavailable] - Platforms to mark as unavailable
+ * @returns {Record<string, import('./types.js').PlatformStatus>}
+ */
+function platformStatus({ allAvailable = false, unavailable = [] } = {}) {
+  function getStatus(platform) {
+    if (unavailable.includes(platform)) return 'unavailable';
+    if (allAvailable) return 'available';
+    return 'unknown';
+  }
+  return Object.fromEntries(PLATFORMS.map(p => [p, getStatus(p)]));
+}
 
 /**
  * Manual override map for testing purposes.
  * These appids will show specific platform availability regardless of actual data.
  * In production, this would be empty and data would come from actual lookups.
- *
- * Key: Steam appid
- * Value: Object with platform availability
  */
 const MANUAL_OVERRIDES = {
-  // Hollow Knight - Available on all platforms
-  '367520': {
-    nintendo: 'available',
-    playstation: 'available',
-    xbox: 'available'
-  },
-  // Elden Ring - Available on PlayStation and Xbox, not on Switch
-  '1245620': {
-    nintendo: 'unavailable',
-    playstation: 'available',
-    xbox: 'available'
-  },
-  // Hades - Available on all platforms
-  '1145360': {
-    nintendo: 'available',
-    playstation: 'available',
-    xbox: 'available'
-  },
-  // Celeste - Available on all platforms
-  '504230': {
-    nintendo: 'available',
-    playstation: 'available',
-    xbox: 'available'
-  },
-  // Baldur's Gate 3 - PlayStation and Xbox, not Switch
-  '1086940': {
-    nintendo: 'unavailable',
-    playstation: 'available',
-    xbox: 'available'
-  },
-  // Stardew Valley - Available on all platforms
-  '413150': {
-    nintendo: 'available',
-    playstation: 'available',
-    xbox: 'available'
-  },
-  // Disco Elysium - Available on all platforms
-  '632470': {
-    nintendo: 'available',
-    playstation: 'available',
-    xbox: 'available'
-  },
-  // Cyberpunk 2077 - PlayStation and Xbox only
-  '1091500': {
-    nintendo: 'unavailable',
-    playstation: 'available',
-    xbox: 'available'
-  }
+  '367520': platformStatus({ allAvailable: true }),   // Hollow Knight
+  '1145360': platformStatus({ allAvailable: true }),  // Hades
+  '504230': platformStatus({ allAvailable: true }),   // Celeste
+  '413150': platformStatus({ allAvailable: true }),   // Stardew Valley
+  '632470': platformStatus({ allAvailable: true }),   // Disco Elysium
+  '1245620': platformStatus({ allAvailable: true, unavailable: ['nintendo'] }), // Elden Ring
+  '1086940': platformStatus({ allAvailable: true, unavailable: ['nintendo'] }), // Baldur's Gate 3
+  '1091500': platformStatus({ allAvailable: true, unavailable: ['nintendo'] })  // Cyberpunk 2077
 };
 
 /**
@@ -82,12 +57,11 @@ function getCacheKey(appid) {
  * @returns {boolean}
  */
 function isCacheValid(entry) {
-  if (!entry || !entry.resolvedAt || !entry.ttlDays) {
+  if (!entry?.resolvedAt || !entry?.ttlDays) {
     return false;
   }
-  const now = Date.now();
-  const expiresAt = entry.resolvedAt + (entry.ttlDays * 24 * 60 * 60 * 1000);
-  return now < expiresAt;
+  const expiresAt = entry.resolvedAt + entry.ttlDays * MS_PER_DAY;
+  return Date.now() < expiresAt;
 }
 
 /**
@@ -103,31 +77,22 @@ function createCacheEntry(appid, gameName) {
   const override = MANUAL_OVERRIDES[appid];
   const StoreUrls = globalThis.XCPW_StoreUrls;
 
-  /** @type {import('./types.js').CacheEntry} */
-  const entry = {
+  const platforms = Object.fromEntries(
+    PLATFORMS.map(platform => [platform, {
+      status: override?.[platform] || 'unknown',
+      storeUrl: StoreUrls[platform](gameName)
+    }])
+  );
+
+  return {
     appid,
     gameName,
-    platforms: {
-      nintendo: {
-        status: override?.nintendo || 'unknown',
-        storeUrl: StoreUrls.nintendo(gameName)
-      },
-      playstation: {
-        status: override?.playstation || 'unknown',
-        storeUrl: StoreUrls.playstation(gameName)
-      },
-      xbox: {
-        status: override?.xbox || 'unknown',
-        storeUrl: StoreUrls.xbox(gameName)
-      }
-    },
+    platforms,
     source: override ? 'manual' : 'none',
     igdbId: null,
     resolvedAt: Date.now(),
     ttlDays: DEFAULT_TTL_DAYS
   };
-
-  return entry;
 }
 
 /**
@@ -158,6 +123,18 @@ async function saveToCache(entry) {
 }
 
 /**
+ * Regenerates store URLs for all platforms with a new game name
+ * @param {import('./types.js').CacheEntry} entry
+ * @param {string} gameName
+ */
+function updateStoreUrls(entry, gameName) {
+  const StoreUrls = globalThis.XCPW_StoreUrls;
+  for (const platform of PLATFORMS) {
+    entry.platforms[platform].storeUrl = StoreUrls[platform](gameName);
+  }
+}
+
+/**
  * Gets or creates platform data for an appid.
  * Returns cached data if available, otherwise creates new entry.
  *
@@ -166,23 +143,16 @@ async function saveToCache(entry) {
  * @returns {Promise<{entry: import('./types.js').CacheEntry, fromCache: boolean}>}
  */
 async function getOrCreatePlatformData(appid, gameName) {
-  // Check cache first
   const cached = await getFromCache(appid);
   if (cached) {
-    // Update game name if it changed (user might have renamed in Steam)
     if (cached.gameName !== gameName) {
       cached.gameName = gameName;
-      // Regenerate store URLs with new name
-      const StoreUrls = globalThis.XCPW_StoreUrls;
-      cached.platforms.nintendo.storeUrl = StoreUrls.nintendo(gameName);
-      cached.platforms.playstation.storeUrl = StoreUrls.playstation(gameName);
-      cached.platforms.xbox.storeUrl = StoreUrls.xbox(gameName);
+      updateStoreUrls(cached, gameName);
       await saveToCache(cached);
     }
     return { entry: cached, fromCache: true };
   }
 
-  // Create new entry
   const entry = createCacheEntry(appid, gameName);
   await saveToCache(entry);
   return { entry, fromCache: false };
@@ -208,18 +178,15 @@ async function getCacheStats() {
   const allData = await chrome.storage.local.get(null);
   const cacheEntries = Object.entries(allData)
     .filter(([key]) => key.startsWith(CACHE_KEY_PREFIX))
-    .map(([, value]) => value);
+    .map(([, entry]) => entry);
 
-  let oldestEntry = null;
-  for (const entry of cacheEntries) {
-    if (entry.resolvedAt && (!oldestEntry || entry.resolvedAt < oldestEntry)) {
-      oldestEntry = entry.resolvedAt;
-    }
-  }
+  const timestamps = cacheEntries
+    .map(entry => entry.resolvedAt)
+    .filter(Boolean);
 
   return {
     count: cacheEntries.length,
-    oldestEntry
+    oldestEntry: timestamps.length > 0 ? Math.min(...timestamps) : null
   };
 }
 

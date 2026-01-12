@@ -156,29 +156,21 @@ function injectStyles() {
 
 /**
  * Extracts the Steam appid from a wishlist item element.
- * Steam's new React-based wishlist uses data-rfd-draggable-id="WishlistItem-{appid}-{index}"
+ * Steam's React-based wishlist uses data-rfd-draggable-id="WishlistItem-{appid}-{index}"
  */
 function extractAppId(item) {
-  // Method 1: data-rfd-draggable-id attribute
+  // Primary: data-rfd-draggable-id attribute (most reliable for wishlist items)
   const draggableId = item.getAttribute('data-rfd-draggable-id');
   if (draggableId) {
     const match = draggableId.match(/^WishlistItem-(\d+)-/);
     if (match) return match[1];
   }
 
-  // Method 2: Find link to app page
+  // Fallback: Find link to app page (works on various Steam pages)
   const appLink = item.querySelector('a[href*="/app/"]');
   if (appLink) {
-    const href = appLink.getAttribute('href');
-    const match = href?.match(/\/app\/(\d+)/);
+    const match = appLink.getAttribute('href')?.match(/\/app\/(\d+)/);
     if (match) return match[1];
-  }
-
-  // Method 3: data-appid on note elements
-  const noteEl = item.querySelector('[data-appid]');
-  if (noteEl) {
-    const appId = noteEl.getAttribute('data-appid');
-    if (appId && /^\d+$/.test(appId)) return appId;
   }
 
   return null;
@@ -380,7 +372,7 @@ function findInjectionPoint(item) {
     }
   }
 
-  // Secondary: Find SVG icon groups (fallback for different layouts)
+  // Secondary: Find the largest SVG icon group (platform icons are typically grouped)
   const svgIcons = item.querySelectorAll('svg:not(.xcpw-platforms svg)');
   const groupCounts = new Map();
   for (const svg of svgIcons) {
@@ -407,32 +399,7 @@ function findInjectionPoint(item) {
     return { container: bestGroup, insertAfter: bestInfo.lastWrapper };
   }
 
-  // Tertiary: Look for platform-related class names
-  const platformSelectors = ['[class*="Platform"]', '[class*="platform"]', '[class*="Compat"]', '[class*="compat"]'];
-  for (const selector of platformSelectors) {
-    const el = item.querySelector(selector);
-    if (el) {
-      const container = el.parentElement || el;
-      if (isValidContainer(item, container)) {
-        return { container, insertAfter: el };
-      }
-    }
-  }
-
-  // Quaternary: Inject near the game title link
-  const titleLink = item.querySelector('a[href*="/app/"]');
-  if (titleLink?.parentElement) {
-    const titleContainer = titleLink.parentElement;
-    const parent = titleContainer.parentElement;
-    if (isValidContainer(item, parent)) {
-      return { container: parent, insertAfter: titleContainer };
-    }
-    if (isValidContainer(item, titleContainer)) {
-      return { container: titleContainer, insertAfter: null };
-    }
-  }
-
-  // Final fallback: append to item itself
+  // Fallback: append to item itself
   return { container: item, insertAfter: null };
 }
 

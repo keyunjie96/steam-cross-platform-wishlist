@@ -343,20 +343,24 @@ describe('wikidataClient.js', () => {
       expect(result.platforms.xbox).toBe(false); // Should NOT detect as Xbox
     });
 
-    it('should return null on network error', async () => {
+    it('should throw on network error (transient failure)', async () => {
       const Client = globalThis.XCPW_WikidataClient;
 
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
+      // Start the query and advance timers concurrently
       const queryPromise = Client.queryBySteamAppId('12345');
-      await jest.advanceTimersByTimeAsync(600);
-      const result = await queryPromise;
 
-      expect(result.found).toBe(false);
-      expect(result.wikidataId).toBeNull();
+      // Advance timers and wait for promise together
+      await expect(
+        Promise.all([
+          jest.advanceTimersByTimeAsync(600),
+          queryPromise
+        ])
+      ).rejects.toThrow('Wikidata query failed');
     });
 
-    it('should return null on non-200 response', async () => {
+    it('should throw on non-200 response (transient failure)', async () => {
       const Client = globalThis.XCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
@@ -364,11 +368,16 @@ describe('wikidataClient.js', () => {
         status: 500
       });
 
+      // Start the query and advance timers concurrently
       const queryPromise = Client.queryBySteamAppId('12345');
-      await jest.advanceTimersByTimeAsync(600);
-      const result = await queryPromise;
 
-      expect(result.found).toBe(false);
+      // Advance timers and wait for promise together
+      await expect(
+        Promise.all([
+          jest.advanceTimersByTimeAsync(600),
+          queryPromise
+        ])
+      ).rejects.toThrow('Wikidata query failed');
     });
 
     it('should retry on 429 rate limit with backoff', async () => {
@@ -409,7 +418,7 @@ describe('wikidataClient.js', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should give up after max retries on 429', async () => {
+    it('should throw after max retries on 429', async () => {
       const Client = globalThis.XCPW_WikidataClient;
 
       // Always return 429
@@ -420,19 +429,15 @@ describe('wikidataClient.js', () => {
 
       const queryPromise = Client.queryBySteamAppId('12345');
 
-      // Initial delay + 4 retries with exponential backoff
-      // Request 1: 500ms rate limit
-      await jest.advanceTimersByTimeAsync(600);
-      // Backoff 1: 1000ms + Request 2: 500ms
-      await jest.advanceTimersByTimeAsync(1600);
-      // Backoff 2: 2000ms + Request 3: 500ms
-      await jest.advanceTimersByTimeAsync(2600);
-      // Backoff 3: 4000ms + Request 4: 500ms
-      await jest.advanceTimersByTimeAsync(4600);
+      // Total time needed: 500ms initial + (1000 + 500) + (2000 + 500) + (4000 + 500) = 9000ms
+      // Advance all at once and wait for promise together
+      await expect(
+        Promise.all([
+          jest.advanceTimersByTimeAsync(10000),
+          queryPromise
+        ])
+      ).rejects.toThrow('Wikidata query failed');
 
-      const result = await queryPromise;
-
-      expect(result.found).toBe(false);
       expect(mockFetch).toHaveBeenCalledTimes(4); // Initial + 3 retries
     });
 

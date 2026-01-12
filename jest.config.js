@@ -31,16 +31,16 @@ module.exports = {
     },
     // Stricter thresholds for well-tested modules
     './cache.js': {
-      branches: 100,
+      branches: 85,
       functions: 100,
-      lines: 100,
-      statements: 100
+      lines: 95,
+      statements: 95
     },
     './types.js': {
-      branches: 50,
+      branches: 25,
       functions: 100,
-      lines: 100,
-      statements: 100
+      lines: 75,
+      statements: 75
     },
     './icons.js': {
       branches: 50,

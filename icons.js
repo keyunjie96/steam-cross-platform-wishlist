@@ -2,14 +2,10 @@
 /**
  * Steam Cross-Platform Wishlist - Icon Definitions
  *
- * Contains inline SVG icons for Nintendo Switch, PlayStation, and Xbox.
- * Icons are designed to be small, monochrome, and match Steam's subtle aesthetic.
- */
-
-/**
- * SVG icons as strings - generated from assets/icons via scripts/normalize_icons.py
+ * SVG icons generated from assets/icons via scripts/normalize_icons.py
  * Normalized to 16x16 and currentColor for consistent styling.
  */
+
 const PLATFORM_ICONS = {
   // BEGIN GENERATED ICONS (scripts/normalize_icons.py)
   nintendo: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" focusable="false">
@@ -48,21 +44,19 @@ const PLATFORM_INFO = {
 };
 
 /**
- * Status display info
+ * Creates a status info entry with tooltip and className
  */
+function createStatusInfo(status, message) {
+  return {
+    tooltip: (platform) => `${PLATFORM_INFO[platform].name}: ${message}`,
+    className: `xcpw-${status}`
+  };
+}
+
 const STATUS_INFO = {
-  available: {
-    tooltip: (platform) => `${PLATFORM_INFO[platform].name}: Available - Click to view`,
-    className: 'xcpw-available'
-  },
-  unavailable: {
-    tooltip: (platform) => `${PLATFORM_INFO[platform].name}: Not available`,
-    className: 'xcpw-unavailable'
-  },
-  unknown: {
-    tooltip: (platform) => `${PLATFORM_INFO[platform].name}: Unknown - Click to search`,
-    className: 'xcpw-unknown'
-  }
+  available: createStatusInfo('available', 'Available - Click to view'),
+  unavailable: createStatusInfo('unavailable', 'Not available'),
+  unknown: createStatusInfo('unknown', 'Unknown - Click to search')
 };
 
 // Export for content script

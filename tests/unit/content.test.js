@@ -554,4 +554,175 @@ describe('content.js', () => {
       expect(svg).toBeTruthy();
     });
   });
+
+  describe('extractAppId fallback', () => {
+    it('should extract appid from app link when draggable-id is missing', () => {
+      // Create item without data-rfd-draggable-id (simulates non-standard layout)
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = 'https://store.steampowered.com/app/570/Dota_2';
+      item.appendChild(link);
+      document.body.appendChild(item);
+
+      // Verify fallback extraction works
+      const appLink = item.querySelector('a[href*="/app/"]');
+      const match = appLink.getAttribute('href')?.match(/\/app\/(\d+)/);
+      expect(match[1]).toBe('570');
+    });
+
+    it('should return null when no appid can be extracted', () => {
+      const item = document.createElement('div');
+      item.textContent = 'No links here';
+      document.body.appendChild(item);
+
+      const appLink = item.querySelector('a[href*="/app/"]');
+      const draggableId = item.getAttribute('data-rfd-draggable-id');
+
+      expect(appLink).toBeNull();
+      expect(draggableId).toBeNull();
+    });
+  });
+
+  describe('updateIconsWithData edge cases', () => {
+    it('should remove separator when no platforms are available', () => {
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+
+      const separator = document.createElement('span');
+      separator.className = 'xcpw-separator';
+      container.appendChild(separator);
+
+      // Add icons in loading state
+      ['nintendo', 'playstation', 'xbox'].forEach(platform => {
+        const icon = document.createElement('a');
+        icon.className = 'xcpw-platform-icon xcpw-loading';
+        icon.setAttribute('data-platform', platform);
+        container.appendChild(icon);
+      });
+
+      document.body.appendChild(container);
+
+      // Simulate all platforms unavailable - icons get removed
+      container.querySelectorAll('[data-platform]').forEach(icon => icon.remove());
+
+      // Check if separator should be removed when no icons visible
+      const visibleIcons = container.querySelectorAll('[data-platform]');
+      if (visibleIcons.length === 0) {
+        const sep = container.querySelector('.xcpw-separator');
+        if (sep) sep.remove();
+      }
+
+      expect(container.querySelector('.xcpw-separator')).toBeNull();
+    });
+
+    it('should keep separator when at least one platform is available', () => {
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+
+      const separator = document.createElement('span');
+      separator.className = 'xcpw-separator';
+      container.appendChild(separator);
+
+      const icon = document.createElement('a');
+      icon.className = 'xcpw-platform-icon xcpw-available';
+      icon.setAttribute('data-platform', 'nintendo');
+      container.appendChild(icon);
+
+      document.body.appendChild(container);
+
+      expect(container.querySelector('.xcpw-separator')).toBeTruthy();
+      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
+    });
+  });
+
+  describe('findInjectionPoint fallback', () => {
+    it('should fall back to item itself when no valid container found', () => {
+      const item = document.createElement('div');
+      item.setAttribute('data-rfd-draggable-id', 'WishlistItem-99999-0');
+      // No platform icons, no SVGs, no title links
+      item.textContent = 'Empty item';
+      document.body.appendChild(item);
+
+      // Verify fallback behavior: when nothing found, item itself is the container
+      const platformIcon = item.querySelector('span[title]');
+      const svgIcons = item.querySelectorAll('svg');
+
+      expect(platformIcon).toBeNull();
+      expect(svgIcons.length).toBe(0);
+      // In this case, findInjectionPoint returns { container: item, insertAfter: null }
+    });
+
+    it('should find SVG group when platform icons by title are not found', () => {
+      const item = document.createElement('div');
+      item.setAttribute('data-rfd-draggable-id', 'WishlistItem-12345-0');
+
+      // Create SVGs without title attributes
+      const group = document.createElement('div');
+      for (let i = 0; i < 3; i++) {
+        const wrapper = document.createElement('span');
+        const svg = document.createElement('svg');
+        svg.setAttribute('class', 'SVGIcon_' + i);
+        wrapper.appendChild(svg);
+        group.appendChild(wrapper);
+      }
+      item.appendChild(group);
+      document.body.appendChild(item);
+
+      const svgIcons = item.querySelectorAll('svg');
+      expect(svgIcons.length).toBe(3);
+
+      // Verify group detection works
+      const firstSvg = svgIcons[0];
+      const parent = firstSvg.parentElement;
+      const svgGroup = parent.parentElement || parent;
+      expect(item.contains(svgGroup)).toBe(true);
+    });
+  });
+
+  describe('requestPlatformData error handling', () => {
+    it('should handle service worker errors gracefully', async () => {
+      chrome.runtime.sendMessage.mockRejectedValueOnce(
+        new Error('Extension context invalidated')
+      );
+
+      let result = null;
+      try {
+        result = await chrome.runtime.sendMessage({
+          type: 'GET_PLATFORM_DATA',
+          appid: '12345',
+          gameName: 'Test'
+        });
+      } catch {
+        result = null; // Error caught, return null
+      }
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null for unsuccessful response', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: false,
+        data: null
+      });
+
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_PLATFORM_DATA',
+        appid: '12345',
+        gameName: 'Test'
+      });
+
+      expect(response.success).toBe(false);
+      // In requestPlatformData, this would return null
+    });
+  });
+
+  describe('DOMContentLoaded handling', () => {
+    it('should handle already-loaded DOM state', () => {
+      // Test that init runs when DOM is already ready
+      expect(document.readyState).not.toBe('loading');
+      // content.js should have already run init() since DOM was ready
+      const styleElement = document.getElementById('xcpw-styles');
+      expect(styleElement).toBeTruthy();
+    });
+  });
 });

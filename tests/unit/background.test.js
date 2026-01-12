@@ -47,11 +47,6 @@ describe('background.js', () => {
     // Mock importScripts (used in service workers)
     globalThis.importScripts = jest.fn();
 
-    // Mock self.addEventListener
-    globalThis.self = {
-      addEventListener: jest.fn()
-    };
-
     // Load background.js
     require('../../background.js');
 
@@ -63,7 +58,6 @@ describe('background.js', () => {
     delete globalThis.XCPW_Resolver;
     delete globalThis.XCPW_Cache;
     delete globalThis.importScripts;
-    delete globalThis.self;
   });
 
   describe('initialization', () => {
@@ -75,13 +69,6 @@ describe('background.js', () => {
     it('should call importScripts for dependencies', () => {
       expect(globalThis.importScripts).toHaveBeenCalledWith(
         'types.js', 'cache.js', 'wikidataClient.js', 'resolver.js'
-      );
-    });
-
-    it('should register activate event listener', () => {
-      expect(globalThis.self.addEventListener).toHaveBeenCalledWith(
-        'activate',
-        expect.any(Function)
       );
     });
   });
@@ -257,8 +244,7 @@ describe('background.js', () => {
       expect(sendResponse).toHaveBeenCalledWith({
         success: false,
         data: null,
-        fromCache: false,
-        error: 'Resolution failed'
+        fromCache: false
       });
     });
   });

@@ -4,12 +4,34 @@
  * Handles the options UI for managing the cache.
  */
 
+// Constants
+const MS_PER_HOUR = 1000 * 60 * 60;
+const MS_PER_DAY = MS_PER_HOUR * 24;
+
 // DOM Elements
 const statusEl = document.getElementById('status');
 const cacheCountEl = document.getElementById('cache-count');
 const cacheAgeEl = document.getElementById('cache-age');
 const refreshStatsBtn = document.getElementById('refresh-stats-btn');
 const clearCacheBtn = document.getElementById('clear-cache-btn');
+
+/**
+ * Formats a duration in milliseconds to a human-readable string
+ * @param {number} ms - Duration in milliseconds
+ * @returns {string}
+ */
+function formatAge(ms) {
+  const days = Math.floor(ms / MS_PER_DAY);
+  const hours = Math.floor((ms % MS_PER_DAY) / MS_PER_HOUR);
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  }
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+  return '<1h';
+}
 
 /**
  * Shows a status message
@@ -37,32 +59,17 @@ function setButtonLoading(button, loading) {
 }
 
 /**
- * Loads cache statistics
+ * Loads and displays cache statistics
  */
 async function loadCacheStats() {
   try {
-    const response = await chrome.runtime.sendMessage({
-      type: 'GET_CACHE_STATS'
-    });
+    const response = await chrome.runtime.sendMessage({ type: 'GET_CACHE_STATS' });
 
     if (response?.success) {
       cacheCountEl.textContent = response.count.toString();
-
-      if (response.oldestEntry) {
-        const age = Date.now() - response.oldestEntry;
-        const days = Math.floor(age / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((age % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-        if (days > 0) {
-          cacheAgeEl.textContent = `${days}d ${hours}h`;
-        } else if (hours > 0) {
-          cacheAgeEl.textContent = `${hours}h`;
-        } else {
-          cacheAgeEl.textContent = '<1h';
-        }
-      } else {
-        cacheAgeEl.textContent = '-';
-      }
+      cacheAgeEl.textContent = response.oldestEntry
+        ? formatAge(Date.now() - response.oldestEntry)
+        : '-';
     }
   } catch (error) {
     console.error('Error loading cache stats:', error);
@@ -72,19 +79,18 @@ async function loadCacheStats() {
 }
 
 /**
- * Clears the cache
+ * Clears the cache after user confirmation
  */
 async function clearCache() {
-  if (!confirm('Are you sure you want to clear the cache? All games will need to be re-resolved.')) {
+  const confirmed = confirm('Are you sure you want to clear the cache? All games will need to be re-resolved.');
+  if (!confirmed) {
     return;
   }
 
   setButtonLoading(clearCacheBtn, true);
 
   try {
-    const response = await chrome.runtime.sendMessage({
-      type: 'CLEAR_CACHE'
-    });
+    const response = await chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' });
 
     if (response?.success) {
       showStatus('Cache cleared successfully.', 'success');
@@ -105,6 +111,4 @@ refreshStatsBtn.addEventListener('click', loadCacheStats);
 clearCacheBtn.addEventListener('click', clearCache);
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-  loadCacheStats();
-});
+document.addEventListener('DOMContentLoaded', loadCacheStats);

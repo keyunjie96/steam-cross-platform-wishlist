@@ -8,43 +8,28 @@
 
 const WIKIDATA_SPARQL_URL = 'https://query.wikidata.org/sparql';
 const WIKIDATA_LOG_PREFIX = '[XCPW Wikidata]';
-const WIKIDATA_DEBUG = false; // Set to true for verbose debugging
+const WIKIDATA_DEBUG = false;
 
-// Rate limiting - Wikidata asks for reasonable usage
-// Increased delay to avoid 429 errors
-const REQUEST_DELAY_MS = 500; // 500ms between requests
+const REQUEST_DELAY_MS = 500;
 const MAX_RETRIES = 3;
-const INITIAL_BACKOFF_MS = 1000; // 1 second initial backoff for 429
+const INITIAL_BACKOFF_MS = 1000;
 
-// Request queue to serialize concurrent requests and prevent bursts
-// Each request waits for the previous one to complete + delay
 let requestQueue = Promise.resolve();
 
-// Wikidata Platform QIDs
 const PLATFORM_QIDS = {
-  // Nintendo
   SWITCH: 'Q19610114',
-
-  // PlayStation
   PS4: 'Q5014725',
   PS5: 'Q63184502',
-
-  // Xbox
   XBOX_ONE: 'Q13361286',
   XBOX_SERIES_X: 'Q64513817',
   XBOX_SERIES_S: 'Q98973368',
-
-  // PC (for reference)
   WINDOWS: 'Q1406',
   MACOS: 'Q14116',
   LINUX: 'Q388',
-
-  // Mobile
   IOS: 'Q48493',
   ANDROID: 'Q94'
 };
 
-// Wikidata Property IDs
 const PROPERTIES = {
   STEAM_APP_ID: 'P1733',
   PLATFORM: 'P400',
@@ -56,55 +41,79 @@ const PROPERTIES = {
   APP_STORE_ID: 'P3861',
   PLAY_STORE_ID: 'P3418',
   ITCH_ID: 'P7294',
-
-  // Platform-specific store IDs (used to detect availability when P400 is incomplete)
-  // Nintendo
-  SWITCH_TITLE_ID: 'P11072',       // Nintendo Switch title ID
-  ESHOP_EUROPE_ID: 'P12418',       // Nintendo eShop (Europe) ID
-  ESHOP_US_ID: 'P8084',            // Nintendo eShop ID
-  NINTENDO_LIFE_GAME_ID: 'P12735', // Nintendo Life game ID
-
-  // PlayStation
-  PS_STORE_EU: 'P5971',            // Europe PlayStation Store ID
-  PS_STORE_JP: 'P5999',            // Japan PlayStation Store ID
-  PS_STORE_NA: 'P5944',            // North America PlayStation Store ID
-  PS_STORE_CONCEPT: 'P12332',      // PlayStation Store concept ID
-  PUSH_SQUARE_ID: 'P12736',        // Push Square game ID
-
-  // Xbox
-  MS_STORE_ID: 'P5885',            // Microsoft Store product ID
-  PURE_XBOX_ID: 'P12737',          // Pure Xbox game ID
-  XBOX_360_STORE: 'P11789'         // Xbox Games Store ID (Xbox 360)
+  SWITCH_TITLE_ID: 'P11072',
+  ESHOP_EUROPE_ID: 'P12418',
+  ESHOP_US_ID: 'P8084',
+  NINTENDO_LIFE_GAME_ID: 'P12735',
+  PS_STORE_EU: 'P5971',
+  PS_STORE_JP: 'P5999',
+  PS_STORE_NA: 'P5944',
+  PS_STORE_CONCEPT: 'P12332',
+  PUSH_SQUARE_ID: 'P12736',
+  MS_STORE_ID: 'P5885',
+  PURE_XBOX_ID: 'P12737',
+  XBOX_360_STORE: 'P11789'
 };
 
-// Store URL constructors
-// These build direct store page URLs from Wikidata external IDs
-// Region-agnostic URLs - stores will redirect users to their local version
+const SPARQL_SELECT_FIELDS = `
+  (GROUP_CONCAT(DISTINCT ?platformQID; separator=",") AS ?platforms)
+  (SAMPLE(?eshopId) AS ?eshop) (SAMPLE(?psStoreId) AS ?psStore) (SAMPLE(?xboxId) AS ?xbox)
+  (SAMPLE(?gogId) AS ?gog) (SAMPLE(?epicId) AS ?epic)
+  (SAMPLE(?appStoreId) AS ?appStore) (SAMPLE(?playStoreId) AS ?playStore)
+  (SAMPLE(?switchTitleId) AS ?switchTitle) (SAMPLE(?eshopEuId) AS ?eshopEu) (SAMPLE(?eshopUsId) AS ?eshopUs)
+  (SAMPLE(?psStoreEuId) AS ?psStoreEu) (SAMPLE(?psStoreNaId) AS ?psStoreNa) (SAMPLE(?psStoreConceptId) AS ?psStoreConcept)
+  (SAMPLE(?msStoreId) AS ?msStore) (SAMPLE(?pureXboxId) AS ?pureXbox)`;
+
+const SPARQL_OPTIONAL_CLAUSES = `
+  OPTIONAL { ?game wdt:${PROPERTIES.PLATFORM} ?platform . BIND(STRAFTER(STR(?platform), "entity/") AS ?platformQID) }
+  OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_ID} ?eshopId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_ID} ?psStoreId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.XBOX_ID} ?xboxId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.GOG_ID} ?gogId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.EPIC_ID} ?epicId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.APP_STORE_ID} ?appStoreId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.PLAY_STORE_ID} ?playStoreId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.SWITCH_TITLE_ID} ?switchTitleId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_EUROPE_ID} ?eshopEuId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_US_ID} ?eshopUsId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_EU} ?psStoreEuId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_NA} ?psStoreNaId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_CONCEPT} ?psStoreConceptId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.MS_STORE_ID} ?msStoreId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.PURE_XBOX_ID} ?pureXboxId . }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }`;
+
+const PLATFORM_STORE_ID_MAP = {
+  nintendo: 'eshop',
+  playstation: 'psStore',
+  xbox: 'xbox'
+};
+
+const STORE_URL_TEMPLATES = {
+  nintendo: 'https://www.nintendo.com/store/products/{id}/',
+  playstation: 'https://store.playstation.com/concept/{id}',
+  xbox: 'https://www.xbox.com/games/store/-/{id}',
+  gog: 'https://www.gog.com/game/{id}',
+  epic: 'https://store.epicgames.com/p/{id}',
+  appStore: 'https://apps.apple.com/app/id{id}',
+  playStore: 'https://play.google.com/store/apps/details?id={id}',
+  itch: 'https://{id}.itch.io/'
+};
+
+function buildStoreUrl(store, id) {
+  if (!id || !STORE_URL_TEMPLATES[store]) return null;
+  return STORE_URL_TEMPLATES[store].replace('{id}', id);
+}
+
 const STORE_URL_BUILDERS = {
-  nintendo: (eshopId) => eshopId
-    ? `https://www.nintendo.com/store/products/${eshopId}/`  // No region - auto-redirects
-    : null,
-  playstation: (psStoreId) => psStoreId
-    ? `https://store.playstation.com/concept/${psStoreId}`   // No region - auto-redirects
-    : null,
-  xbox: (xboxId) => xboxId
-    ? `https://www.xbox.com/games/store/-/${xboxId}`         // No region - auto-redirects
-    : null,
-  gog: (gogId) => gogId
-    ? `https://www.gog.com/game/${gogId}`
-    : null,
-  epic: (epicId) => epicId
-    ? `https://store.epicgames.com/p/${epicId}`              // No region
-    : null,
-  appStore: (appStoreId) => appStoreId
-    ? `https://apps.apple.com/app/id${appStoreId}`           // No region - auto-redirects
-    : null,
-  playStore: (playStoreId) => playStoreId
-    ? `https://play.google.com/store/apps/details?id=${playStoreId}`
-    : null,
-  itch: (itchId) => itchId
-    ? `https://${itchId}.itch.io/`
-    : null
+  nintendo: (id) => buildStoreUrl('nintendo', id),
+  playstation: (id) => buildStoreUrl('playstation', id),
+  xbox: (id) => buildStoreUrl('xbox', id),
+  gog: (id) => buildStoreUrl('gog', id),
+  epic: (id) => buildStoreUrl('epic', id),
+  appStore: (id) => buildStoreUrl('appStore', id),
+  playStore: (id) => buildStoreUrl('playStore', id),
+  itch: (id) => buildStoreUrl('itch', id)
 };
 
 /**
@@ -124,21 +133,70 @@ const STORE_URL_BUILDERS = {
  * @property {string | null} storeIds.epic - Epic Games Store ID
  */
 
+const EMPTY_RESULT = {
+  wikidataId: null,
+  gameName: '',
+  found: false,
+  platforms: { nintendo: false, playstation: false, xbox: false },
+  storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null }
+};
+
+function createEmptyResult() {
+  return { ...EMPTY_RESULT, platforms: { ...EMPTY_RESULT.platforms }, storeIds: { ...EMPTY_RESULT.storeIds } };
+}
+
+/**
+ * Extracts platform availability and store IDs from a SPARQL binding
+ * @param {Object} binding - SPARQL result binding
+ * @returns {WikidataResult}
+ */
+function parseBindingToResult(binding) {
+  const platformQIDs = binding.platforms?.value?.split(',') || [];
+
+  const hasSwitchP400 = platformQIDs.includes(PLATFORM_QIDS.SWITCH);
+  const hasPSP400 = platformQIDs.includes(PLATFORM_QIDS.PS4) || platformQIDs.includes(PLATFORM_QIDS.PS5);
+  const hasXboxP400 = platformQIDs.includes(PLATFORM_QIDS.XBOX_ONE) ||
+                      platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_X) ||
+                      platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_S);
+
+  const hasSwitchStoreId = !!(binding.switchTitle?.value || binding.eshopEu?.value || binding.eshopUs?.value);
+  const hasPSStoreId = !!(binding.psStoreEu?.value || binding.psStoreNa?.value ||
+                          binding.psStoreConcept?.value || binding.psStore?.value);
+
+  const pureXboxId = binding.pureXbox?.value;
+  const isPureXboxConsole = pureXboxId && !pureXboxId.includes('xbox-for-pc') && !pureXboxId.includes('-for-pc');
+  const hasXboxStoreId = !!(binding.msStore?.value || isPureXboxConsole || binding.xbox?.value);
+
+  const wikidataId = binding.game?.value ? binding.game.value.split('/').pop() : null;
+
+  return {
+    wikidataId,
+    gameName: binding.gameLabel?.value || '',
+    found: true,
+    platforms: {
+      nintendo: hasSwitchP400 || hasSwitchStoreId,
+      playstation: hasPSP400 || hasPSStoreId,
+      xbox: hasXboxP400 || hasXboxStoreId
+    },
+    storeIds: {
+      eshop: binding.eshopUs?.value || binding.eshopEu?.value || null,
+      psStore: binding.psStoreConcept?.value || binding.psStoreNa?.value || binding.psStoreEu?.value || binding.psStore?.value || null,
+      xbox: binding.msStore?.value || binding.xbox?.value || null,
+      gog: binding.gog?.value || null,
+      epic: binding.epic?.value || null,
+      appStore: binding.appStore?.value || null,
+      playStore: binding.playStore?.value || null
+    }
+  };
+}
+
 /**
  * Serializes requests through a queue to prevent concurrent bursts.
- * Each request waits for the previous one to complete + enforced delay.
  * @returns {Promise<void>}
  */
 async function rateLimit() {
-  // Chain this request onto the queue - ensures serialization
-  const myTurn = requestQueue.then(async () => {
-    await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY_MS));
-  });
-
-  // Update queue to include this request (don't await yet)
-  requestQueue = myTurn.catch(() => {});  // Prevent queue from breaking on errors
-
-  // Now wait for our turn
+  const myTurn = requestQueue.then(() => new Promise(resolve => setTimeout(resolve, REQUEST_DELAY_MS)));
+  requestQueue = myTurn.catch(() => {});
   await myTurn;
 }
 
@@ -191,63 +249,16 @@ async function executeSparqlQuery(query, retryCount = 0) {
  * Queries Wikidata for a game by Steam App ID
  * @param {string} steamAppId - Steam application ID
  * @returns {Promise<WikidataResult>}
+ * @throws {Error} When query fails due to network/rate limit (caller should NOT cache)
  */
 async function queryBySteamAppId(steamAppId) {
   if (WIKIDATA_DEBUG) console.log(`${WIKIDATA_LOG_PREFIX} queryBySteamAppId called for: ${steamAppId}`);
 
-  // SPARQL query to get game data by Steam App ID
-  // Uses both P400 (platforms) AND platform-specific store IDs to detect availability
-  // This handles cases where P400 is incomplete but store IDs exist
   const query = `
-    SELECT ?game ?gameLabel
-           (GROUP_CONCAT(DISTINCT ?platformQID; separator=",") AS ?platforms)
-           (SAMPLE(?eshopId) AS ?eshop)
-           (SAMPLE(?psStoreId) AS ?psStore)
-           (SAMPLE(?xboxId) AS ?xbox)
-           (SAMPLE(?gogId) AS ?gog)
-           (SAMPLE(?epicId) AS ?epic)
-           (SAMPLE(?appStoreId) AS ?appStore)
-           (SAMPLE(?playStoreId) AS ?playStore)
-           (SAMPLE(?switchTitleId) AS ?switchTitle)
-           (SAMPLE(?eshopEuId) AS ?eshopEu)
-           (SAMPLE(?eshopUsId) AS ?eshopUs)
-           (SAMPLE(?psStoreEuId) AS ?psStoreEu)
-           (SAMPLE(?psStoreNaId) AS ?psStoreNa)
-           (SAMPLE(?psStoreConceptId) AS ?psStoreConcept)
-           (SAMPLE(?msStoreId) AS ?msStore)
-           (SAMPLE(?pureXboxId) AS ?pureXbox)
+    SELECT ?game ?gameLabel ${SPARQL_SELECT_FIELDS}
     WHERE {
       ?game wdt:${PROPERTIES.STEAM_APP_ID} "${steamAppId}" .
-
-      OPTIONAL {
-        ?game wdt:${PROPERTIES.PLATFORM} ?platform .
-        BIND(STRAFTER(STR(?platform), "entity/") AS ?platformQID)
-      }
-
-      # Primary store IDs
-      OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_ID} ?eshopId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_ID} ?psStoreId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.XBOX_ID} ?xboxId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.GOG_ID} ?gogId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.EPIC_ID} ?epicId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.APP_STORE_ID} ?appStoreId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.PLAY_STORE_ID} ?playStoreId . }
-
-      # Nintendo platform-specific IDs (fallback detection)
-      OPTIONAL { ?game wdt:${PROPERTIES.SWITCH_TITLE_ID} ?switchTitleId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_EUROPE_ID} ?eshopEuId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_US_ID} ?eshopUsId . }
-
-      # PlayStation platform-specific IDs (fallback detection)
-      OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_EU} ?psStoreEuId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_NA} ?psStoreNaId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_CONCEPT} ?psStoreConceptId . }
-
-      # Xbox platform-specific IDs (fallback detection)
-      OPTIONAL { ?game wdt:${PROPERTIES.MS_STORE_ID} ?msStoreId . }
-      OPTIONAL { ?game wdt:${PROPERTIES.PURE_XBOX_ID} ?pureXboxId . }
-
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      ${SPARQL_OPTIONAL_CLAUSES}
     }
     GROUP BY ?game ?gameLabel
     LIMIT 1
@@ -255,101 +266,24 @@ async function queryBySteamAppId(steamAppId) {
 
   const result = await executeSparqlQuery(query);
 
-  if (!result?.results?.bindings?.length) {
-    console.log(`${WIKIDATA_LOG_PREFIX} No Wikidata match for Steam appid ${steamAppId}`);
-    return {
-      wikidataId: null,
-      gameName: '',
-      found: false,
-      platforms: {
-        nintendo: false,
-        playstation: false,
-        xbox: false
-      },
-      storeIds: {
-        eshop: null,
-        psStore: null,
-        xbox: null,
-        gog: null,
-        epic: null,
-        appStore: null,
-        playStore: null
-      }
-    };
+  // Query failed (network/rate limit) - throw to signal transient failure
+  if (result === null) {
+    throw new Error('Wikidata query failed - will retry later');
   }
 
-  const binding = result.results.bindings[0];
-  const platformQIDs = binding.platforms?.value?.split(',') || [];
+  // Query succeeded but no results - game genuinely not in Wikidata
+  if (!result?.results?.bindings?.length) {
+    console.log(`${WIKIDATA_LOG_PREFIX} No Wikidata match for Steam appid ${steamAppId}`);
+    return createEmptyResult();
+  }
 
-  // Check platform availability from P400 platforms property
-  const hasSwitchP400 = platformQIDs.includes(PLATFORM_QIDS.SWITCH);
-  const hasPSP400 = platformQIDs.includes(PLATFORM_QIDS.PS4) ||
-                    platformQIDs.includes(PLATFORM_QIDS.PS5);
-  const hasXboxP400 = platformQIDs.includes(PLATFORM_QIDS.XBOX_ONE) ||
-                      platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_X) ||
-                      platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_S);
-
-  // Check platform availability from platform-specific store IDs (fallback)
-  // Note: Only use ExternalId type properties, not WikibaseItem references
-  const hasSwitchStoreId = !!(
-    binding.switchTitle?.value ||
-    binding.eshopEu?.value ||
-    binding.eshopUs?.value
-    // Note: P8956 (eshop) is WikibaseItem type "compatible with", NOT an eShop ID - excluded
-  );
-  const hasPSStoreId = !!(
-    binding.psStoreEu?.value ||
-    binding.psStoreNa?.value ||
-    binding.psStoreConcept?.value ||
-    binding.psStore?.value
-  );
-  // Note: Pure Xbox IDs containing "xbox-for-pc" are PC-only releases, not console
-  const pureXboxId = binding.pureXbox?.value;
-  const isPureXboxConsole = pureXboxId && !pureXboxId.includes('xbox-for-pc') && !pureXboxId.includes('-for-pc');
-
-  const hasXboxStoreId = !!(
-    binding.msStore?.value ||
-    isPureXboxConsole ||
-    binding.xbox?.value
-  );
-
-  // Final availability: P400 OR platform-specific store IDs
-  const hasSwitch = hasSwitchP400 || hasSwitchStoreId;
-  const hasPS = hasPSP400 || hasPSStoreId;
-  const hasXbox = hasXboxP400 || hasXboxStoreId;
-
-  // Extract Wikidata QID from URI
-  const wikidataId = binding.game?.value
-    ? binding.game.value.split('/').pop()
-    : null;
-
-  const gameResult = {
-    wikidataId,
-    gameName: binding.gameLabel?.value || '',
-    found: true,
-    platforms: {
-      nintendo: hasSwitch,
-      playstation: hasPS,
-      xbox: hasXbox
-    },
-    storeIds: {
-      eshop: binding.eshopUs?.value || binding.eshopEu?.value || null, // P8084 (US) or P12418 (EU)
-      psStore: binding.psStoreConcept?.value || binding.psStoreNa?.value || binding.psStoreEu?.value || binding.psStore?.value || null, // Prefer concept ID
-      xbox: binding.msStore?.value || binding.xbox?.value || null, // P5885 (MS Store) preferred
-      gog: binding.gog?.value || null,
-      epic: binding.epic?.value || null,
-      appStore: binding.appStore?.value || null,
-      playStore: binding.playStore?.value || null
-    }
-  };
+  const gameResult = parseBindingToResult(result.results.bindings[0]);
 
   if (WIKIDATA_DEBUG) {
-    console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${wikidataId}:`);
-    console.log(`  P400: NS=${hasSwitchP400}, PS=${hasPSP400}, XB=${hasXboxP400}`);
-    console.log(`  StoreIDs: NS=${hasSwitchStoreId}, PS=${hasPSStoreId}, XB=${hasXboxStoreId}`);
-    console.log(`  Final: NS=${hasSwitch}, PS=${hasPS}, XB=${hasXbox}`);
+    console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${gameResult.wikidataId}:`, gameResult.platforms);
   } else {
-    console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${wikidataId}: NS=${hasSwitch}, PS=${hasPS}, XB=${hasXbox}`);
+    const { nintendo, playstation, xbox } = gameResult.platforms;
+    console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${gameResult.wikidataId}: NS=${nintendo}, PS=${playstation}, XB=${xbox}`);
   }
 
   return gameResult;
@@ -359,160 +293,51 @@ async function queryBySteamAppId(steamAppId) {
  * Batch query multiple Steam App IDs
  * @param {string[]} steamAppIds - Array of Steam App IDs
  * @returns {Promise<Map<string, WikidataResult>>}
+ * @throws {Error} When query fails due to network/rate limit (caller should NOT cache)
  */
 async function batchQueryBySteamAppIds(steamAppIds) {
   const results = new Map();
-
-  // Wikidata SPARQL doesn't handle large IN clauses well
-  // Process in smaller batches
   const BATCH_SIZE = 20;
 
   for (let i = 0; i < steamAppIds.length; i += BATCH_SIZE) {
     const batch = steamAppIds.slice(i, i + BATCH_SIZE);
-
-    // Build VALUES clause for batch query
     const valuesClause = batch.map(id => `"${id}"`).join(' ');
 
-    // Uses both P400 (platforms) AND platform-specific store IDs to detect availability
     const query = `
-      SELECT ?steamId ?game ?gameLabel
-             (GROUP_CONCAT(DISTINCT ?platformQID; separator=",") AS ?platforms)
-             (SAMPLE(?eshopId) AS ?eshop)
-             (SAMPLE(?psStoreId) AS ?psStore)
-             (SAMPLE(?xboxId) AS ?xbox)
-             (SAMPLE(?gogId) AS ?gog)
-             (SAMPLE(?epicId) AS ?epic)
-             (SAMPLE(?switchTitleId) AS ?switchTitle)
-             (SAMPLE(?eshopEuId) AS ?eshopEu)
-             (SAMPLE(?eshopUsId) AS ?eshopUs)
-             (SAMPLE(?psStoreEuId) AS ?psStoreEu)
-             (SAMPLE(?psStoreNaId) AS ?psStoreNa)
-             (SAMPLE(?psStoreConceptId) AS ?psStoreConcept)
-             (SAMPLE(?msStoreId) AS ?msStore)
-             (SAMPLE(?pureXboxId) AS ?pureXbox)
+      SELECT ?steamId ?game ?gameLabel ${SPARQL_SELECT_FIELDS}
       WHERE {
         VALUES ?steamId { ${valuesClause} }
         ?game wdt:${PROPERTIES.STEAM_APP_ID} ?steamId .
-
-        OPTIONAL {
-          ?game wdt:${PROPERTIES.PLATFORM} ?platform .
-          BIND(STRAFTER(STR(?platform), "entity/") AS ?platformQID)
-        }
-
-        # Primary store IDs
-        OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_ID} ?eshopId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_ID} ?psStoreId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.XBOX_ID} ?xboxId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.GOG_ID} ?gogId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.EPIC_ID} ?epicId . }
-
-        # Nintendo platform-specific IDs (fallback detection)
-        OPTIONAL { ?game wdt:${PROPERTIES.SWITCH_TITLE_ID} ?switchTitleId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_EUROPE_ID} ?eshopEuId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.ESHOP_US_ID} ?eshopUsId . }
-
-        # PlayStation platform-specific IDs (fallback detection)
-        OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_EU} ?psStoreEuId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_NA} ?psStoreNaId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_CONCEPT} ?psStoreConceptId . }
-
-        # Xbox platform-specific IDs (fallback detection)
-        OPTIONAL { ?game wdt:${PROPERTIES.MS_STORE_ID} ?msStoreId . }
-        OPTIONAL { ?game wdt:${PROPERTIES.PURE_XBOX_ID} ?pureXboxId . }
-
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        ${SPARQL_OPTIONAL_CLAUSES}
       }
       GROUP BY ?steamId ?game ?gameLabel
     `;
 
     const result = await executeSparqlQuery(query);
 
+    // Query failed - throw to signal transient failure
+    if (result === null) {
+      throw new Error('Wikidata batch query failed - will retry later');
+    }
+
     if (result?.results?.bindings) {
       for (const binding of result.results.bindings) {
         const steamId = binding.steamId?.value;
-        if (!steamId) continue;
-
-        const platformQIDs = binding.platforms?.value?.split(',') || [];
-
-        // Check platform availability from P400 platforms property
-        const hasSwitchP400 = platformQIDs.includes(PLATFORM_QIDS.SWITCH);
-        const hasPSP400 = platformQIDs.includes(PLATFORM_QIDS.PS4) ||
-                          platformQIDs.includes(PLATFORM_QIDS.PS5);
-        const hasXboxP400 = platformQIDs.includes(PLATFORM_QIDS.XBOX_ONE) ||
-                            platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_X) ||
-                            platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_S);
-
-        // Check platform availability from platform-specific store IDs (fallback)
-        // Note: Only use ExternalId type properties, not WikibaseItem references
-        const hasSwitchStoreId = !!(
-          binding.switchTitle?.value ||
-          binding.eshopEu?.value ||
-          binding.eshopUs?.value
-          // Note: P8956 (eshop) is WikibaseItem type "compatible with", NOT an eShop ID - excluded
-        );
-        const hasPSStoreId = !!(
-          binding.psStoreEu?.value ||
-          binding.psStoreNa?.value ||
-          binding.psStoreConcept?.value ||
-          binding.psStore?.value
-        );
-        // Note: Pure Xbox IDs containing "xbox-for-pc" are PC-only releases, not console
-        const pureXboxId = binding.pureXbox?.value;
-        const isPureXboxConsole = pureXboxId && !pureXboxId.includes('xbox-for-pc') && !pureXboxId.includes('-for-pc');
-
-        const hasXboxStoreId = !!(
-          binding.msStore?.value ||
-          isPureXboxConsole ||
-          binding.xbox?.value
-        );
-
-        // Final availability: P400 OR platform-specific store IDs
-        const hasSwitch = hasSwitchP400 || hasSwitchStoreId;
-        const hasPS = hasPSP400 || hasPSStoreId;
-        const hasXbox = hasXboxP400 || hasXboxStoreId;
-
-        const wikidataId = binding.game?.value
-          ? binding.game.value.split('/').pop()
-          : null;
-
-        results.set(steamId, {
-          wikidataId,
-          gameName: binding.gameLabel?.value || '',
-          found: true,
-          platforms: {
-            nintendo: hasSwitch,
-            playstation: hasPS,
-            xbox: hasXbox
-          },
-          storeIds: {
-            eshop: binding.eshopUs?.value || binding.eshopEu?.value || null, // P8084 (US) or P12418 (EU)
-            psStore: binding.psStoreConcept?.value || binding.psStoreNa?.value || binding.psStoreEu?.value || binding.psStore?.value || null, // Prefer concept ID
-            xbox: binding.msStore?.value || binding.xbox?.value || null, // P5885 (MS Store) preferred
-            gog: binding.gog?.value || null,
-            epic: binding.epic?.value || null,
-            appStore: null,
-            playStore: null
-          }
-        });
+        if (steamId) {
+          results.set(steamId, parseBindingToResult(binding));
+        }
       }
     }
 
-    // Log progress
     if (steamAppIds.length > BATCH_SIZE) {
       console.log(`${WIKIDATA_LOG_PREFIX} Batch progress: ${Math.min(i + BATCH_SIZE, steamAppIds.length)}/${steamAppIds.length}`);
     }
   }
 
-  // Mark unfound games
+  // Games not found in Wikidata get empty results (this is cached)
   for (const appId of steamAppIds) {
     if (!results.has(appId)) {
-      results.set(appId, {
-        wikidataId: null,
-        gameName: '',
-        found: false,
-        platforms: { nintendo: false, playstation: false, xbox: false },
-        storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null }
-      });
+      results.set(appId, createEmptyResult());
     }
   }
 
@@ -526,16 +351,9 @@ async function batchQueryBySteamAppIds(steamAppIds) {
  * @returns {string | null}
  */
 function getStoreUrl(platform, storeIds) {
-  switch (platform) {
-    case 'nintendo':
-      return STORE_URL_BUILDERS.nintendo(storeIds.eshop);
-    case 'playstation':
-      return STORE_URL_BUILDERS.playstation(storeIds.psStore);
-    case 'xbox':
-      return STORE_URL_BUILDERS.xbox(storeIds.xbox);
-    default:
-      return null;
-  }
+  const storeIdKey = PLATFORM_STORE_ID_MAP[platform];
+  if (!storeIdKey) return null;
+  return buildStoreUrl(platform, storeIds[storeIdKey]);
 }
 
 /**
@@ -544,13 +362,9 @@ function getStoreUrl(platform, storeIds) {
  */
 async function testConnection() {
   try {
-    // Query for a well-known game (Portal 2 - Steam App ID 620)
     const result = await queryBySteamAppId('620');
-
-    if (result.found) {
-      return { success: true, message: 'Wikidata connection successful' };
-    }
-    return { success: true, message: 'Wikidata reachable (test game not found)' };
+    const message = result.found ? 'Wikidata connection successful' : 'Wikidata reachable (test game not found)';
+    return { success: true, message };
   } catch (error) {
     return { success: false, message: `Connection failed: ${error.message}` };
   }
