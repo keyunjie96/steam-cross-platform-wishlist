@@ -11,6 +11,7 @@
 const PROCESSED_ATTR = 'data-xcpw-processed';
 const ICONS_INJECTED_ATTR = 'data-xcpw-icons';
 const LOG_PREFIX = '[Steam Cross-Platform Wishlist]';
+const DEBUG = false; // Set to true for verbose debugging
 
 /** Set of appids that have been processed to avoid duplicate logging */
 const processedAppIds = new Set();
@@ -29,15 +30,16 @@ const PLATFORM_INFO = globalThis.XCPW_PlatformInfo;
 // Store URL Builders
 // ============================================================================
 
+// Region-agnostic URLs - stores will redirect to user's local version
 const StoreUrls = {
   nintendo: (gameName) =>
-    `https://www.nintendo.com/us/search/#q=${encodeURIComponent(gameName)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
+    `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
 
   playstation: (gameName) =>
-    `https://store.playstation.com/en-us/search/${encodeURIComponent(gameName)}`,
+    `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
 
   xbox: (gameName) =>
-    `https://www.xbox.com/en-US/search?q=${encodeURIComponent(gameName)}`
+    `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`
 };
 
 // ============================================================================
@@ -359,12 +361,15 @@ function createPlatformIcon(platform, status, gameName, storeUrl) {
 }
 
 /**
- * Updates the icons container with platform data from cache
+ * Updates the icons container with platform data from cache.
+ * Only shows icons for platforms where the game is available.
+ * Hides icons for unavailable or unknown platforms.
  * @param {HTMLElement} container
  * @param {Object} data - Cache entry with platform data
  */
 function updateIconsWithData(container, data) {
   const gameName = data.gameName;
+  let hasVisibleIcons = false;
 
   for (const platform of PLATFORMS) {
     const oldIcon = container.querySelector(`[data-platform="${platform}"]`);
@@ -374,8 +379,21 @@ function updateIconsWithData(container, data) {
     const status = platformData?.status || 'unknown';
     const storeUrl = platformData?.storeUrl;
 
-    const newIcon = createPlatformIcon(platform, status, gameName, storeUrl);
-    oldIcon.replaceWith(newIcon);
+    // Only show icons for available platforms
+    if (status === 'available') {
+      const newIcon = createPlatformIcon(platform, status, gameName, storeUrl);
+      oldIcon.replaceWith(newIcon);
+      hasVisibleIcons = true;
+    } else {
+      // Hide unavailable/unknown platforms
+      oldIcon.remove();
+    }
+  }
+
+  // If no platforms are available, also hide the separator
+  if (!hasVisibleIcons) {
+    const separator = container.querySelector('.xcpw-separator');
+    if (separator) separator.remove();
   }
 }
 
@@ -496,10 +514,9 @@ async function requestPlatformData(appid, gameName) {
     if (response?.success && response.data) {
       return response;
     }
-
     return null;
   } catch (error) {
-    console.error(`${LOG_PREFIX} Error requesting platform data:`, error);
+    // Service worker may be inactive - fail silently
     return null;
   }
 }
@@ -574,9 +591,11 @@ async function processItem(item) {
   injectedAppIds.add(appId);
 
   // Request platform data from background (async)
+  if (DEBUG) console.log(`${LOG_PREFIX} Sending message to background for appid ${appId}`);
   const response = await requestPlatformData(appId, gameName);
 
   if (response?.data) {
+    if (DEBUG) console.log(`${LOG_PREFIX} Updating icons for appid ${appId} with data:`, response.data.platforms);
     // Update icons with actual data
     updateIconsWithData(iconsContainer, response.data);
 
@@ -586,12 +605,9 @@ async function processItem(item) {
       console.log(`${LOG_PREFIX} Rendered (${source}): ${appId} - ${gameName}`);
     }
   } else {
-    // Remove loading state but keep unknown status
-    iconsContainer.querySelectorAll('.xcpw-loading').forEach(el => {
-      el.classList.remove('xcpw-loading');
-    });
-    if (isNewAppId) {
-      console.warn(`${LOG_PREFIX} No data available for appid ${appId}`);
+    // No data available - hide all icons and separator (will retry on next page load)
+    while (iconsContainer.firstChild) {
+      iconsContainer.removeChild(iconsContainer.firstChild);
     }
   }
 }

@@ -7,10 +7,15 @@
  * Uses Wikidata as data source (no auth required).
  */
 
-// Import dependencies (must be at top level for service worker)
-importScripts('types.js', 'cache.js', 'wikidataClient.js', 'resolver.js');
+// Import dependencies
+try {
+  importScripts('types.js', 'cache.js', 'wikidataClient.js', 'resolver.js');
+} catch (error) {
+  console.error('[XCPW Background] Failed to load dependencies:', error);
+}
 
-const LOG_PREFIX = '[XCPW Background]';
+const BG_LOG_PREFIX = '[XCPW Background]';
+const BG_DEBUG = false; // Set to true for verbose debugging
 
 /**
  * Handles incoming messages from content scripts and options page
@@ -20,13 +25,17 @@ const LOG_PREFIX = '[XCPW Background]';
  * @returns {boolean} - Return true to indicate async response
  */
 function handleMessage(message, sender, sendResponse) {
+  if (BG_DEBUG) console.log(`${BG_LOG_PREFIX} Received message:`, message?.type, message?.appid);
+
   if (!message || !message.type) {
+    console.error(`${BG_LOG_PREFIX} Invalid message format:`, message);
     sendResponse({ success: false, error: 'Invalid message format' });
     return false;
   }
 
   switch (message.type) {
     case 'GET_PLATFORM_DATA':
+      if (BG_DEBUG) console.log(`${BG_LOG_PREFIX} Handling GET_PLATFORM_DATA for appid ${message.appid}`);
       handleGetPlatformData(message, sendResponse);
       return true; // Async response
 
@@ -59,14 +68,26 @@ async function handleGetPlatformData(message, sendResponse) {
     const { appid, gameName } = message;
 
     if (!appid || !gameName) {
+      console.error(`${BG_LOG_PREFIX} Missing appid or gameName:`, { appid, gameName });
       sendResponse({ success: false, data: null, fromCache: false });
+      return;
+    }
+
+    if (BG_DEBUG) console.log(`${BG_LOG_PREFIX} Calling resolver for appid ${appid} (${gameName})`);
+
+    // Check if resolver is available
+    if (!globalThis.XCPW_Resolver) {
+      console.error(`${BG_LOG_PREFIX} CRITICAL: XCPW_Resolver not available!`);
+      sendResponse({ success: false, data: null, fromCache: false, error: 'Resolver not loaded' });
       return;
     }
 
     // Use the resolver to get platform data
     const { entry, fromCache } = await globalThis.XCPW_Resolver.resolvePlatformData(appid, gameName);
 
-    console.log(`${LOG_PREFIX} ${fromCache ? 'Cache hit' : 'Resolved'} for appid ${appid} (source: ${entry.source || 'unknown'})`);
+    if (BG_DEBUG) console.log(`${BG_LOG_PREFIX} Resolver returned:`, { source: entry.source, fromCache, platforms: entry.platforms });
+
+    console.log(`${BG_LOG_PREFIX} ${fromCache ? 'Cache hit' : 'Resolved'} for appid ${appid} (source: ${entry.source || 'unknown'})`);
 
     sendResponse({
       success: true,
@@ -74,8 +95,9 @@ async function handleGetPlatformData(message, sendResponse) {
       fromCache
     });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Error handling GET_PLATFORM_DATA:`, error);
-    sendResponse({ success: false, data: null, fromCache: false });
+    console.error(`${BG_LOG_PREFIX} Error handling GET_PLATFORM_DATA:`, error);
+    console.error(`${BG_LOG_PREFIX} Error stack:`, error.stack);
+    sendResponse({ success: false, data: null, fromCache: false, error: error.message });
   }
 }
 
@@ -96,10 +118,10 @@ async function handleUpdateCache(message, sendResponse) {
     // Force refresh from Wikidata
     await globalThis.XCPW_Resolver.forceRefresh(appid, gameName);
 
-    console.log(`${LOG_PREFIX} Cache updated for appid ${appid}`);
+    console.log(`${BG_LOG_PREFIX} Cache updated for appid ${appid}`);
     sendResponse({ success: true });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Error handling UPDATE_CACHE:`, error);
+    console.error(`${BG_LOG_PREFIX} Error handling UPDATE_CACHE:`, error);
     sendResponse({ success: false });
   }
 }
@@ -117,7 +139,7 @@ async function handleGetCacheStats(sendResponse) {
       oldestEntry: stats.oldestEntry
     });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Error getting cache stats:`, error);
+    console.error(`${BG_LOG_PREFIX} Error getting cache stats:`, error);
     sendResponse({ success: false });
   }
 }
@@ -129,10 +151,10 @@ async function handleGetCacheStats(sendResponse) {
 async function handleClearCache(sendResponse) {
   try {
     await globalThis.XCPW_Cache.clearCache();
-    console.log(`${LOG_PREFIX} Cache cleared`);
+    console.log(`${BG_LOG_PREFIX} Cache cleared`);
     sendResponse({ success: true });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Error clearing cache:`, error);
+    console.error(`${BG_LOG_PREFIX} Error clearing cache:`, error);
     sendResponse({ success: false });
   }
 }
@@ -141,9 +163,9 @@ async function handleClearCache(sendResponse) {
 chrome.runtime.onMessage.addListener(handleMessage);
 
 // Log when service worker starts
-console.log(`${LOG_PREFIX} Service worker initialized (Wikidata)`);
+console.log(`${BG_LOG_PREFIX} Service worker initialized (Wikidata)`);
 
 // Log when service worker is about to be suspended (useful for debugging)
 self.addEventListener('activate', () => {
-  console.log(`${LOG_PREFIX} Service worker activated`);
+  console.log(`${BG_LOG_PREFIX} Service worker activated`);
 });

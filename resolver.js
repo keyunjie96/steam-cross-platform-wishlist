@@ -9,7 +9,8 @@
  *   4. Fallback (unknown status with search URLs)
  */
 
-const LOG_PREFIX = '[XCPW Resolver]';
+const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
+const RESOLVER_DEBUG = false; // Set to true for verbose debugging
 
 /**
  * Gets the store URLs helper from types.js
@@ -44,6 +45,15 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
   }
 
   /**
+   * Checks if a string looks like a Wikidata QID (e.g., "Q123456")
+   * @param {string} str
+   * @returns {boolean}
+   */
+  function isWikidataQID(str) {
+    return /^Q\d+$/.test(str);
+  }
+
+  /**
    * Gets the best URL for a platform
    * @param {string} platform
    * @param {boolean} available
@@ -61,7 +71,10 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
     return StoreUrls[platform](name);
   }
 
-  const displayName = wikidataResult.gameName || gameName;
+  // Use Wikidata game name only if it's not a QID (fallback for missing labels)
+  // Always prefer Steam's game name for URLs since it's more reliable
+  const wikidataName = wikidataResult.gameName;
+  const displayName = (wikidataName && !isWikidataQID(wikidataName)) ? wikidataName : gameName;
 
   return {
     appid,
@@ -130,12 +143,26 @@ function createFallbackEntry(appid, gameName) {
  * @returns {Promise<{entry: import('./types.js').CacheEntry, fromCache: boolean}>}
  */
 async function resolvePlatformData(appid, gameName) {
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} resolvePlatformData called: appid=${appid}, gameName=${gameName}`);
+
   const Cache = globalThis.XCPW_Cache;
   const WikidataClient = globalThis.XCPW_WikidataClient;
 
+  // Verify dependencies are loaded
+  if (!Cache) {
+    console.error(`${RESOLVER_LOG_PREFIX} CRITICAL: XCPW_Cache not available!`);
+    throw new Error('Cache module not loaded');
+  }
+  if (!WikidataClient) {
+    console.error(`${RESOLVER_LOG_PREFIX} CRITICAL: XCPW_WikidataClient not available!`);
+    throw new Error('WikidataClient module not loaded');
+  }
+
   // 1. Check cache first
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Checking cache for appid ${appid}`);
   const cached = await Cache.getFromCache(appid);
   if (cached) {
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache HIT for appid ${appid}`);
     // Update game name if changed
     if (cached.gameName !== gameName) {
       cached.gameName = gameName;
@@ -150,6 +177,8 @@ async function resolvePlatformData(appid, gameName) {
     }
     return { entry: cached, fromCache: true };
   }
+
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache MISS for appid ${appid}, checking manual overrides`);
 
   // 2. Check for manual overrides
   const override = Cache.MANUAL_OVERRIDES?.[appid];
@@ -169,26 +198,34 @@ async function resolvePlatformData(appid, gameName) {
       ttlDays: 7
     };
     await Cache.saveToCache(entry);
-    console.log(`${LOG_PREFIX} Using manual override for appid ${appid}`);
+    console.log(`${RESOLVER_LOG_PREFIX} Using manual override for appid ${appid}`);
     return { entry, fromCache: false };
   }
 
   // 3. Try Wikidata
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Querying Wikidata for appid ${appid}`);
   try {
     const wikidataResult = await WikidataClient.queryBySteamAppId(appid);
+
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata result for ${appid}:`, {
+      found: wikidataResult?.found,
+      wikidataId: wikidataResult?.wikidataId,
+      platforms: wikidataResult?.platforms
+    });
 
     if (wikidataResult.found) {
       const entry = wikidataResultToCacheEntry(appid, gameName, wikidataResult);
       await Cache.saveToCache(entry);
-      console.log(`${LOG_PREFIX} Resolved via Wikidata: ${appid}`);
+      console.log(`${RESOLVER_LOG_PREFIX} Resolved via Wikidata: ${appid}`);
       return { entry, fromCache: false };
+    } else {
+      if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata found no match for appid ${appid}`);
     }
   } catch (error) {
-    console.error(`${LOG_PREFIX} Wikidata resolution failed for ${appid}:`, error);
+    // Wikidata query failed - fall back silently
   }
 
-  // 4. Fallback - unknown status with search URLs
-  console.log(`${LOG_PREFIX} Using fallback for appid ${appid}`);
+  // 4. Fallback - no data available, will retry on next page load
   const entry = createFallbackEntry(appid, gameName);
   await Cache.saveToCache(entry);
   return { entry, fromCache: false };
@@ -218,11 +255,11 @@ async function batchResolvePlatformData(games) {
   }
 
   if (uncached.length === 0) {
-    console.log(`${LOG_PREFIX} All ${games.length} games found in cache`);
+    console.log(`${RESOLVER_LOG_PREFIX} All ${games.length} games found in cache`);
     return results;
   }
 
-  console.log(`${LOG_PREFIX} Batch resolving ${uncached.length} games (${games.length - uncached.length} cached)`);
+  console.log(`${RESOLVER_LOG_PREFIX} Batch resolving ${uncached.length} games (${games.length - uncached.length} cached)`);
 
   // 2. Check for manual overrides
   const needsResolution = [];
@@ -274,9 +311,9 @@ async function batchResolvePlatformData(games) {
       }
     }
 
-    console.log(`${LOG_PREFIX} Wikidata batch resolved ${needsResolution.length} games`);
+    console.log(`${RESOLVER_LOG_PREFIX} Wikidata batch resolved ${needsResolution.length} games`);
   } catch (error) {
-    console.error(`${LOG_PREFIX} Batch Wikidata resolution failed:`, error);
+    console.error(`${RESOLVER_LOG_PREFIX} Batch Wikidata resolution failed:`, error);
     // Fallback for all remaining
     for (const { appid, gameName } of needsResolution) {
       if (!results.has(appid)) {

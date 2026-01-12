@@ -1,0 +1,2230 @@
+{
+  "total": 50,
+  "found": 50,
+  "notFound": 0,
+  "matched": 50,
+  "mismatched": 0,
+  "details": [
+    {
+      "appid": "367520",
+      "name": "Hollow Knight",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q29300592",
+        "gameLabel": "Hollow Knight",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q122761124",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1145360",
+      "name": "Hades",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q59756366",
+        "gameLabel": "Hades",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q14116",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "504230",
+      "name": "Celeste",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q28451532",
+        "gameLabel": "Celeste",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "413150",
+      "name": "Stardew Valley",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q23013817",
+        "gameLabel": "Stardew Valley",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q122761124",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q203597",
+          "Q188808",
+          "Q48493",
+          "Q14116",
+          "Q10683",
+          "Q10677",
+          "Q1406",
+          "Q388",
+          "Q94"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "268910",
+      "name": "Cuphead",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q18149495",
+        "gameLabel": "Cuphead",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q14116",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "588650",
+      "name": "Dead Cells",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q30639210",
+        "gameLabel": "Dead Cells",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q48493",
+          "Q14116",
+          "Q1406",
+          "Q388",
+          "Q94"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "250760",
+      "name": "Shovel Knight",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q123158447",
+        "gameLabel": "Shovel Knight: Treasure Trove",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q203597",
+          "Q188808",
+          "Q56942",
+          "Q14116",
+          "Q10683",
+          "Q1406",
+          "Q388",
+          "Q94"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "391540",
+      "name": "Undertale",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q21039924",
+        "gameLabel": "Undertale",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q188808",
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "261570",
+      "name": "Ori and the Blind Forest",
+      "expected": {
+        "nintendo": true,
+        "playstation": false,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q17513672",
+        "gameLabel": "Ori and the Blind Forest",
+        "platforms": {
+          "nintendo": true,
+          "playstation": false,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q19610114",
+          "Q13361286",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "292030",
+      "name": "The Witcher 3",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q4267401",
+        "gameLabel": "The Witcher 3: Wild Hunt",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "374320",
+      "name": "Dark Souls III",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q20112508",
+        "gameLabel": "Dark Souls III",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1245620",
+      "name": "Elden Ring",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q64826862",
+        "gameLabel": "Elden Ring",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q122761124",
+          "Q98973368",
+          "Q63184502",
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "814380",
+      "name": "Sekiro",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q54906424",
+        "gameLabel": "Sekiro: Shadows Die Twice",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1446780",
+      "name": "Monster Hunter Rise",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q99441852",
+        "gameLabel": "Monster Hunter Rise",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1687950",
+      "name": "Persona 5 Royal",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q63385672",
+        "gameLabel": "Persona 5 Royal",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "427520",
+      "name": "Factorio",
+      "expected": {
+        "nintendo": true,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q16972008",
+        "gameLabel": "Factorio",
+        "platforms": {
+          "nintendo": true,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q122761124",
+          "Q19610114",
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "294100",
+      "name": "RimWorld",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q19581568",
+        "gameLabel": "RimWorld",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "975370",
+      "name": "Dwarf Fortress",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q114982675",
+        "gameLabel": "Dwarf Fortress",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "233860",
+      "name": "Kenshi",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q60770258",
+        "gameLabel": "Kenshi",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1158310",
+      "name": "Crusader Kings III",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q71701894",
+        "gameLabel": "Crusader Kings III",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "529340",
+      "name": "Victoria 3",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q106928099",
+        "gameLabel": "Victoria 3",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "394360",
+      "name": "Hearts of Iron IV",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q15712701",
+        "gameLabel": "Q15712701",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "236850",
+      "name": "Europa Universalis IV",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q2625075",
+        "gameLabel": "Europa Universalis IV",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "281990",
+      "name": "Stellaris",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q20829312",
+        "gameLabel": "Stellaris",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q13361286",
+          "Q5014725",
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1142710",
+      "name": "Total War: Warhammer III",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q105427208",
+        "gameLabel": "Total War: Warhammer III",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "238960",
+      "name": "Path of Exile",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q3790509",
+        "gameLabel": "Path of Exile",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q13361286",
+          "Q5014725",
+          "Q14116",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "892970",
+      "name": "Valheim",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q105100327",
+        "gameLabel": "Valheim",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q13361286",
+          "Q14116",
+          "Q1406",
+          "Q388"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1086940",
+      "name": "Baldur's Gate 3",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q64441774",
+        "gameLabel": "Q64441774",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q14116",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "553420",
+      "name": "Tunic",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q55636303",
+        "gameLabel": "Tunic",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q14116",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "548430",
+      "name": "Deep Rock Galactic",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "pcOnly",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q55381944",
+        "gameLabel": "Deep Rock Galactic",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1817070",
+      "name": "Marvels Spider-Man Remastered",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": false
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q100440421",
+        "gameLabel": "Spider-Man Remastered",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q63184502",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1817190",
+      "name": "Marvels Spider-Man Miles Morales",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": false
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q96216165",
+        "gameLabel": "Spider-Man: Miles Morales",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q63184502",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1593500",
+      "name": "God of War",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": false
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q18345138",
+        "gameLabel": "God of War",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q63184502",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "2322010",
+      "name": "Horizon Zero Dawn Remastered",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": false
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q99397916",
+        "gameLabel": "God of War Ragnarök",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q63184502",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1938090",
+      "name": "Call of Duty Modern Warfare II",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q110206584",
+        "gameLabel": "Q110206584",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1245620",
+      "name": "Elden Ring",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "multiPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q64826862",
+        "gameLabel": "Elden Ring",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q122761124",
+          "Q98973368",
+          "Q63184502",
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "493520",
+      "name": "GTFO",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q55382124",
+        "gameLabel": "GTFO",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1174180",
+      "name": "Red Dead Redemption 2",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q27438121",
+        "gameLabel": "Red Dead Redemption 2",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q13361286",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1551360",
+      "name": "Forza Horizon 5",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q107214683",
+        "gameLabel": "Forza Horizon 5",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q13361286",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1240440",
+      "name": "Halo Infinite",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": true
+      },
+      "category": "partialPlatform",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q54913666",
+        "gameLabel": "Halo Infinite",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q13361286",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "2358720",
+      "name": "Black Myth: Wukong",
+      "expected": {
+        "nintendo": false,
+        "playstation": true,
+        "xbox": true
+      },
+      "likelyInWikidata": true,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q98582386",
+        "gameLabel": "Black Myth: Wukong",
+        "platforms": {
+          "nintendo": false,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1468810",
+      "name": "Tale of Immortal (鬼谷八荒)",
+      "expected": {
+        "nintendo": true,
+        "playstation": false,
+        "xbox": false
+      },
+      "likelyInWikidata": true,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q105366554",
+        "gameLabel": "Tale of Immortal",
+        "platforms": {
+          "nintendo": true,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1366540",
+      "name": "Dyson Sphere Program",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "likelyInWikidata": true,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q104882972",
+        "gameLabel": "Dyson Sphere Program",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "955900",
+      "name": "Amazing Cultivation Simulator",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "likelyInWikidata": false,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q112171143",
+        "gameLabel": "Amazing Cultivation Simulator",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1550890",
+      "name": "Michangsheng (觅长生)",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "likelyInWikidata": false,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q134995318",
+        "gameLabel": "Escape Within",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "838350",
+      "name": "The Scroll Of Taiwu",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "likelyInWikidata": false,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q60990652",
+        "gameLabel": "Scroll of Taiwu",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1288310",
+      "name": "Firework (烟火)",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "likelyInWikidata": true,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q106196084",
+        "gameLabel": "Firework",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "666140",
+      "name": "My Time at Portia",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "likelyInWikidata": true,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q61046582",
+        "gameLabel": "My Time At Portia",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q19610114",
+          "Q13361286",
+          "Q5014725",
+          "Q48493",
+          "Q1406",
+          "Q94"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1084600",
+      "name": "My Time at Sandrock",
+      "expected": {
+        "nintendo": true,
+        "playstation": true,
+        "xbox": true
+      },
+      "likelyInWikidata": true,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q111968979",
+        "gameLabel": "My Time at Sandrock",
+        "platforms": {
+          "nintendo": true,
+          "playstation": true,
+          "xbox": true
+        },
+        "rawPlatforms": [
+          "Q98973368",
+          "Q63184502",
+          "Q19610114",
+          "Q5014725",
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": true,
+            "storeId": true
+          },
+          "playstation": {
+            "p400": true,
+            "storeId": true
+          },
+          "xbox": {
+            "p400": true,
+            "storeId": true
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    },
+    {
+      "appid": "1094520",
+      "name": "Sands of Salzaar",
+      "expected": {
+        "nintendo": false,
+        "playstation": false,
+        "xbox": false
+      },
+      "likelyInWikidata": true,
+      "category": "chineseIndie",
+      "actual": {
+        "found": true,
+        "wikidataId": "Q110439513",
+        "gameLabel": "Sands of Salzaar",
+        "platforms": {
+          "nintendo": false,
+          "playstation": false,
+          "xbox": false
+        },
+        "rawPlatforms": [
+          "Q1406"
+        ],
+        "storeIdDetection": {
+          "nintendo": {
+            "p400": false,
+            "storeId": false
+          },
+          "playstation": {
+            "p400": false,
+            "storeId": false
+          },
+          "xbox": {
+            "p400": false,
+            "storeId": false
+          }
+        }
+      },
+      "comparison": {
+        "match": true,
+        "mismatches": []
+      }
+    }
+  ]
+}

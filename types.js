@@ -94,32 +94,33 @@
 // ============================================================================
 
 /**
- * Builds search URLs for each platform's US store
+ * Builds search URLs for each platform's store (fallback when no direct link available)
+ * Region-agnostic - stores will redirect to user's local version
  */
 const StoreUrls = {
   /**
-   * Nintendo US eShop search URL
+   * Nintendo eShop search URL
    * @param {string} gameName
    * @returns {string}
    */
   nintendo: (gameName) =>
-    `https://www.nintendo.com/us/search/#q=${encodeURIComponent(gameName)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
+    `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
 
   /**
-   * PlayStation US store search URL
+   * PlayStation store search URL
    * @param {string} gameName
    * @returns {string}
    */
   playstation: (gameName) =>
-    `https://store.playstation.com/en-us/search/${encodeURIComponent(gameName)}`,
+    `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
 
   /**
-   * Xbox US store search URL
+   * Xbox store search URL
    * @param {string} gameName
    * @returns {string}
    */
   xbox: (gameName) =>
-    `https://www.xbox.com/en-US/search?q=${encodeURIComponent(gameName)}`
+    `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`
 };
 
 // Export for use in other modules (ES module style won't work in content scripts)
