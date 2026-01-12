@@ -12,8 +12,10 @@
 const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
 const RESOLVER_DEBUG = false;
 
-// Get PLATFORMS from cache module (avoids duplicate const declaration in service worker)
-const PLATFORMS = globalThis.XCPW_Cache?.PLATFORMS || ['nintendo', 'playstation', 'xbox'];
+// Helper to get PLATFORMS - uses cache module in service worker, fallback for tests
+function getPlatforms() {
+  return globalThis.XCPW_Cache?.PLATFORMS || ['nintendo', 'playstation', 'xbox'];
+}
 
 /**
  * Checks if a string looks like a Wikidata QID (e.g., "Q123456")
@@ -44,7 +46,7 @@ function getPlatformStatus(available, foundInWikidata) {
  */
 function createPlatformsObject(platformMapper) {
   const platforms = {};
-  for (const platform of PLATFORMS) {
+  for (const platform of getPlatforms()) {
     platforms[platform] = platformMapper(platform);
   }
   return platforms;
@@ -153,7 +155,7 @@ async function updateCachedEntryIfNeeded(cached, gameName) {
 
   cached.gameName = gameName;
   // Update search URLs for unknown status only (don't override official URLs)
-  for (const platform of PLATFORMS) {
+  for (const platform of getPlatforms()) {
     if (cached.platforms[platform].status === 'unknown') {
       cached.platforms[platform].storeUrl = StoreUrls[platform](gameName);
     }
