@@ -406,19 +406,32 @@ function findInjectionPoint(item) {
   // Steam's React UI uses hashed class names, so we use structural queries
   // and look for SVG platform icons which are more stable
 
-  // Method 1: Find SVG platform icons (Win/Mac/Linux/SteamDeck icons)
-  // Insert our console icons as a separate sibling group, not inside the same container.
-  const svgIcons = Array.from(item.querySelectorAll('svg'));
+  // Method 1: Find ALL Steam platform icons using their title attributes
+  // Steam uses spans with title="Windows", "macOS", "Linux / SteamOS", "Steam Deck"
+  // This is more stable than relying on hashed CSS class names or SVG classes
+  // Structure: div -> span (group) -> span[title] (wrapper) -> svg
+  // We want to insert inside the group, after the LAST platform icon wrapper
+  const platformTitles = ['Windows', 'macOS', 'Linux / SteamOS', 'Linux', 'Steam Deck'];
+  const platformIcons = Array.from(item.querySelectorAll('span[title]')).filter(span =>
+    platformTitles.some(title => span.getAttribute('title')?.includes(title))
+  );
+
+  if (platformIcons.length > 0) {
+    // Get the last platform icon's wrapper to insert after all Steam icons
+    const lastIcon = platformIcons[platformIcons.length - 1];
+    const group = lastIcon.parentElement;
+    if (group && item.contains(group) && !group.contains(item)) {
+      // Insert inside the group, after the LAST platform icon
+      return { container: group, insertAfter: lastIcon };
+    }
+  }
+
+  // Method 1b: Fallback - find any small SVG icons grouped together
+  const svgIcons = Array.from(item.querySelectorAll('svg:not(.xcpw-platforms svg)'));
   const groupInfo = new Map();
 
   for (const svg of svgIcons) {
     if (svg.closest('.xcpw-platforms')) {
-      continue;
-    }
-
-    // Platform icons are usually small (around 16-24px) and in a row
-    const rect = svg.getBoundingClientRect();
-    if (rect.width > 30 || rect.height > 30) {
       continue;
     }
 
@@ -428,7 +441,8 @@ function findInjectionPoint(item) {
     }
 
     const group = parent.parentElement || parent;
-    if (!item.contains(group)) {
+    // IMPORTANT: Ensure the group is INSIDE the item, not a parent/ancestor of it
+    if (!item.contains(group) || group.contains(item)) {
       continue;
     }
 
@@ -462,7 +476,11 @@ function findInjectionPoint(item) {
     const matches = item.querySelectorAll(selector);
     if (matches.length) {
       const el = matches[matches.length - 1];
-      return { container: el.parentElement || el, insertAfter: el };
+      const container = el.parentElement || el;
+      // IMPORTANT: Ensure container is inside the item
+      if (item.contains(container) && container !== item) {
+        return { container, insertAfter: el };
+      }
     }
   }
 
@@ -472,8 +490,16 @@ function findInjectionPoint(item) {
   if (titleLink) {
     // Insert after the title's parent container
     const titleContainer = titleLink.parentElement;
-    if (titleContainer) {
-      return { container: titleContainer.parentElement || titleContainer, insertAfter: titleContainer };
+    if (titleContainer && titleContainer !== item) {
+      const parent = titleContainer.parentElement;
+      // IMPORTANT: Ensure parent is inside the item, not outside
+      if (parent && item.contains(parent) && parent !== item) {
+        return { container: parent, insertAfter: titleContainer };
+      }
+      // Fallback: if titleContainer is directly inside item, append to it
+      if (item.contains(titleContainer)) {
+        return { container: titleContainer, insertAfter: null };
+      }
     }
   }
 
@@ -484,13 +510,18 @@ function findInjectionPoint(item) {
     let sibling = firstImg.parentElement?.nextElementSibling;
     while (sibling) {
       if (sibling.tagName === 'DIV' && sibling.textContent?.trim()) {
-        return { container: sibling, insertAfter: null };
+        // IMPORTANT: Ensure sibling is inside the item
+        if (item.contains(sibling)) {
+          return { container: sibling, insertAfter: null };
+        }
       }
       sibling = sibling.nextElementSibling;
     }
   }
 
-  return null;
+  // Final fallback: append to the end of the item itself
+  // This ensures icons are always placed inside the wishlist item
+  return { container: item, insertAfter: null };
 }
 
 // ============================================================================
@@ -527,6 +558,41 @@ async function requestPlatformData(appid, gameName) {
 
 /** Set of appids that have icons already injected (survives React re-renders) */
 const injectedAppIds = new Set();
+
+/**
+ * Waits for the correct injection point to appear in lazy-loaded items.
+ * Steam's virtualized list loads item skeletons first, then adds SVG icons slightly later.
+ * This function retries finding the SVG icons with exponential backoff.
+ * @param {Element} item - Wishlist item element
+ * @param {number} maxRetries - Maximum retry attempts (default: 10)
+ * @param {number} baseDelayMs - Initial delay between retries in ms (default: 150)
+ * @returns {Promise<{container: Element, insertAfter: Element | null} | null>}
+ */
+async function waitForInjectionPoint(item, maxRetries = 10, baseDelayMs = 150) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Check if SVG icons exist in the item
+    const svg = item.querySelector('svg[class*="SVGIcon_"]');
+    if (svg) {
+      // Found SVG icons, now get the proper injection point
+      const injectionPoint = findInjectionPoint(item);
+      if (injectionPoint) {
+        return injectionPoint;
+      }
+    }
+
+    // If this is the last attempt, don't wait
+    if (attempt === maxRetries) {
+      break;
+    }
+
+    // Wait with exponential backoff before retrying
+    const delay = baseDelayMs * Math.pow(1.5, attempt);
+    await new Promise(r => setTimeout(r, delay));
+  }
+
+  // No SVG icons found after retries, return null (caller will use fallback)
+  return null;
+}
 
 /**
  * Processes a single wishlist item element.
@@ -566,17 +632,16 @@ async function processItem(item) {
   }
 
   const gameName = extractGameName(item);
-  const injectionResult = findInjectionPoint(item);
 
-  if (!injectionResult) {
-    // Only warn once per appid
-    if (isNewAppId) {
-      console.warn(`${LOG_PREFIX} Could not find injection point for appid ${appId}`);
-    }
-    return;
+  // Wait for injection point to be ready (handles lazy-loaded items where
+  // Steam loads SVG icons slightly after the item skeleton appears)
+  let injectionPoint = await waitForInjectionPoint(item);
+  if (!injectionPoint) {
+    // Fallback: Use whatever injection point we can find
+    if (DEBUG) console.log(`${LOG_PREFIX} Using fallback injection for appid ${appId}`);
+    injectionPoint = findInjectionPoint(item);
   }
-
-  const { container, insertAfter } = injectionResult;
+  const { container, insertAfter } = injectionPoint;
 
   // Create and inject icons container (initially in loading state)
   const iconsContainer = createIconsContainer(appId, gameName);
@@ -635,7 +700,7 @@ function setupObserver() {
         if (node instanceof Element) {
           // Check if the node itself is a wishlist item
           if (node.hasAttribute?.('data-rfd-draggable-id') &&
-              node.getAttribute('data-rfd-draggable-id')?.startsWith('WishlistItem-')) {
+            node.getAttribute('data-rfd-draggable-id')?.startsWith('WishlistItem-')) {
             processItem(node);
           }
           // Also check descendants
