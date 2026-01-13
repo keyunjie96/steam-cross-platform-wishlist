@@ -50,18 +50,6 @@
 
 ---
 
-## Performance Issues (Necessity: 8)
-
-### PERF-1: Batch resolution not utilized
-**Files:** `src/content.js:518-525`, `src/background.js:45-66`, `src/wikidataClient.js:13,198`
-**Issue:** Content script sends 1 `GET_PLATFORM_DATA` message per wishlist item. Wikidata client enforces 500ms delay between requests.
-**Impact:** Cold cache with N items = minimum 0.5×N seconds. 200 items = 100+ seconds.
-**Already implemented but unused:** `wikidataClient.js:300` has `BATCH_SIZE = 20`, `resolver.js:248` exports `batchResolvePlatformData()`.
-**Fix:** Add `GET_PLATFORM_DATA_BATCH` message handler; aggregate appids; call batch resolver.
-**Potential improvement:** ~20× reduction in Wikidata requests.
-
----
-
 ## Reliability Issues (Necessity: 6)
 
 ### REL-1: Misleading initialization log
@@ -301,11 +289,12 @@
 - [x] Region-agnostic store URLs
 - [x] Store ID extraction from Wikidata
 - [x] Options page with cache management
-- [x] Comprehensive test suite (239 tests)
+- [x] Comprehensive test suite (240 tests)
 - [x] CI/CD with GitHub Actions
 - [x] CLAUDE.md project context file
 - [x] ROADMAP.md with detailed specs
 - [x] src/ directory reorganization
+- [x] PERF-1: Batch resolution for Wikidata queries (~20× improvement)
 
 ---
 
@@ -315,7 +304,6 @@
 |----|------|-----------|------------|-------|--------|
 | BUG-1 | Icons removed for unavailable/unknown | 10 | 10 | 100 | Low |
 | DOC-1 | README privacy incorrect | 9 | 10 | 90 | Trivial |
-| PERF-1 | Batch resolution unused | 8 | 10 | 80 | Medium |
 | BUG-2 | Blank icons on failure | 6 | 9 | 54 | Low |
 | CODE-1 | Duplicate CSS | 5 | 10 | 50 | Trivial |
 | CODE-2 | Duplicate StoreUrls | 5 | 10 | 50 | Low |
