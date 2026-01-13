@@ -101,8 +101,8 @@ npm run test:coverage       # Full coverage report
 
 ### Icon States
 - **available**: Full opacity, clickable - opens store page
-- **unavailable**: Dimmed (50% opacity), not clickable
-- **unknown**: Full opacity, clickable - opens search
+- **unavailable**: Hidden (not displayed)
+- **unknown**: Hidden (not displayed)
 
 ### Resolution Priority
 1. **Cache**: Check `chrome.storage.local` first (7-day TTL)

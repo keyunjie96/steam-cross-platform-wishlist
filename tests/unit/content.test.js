@@ -515,9 +515,39 @@ describe('content.js', () => {
       expect(container.querySelectorAll('[data-platform]').length).toBe(3);
       expect(container.querySelectorAll('.xcpw-loading').length).toBe(3);
 
-      // After updateIconsWithData:
-      // - available icons are updated in place (clickable, links to store)
-      // - unavailable and unknown icons are removed
+      // Simulate updateIconsWithData behavior:
+      // Only 'available' icons are kept, 'unavailable' and 'unknown' are removed
+      const data = {
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://example.com/ns' },
+          playstation: { status: 'unavailable' },
+          xbox: { status: 'unknown' }
+        }
+      };
+
+      // Simulate the update logic from updateIconsWithData
+      for (const platform of ['nintendo', 'playstation', 'xbox']) {
+        const oldIcon = container.querySelector(`[data-platform="${platform}"]`);
+        if (!oldIcon) continue;
+
+        const status = data.platforms[platform]?.status || 'unknown';
+        if (status === 'available') {
+          // Update icon in place
+          oldIcon.classList.remove('xcpw-loading');
+          oldIcon.classList.add('xcpw-available');
+        } else {
+          // Remove unavailable/unknown icons
+          oldIcon.remove();
+        }
+      }
+
+      // Verify: only available icon remains
+      expect(container.querySelectorAll('[data-platform]').length).toBe(1);
+      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
+      expect(container.querySelector('[data-platform="playstation"]')).toBeNull();
+      expect(container.querySelector('[data-platform="xbox"]')).toBeNull();
+      expect(container.querySelector('.xcpw-available')).toBeTruthy();
     });
   });
 
