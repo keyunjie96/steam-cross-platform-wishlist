@@ -49,9 +49,14 @@ assets/icons/
 
 ## Privacy
 
-- Queries Wikidata for game platform info (external API)
-- No analytics or tracking
-- All cache data stays in chrome.storage.local
+**Host permissions required:**
+- `store.steampowered.com` - to inject icons on your wishlist page
+- `query.wikidata.org` - to fetch platform availability data
+
+**Data handling:**
+- Makes external API requests to Wikidata's SPARQL endpoint for platform lookups
+- All cached data stays in chrome.storage.local (never sent anywhere)
+- No analytics, tracking, or telemetry
 - Store links are region-agnostic (auto-redirects to your local store)
 
 ## License

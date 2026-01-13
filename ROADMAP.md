@@ -11,12 +11,6 @@
 
 ## Documentation Bugs (Necessity: 9)
 
-### DOC-1: README privacy section is incorrect
-**File:** `README.md:117-122`
-**Issue:** States "No external API requests" and "Only requires host permission for store.steampowered.com"
-**Reality:** Extension has host permission for `https://query.wikidata.org/*` and actively fetches from Wikidata.
-**Impact:** Misleading for Chrome Web Store privacy disclosure.
-
 ### DOC-2: README US store links outdated
 **File:** `README.md:14`
 **Issue:** Says "open US store search pages" but URLs are now region-agnostic (commit `542c55e`).
@@ -301,6 +295,7 @@
 - [x] ROADMAP.md with detailed specs
 - [x] src/ directory reorganization
 - [x] BUG-1: Fix icons removed for unavailable/unknown states
+- [x] DOC-1: README privacy section corrected for Chrome Web Store disclosure
 
 ---
 
@@ -309,6 +304,7 @@
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
 | DOC-1 | README privacy incorrect | 9 | 10 | 90 | Trivial |
+| BUG-1 | Icons removed for unavailable/unknown | 10 | 10 | 100 | Low |
 | PERF-1 | Batch resolution unused | 8 | 10 | 80 | Medium |
 | BUG-2 | Blank icons on failure | 6 | 9 | 54 | Low |
 | CODE-1 | Duplicate CSS | 5 | 10 | 50 | Trivial |
