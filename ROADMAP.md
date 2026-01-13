@@ -2,9 +2,7 @@
 
 ## Documentation Bugs (Necessity: 9)
 
-### DOC-2: README US store links outdated
-**File:** `README.md:14`
-**Issue:** Says "open US store search pages" but URLs are now region-agnostic (commit `542c55e`).
+*No pending documentation bugs.*
 
 ---
 
@@ -174,7 +172,8 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] CODE-2: Consolidate StoreUrls to types.js (added to content script manifest)
 - [x] CODE-3: Gate manual overrides behind CACHE_DEBUG flag
 - [x] FEAT-3: Direct store links (Nintendo/PS/Xbox IDs → direct URLs via Wikidata)
-- [x] FEAT-1: Steam Deck verification with ProtonDB tiers (native/platinum/gold/silver/bronze/borked)
+- [x] FEAT-1: Steam Deck Verified status (via page SSR data extraction)
+- [x] DOC-2: README US store links outdated (fixed: region-agnostic links)
 
 ---
 

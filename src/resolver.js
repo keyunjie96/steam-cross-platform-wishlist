@@ -1,12 +1,15 @@
 /**
  * Steam Cross-Platform Wishlist - Resolver
  *
- * Coordinates between Wikidata and the cache system.
+ * Coordinates between Wikidata and the cache system for console platforms.
  * Resolution priority:
  *   1. Cache (if valid)
  *   2. Manual overrides
  *   3. Wikidata (no auth required)
  *   4. Fallback (unknown status with search URLs)
+ *
+ * Note: Steam Deck data is extracted directly from SSR in the content script,
+ * not through this resolver.
  */
 
 const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
@@ -100,52 +103,16 @@ function createManualOverrideEntry(appid, gameName, override) {
   };
 }
 
-/**
- * Fetches Steam Deck compatibility from ProtonDB
- * @param {string} appid - Steam app ID
- * @returns {Promise<{status: string, storeUrl: string, tier?: string}>}
- */
-async function getSteamDeckData(appid) {
-  const ProtonDBClient = globalThis.XCPW_ProtonDBClient;
-  const StoreUrls = globalThis.XCPW_StoreUrls;
 
-  if (!ProtonDBClient) {
-    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} ProtonDB client not available, using fallback for Steam Deck`);
-    return {
-      status: 'unknown',
-      storeUrl: StoreUrls.steamdeck(''),
-      tier: 'unknown'
-    };
-  }
-
-  try {
-    const result = await ProtonDBClient.queryByAppId(appid);
-    const status = ProtonDBClient.tierToStatus(result.tier);
-
-    return {
-      status,
-      storeUrl: ProtonDBClient.getProtonDBUrl(appid),
-      tier: result.tier
-    };
-  } catch (error) {
-    console.warn(`${RESOLVER_LOG_PREFIX} ProtonDB query failed for ${appid}:`, error.message);
-    return {
-      status: 'unknown',
-      storeUrl: ProtonDBClient.getProtonDBUrl(appid),
-      tier: 'unknown'
-    };
-  }
-}
 
 /**
  * Converts Wikidata result to cache entry format
  * @param {string} appid
  * @param {string} gameName
  * @param {Object} wikidataResult - Result from Wikidata client
- * @param {Object} [steamDeckData] - Optional Steam Deck data from ProtonDB
  * @returns {import('./types.js').CacheEntry}
  */
-function wikidataResultToCacheEntry(appid, gameName, wikidataResult, steamDeckData = null) {
+function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
   const StoreUrls = globalThis.XCPW_StoreUrls;
   const WikidataClient = globalThis.XCPW_WikidataClient;
 
@@ -163,21 +130,10 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult, steamDeckDa
     return officialUrl || StoreUrls[platform](displayName);
   }
 
-  const platforms = createPlatformsObject((platform) => {
-    // Special handling for Steam Deck - use ProtonDB data
-    if (platform === 'steamdeck' && steamDeckData) {
-      return {
-        status: steamDeckData.status,
-        storeUrl: steamDeckData.storeUrl,
-        tier: steamDeckData.tier
-      };
-    }
-
-    return {
-      status: getPlatformStatus(wikidataResult.platforms[platform], wikidataResult.found),
-      storeUrl: getUrl(platform)
-    };
-  });
+  const platforms = createPlatformsObject((platform) => ({
+    status: getPlatformStatus(wikidataResult.platforms[platform], wikidataResult.found),
+    storeUrl: getUrl(platform)
+  }));
 
   return {
     appid,
@@ -186,8 +142,7 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult, steamDeckDa
     source: wikidataResult.found ? 'wikidata' : 'fallback',
     wikidataId: wikidataResult.wikidataId,
     resolvedAt: Date.now(),
-    ttlDays: 7,
-    steamDeckTtlDays: 2  // Shorter TTL for Steam Deck data
+    ttlDays: 7
   };
 }
 
@@ -259,14 +214,10 @@ async function resolvePlatformData(appid, gameName) {
     return { entry, fromCache: false };
   }
 
-  // 3. Try Wikidata and ProtonDB in parallel
-  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Querying Wikidata and ProtonDB for appid ${appid}`);
+  // 3. Try Wikidata
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Querying Wikidata for appid ${appid}`);
   try {
-    // Query both sources in parallel for efficiency
-    const [wikidataResult, steamDeckData] = await Promise.all([
-      WikidataClient.queryBySteamAppId(appid),
-      getSteamDeckData(appid)
-    ]);
+    const wikidataResult = await WikidataClient.queryBySteamAppId(appid);
 
     if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata result for ${appid}:`, {
       found: wikidataResult?.found,
@@ -274,13 +225,11 @@ async function resolvePlatformData(appid, gameName) {
       platforms: wikidataResult?.platforms
     });
 
-    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} ProtonDB result for ${appid}:`, steamDeckData);
-
-    const entry = wikidataResultToCacheEntry(appid, gameName, wikidataResult, steamDeckData);
+    const entry = wikidataResultToCacheEntry(appid, gameName, wikidataResult);
 
     if (wikidataResult.found) {
       await Cache.saveToCache(entry);
-      console.log(`${RESOLVER_LOG_PREFIX} Resolved via Wikidata + ProtonDB: ${appid}`);
+      console.log(`${RESOLVER_LOG_PREFIX} Resolved via Wikidata: ${appid}`);
     } else {
       // Game genuinely not in Wikidata - cache this result so we don't keep querying
       if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata found no match for appid ${appid}`);
@@ -343,41 +292,29 @@ async function batchResolvePlatformData(games) {
     return results;
   }
 
-  // 3. Batch query Wikidata and ProtonDB in parallel
+  // 3. Batch query Wikidata
   try {
     const appIds = needsResolution.map(g => g.appid);
-
-    // Query Wikidata (batched) and ProtonDB (individual, but concurrent) in parallel
-    const [wikidataResults, ...steamDeckResults] = await Promise.all([
-      WikidataClient.batchQueryBySteamAppIds(appIds),
-      ...appIds.map(appid => getSteamDeckData(appid))
-    ]);
-
-    // Create a map of appid -> steamDeckData
-    const steamDeckDataMap = new Map();
-    appIds.forEach((appid, index) => {
-      steamDeckDataMap.set(appid, steamDeckResults[index]);
-    });
+    const wikidataResults = await WikidataClient.batchQueryBySteamAppIds(appIds);
 
     for (const { appid, gameName } of needsResolution) {
       const wikidataResult = wikidataResults.get(appid);
-      const steamDeckData = steamDeckDataMap.get(appid);
 
       const entry = wikidataResult?.found
-        ? wikidataResultToCacheEntry(appid, gameName, wikidataResult, steamDeckData)
+        ? wikidataResultToCacheEntry(appid, gameName, wikidataResult)
         : wikidataResultToCacheEntry(appid, gameName, {
-            found: false,
-            platforms: {},
-            storeIds: {},
-            wikidataId: null,
-            gameName: gameName
-          }, steamDeckData);
+          found: false,
+          platforms: {},
+          storeIds: {},
+          wikidataId: null,
+          gameName: gameName
+        });
 
       await Cache.saveToCache(entry);
       results.set(appid, { entry, fromCache: false });
     }
 
-    console.log(`${RESOLVER_LOG_PREFIX} Wikidata + ProtonDB batch resolved ${needsResolution.length} games`);
+    console.log(`${RESOLVER_LOG_PREFIX} Wikidata batch resolved ${needsResolution.length} games`);
   } catch (error) {
     // Batch query failed - DON'T cache to allow retry
     console.warn(`${RESOLVER_LOG_PREFIX} Batch resolution failed, will retry later:`, error.message);

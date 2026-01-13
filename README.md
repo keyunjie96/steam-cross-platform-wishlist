@@ -1,6 +1,6 @@
 # Steam Cross-Platform Wishlist
 
-Chrome extension that adds Switch/PlayStation/Xbox availability icons to your Steam wishlist. Uses Wikidata to look up platform data.
+Chrome extension that adds Switch/PlayStation/Xbox/Steam Deck availability icons to your Steam wishlist. Uses Wikidata for console platforms and Steam's own data for Steam Deck.
 
 ## What it does
 
@@ -19,9 +19,12 @@ The Wikidata lookup happens in the background. There's a 500ms delay between req
 
 ## Icon states
 
+**Console platforms (Switch/PlayStation/Xbox):**
 - **Bright icon** = available, click to open store
-- **Bright icon (with "unknown" tooltip)** = Wikidata doesn't have info, click to search
-- **Dimmed icon** = not on that platform
+
+**Steam Deck:**
+- **Bright icon** = Verified (works great on Steam Deck)
+- **Dimmed icon** = Playable (may need tweaks)
 
 ## Install
 

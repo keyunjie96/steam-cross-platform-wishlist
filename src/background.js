@@ -7,7 +7,7 @@
  * Uses Wikidata as data source (no auth required).
  */
 
-importScripts('types.js', 'cache.js', 'wikidataClient.js', 'protondbClient.js', 'resolver.js');
+importScripts('types.js', 'cache.js', 'wikidataClient.js', 'resolver.js');
 
 const LOG_PREFIX = '[XCPW Background]';
 
