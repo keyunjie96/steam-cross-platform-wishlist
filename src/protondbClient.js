@@ -9,9 +9,9 @@ const PROTONDB_DEBUG = false;
 const PROTONDB_LOG_PREFIX = '[XCPW ProtonDB]';
 
 const PROTONDB_API_URL = 'https://www.protondb.com/api/v1/reports/summaries';
-const REQUEST_DELAY_MS = 300; // Rate limit: be gentle with community API
+const PROTONDB_REQUEST_DELAY_MS = 300; // Rate limit: be gentle with community API
 
-let requestQueue = Promise.resolve();
+let protondbRequestQueue = Promise.resolve();
 
 /**
  * ProtonDB tier values in order of compatibility quality
@@ -38,12 +38,12 @@ const EMPTY_RESULT = {
  * @returns {Promise<void>}
  */
 async function rateLimit() {
-  const previousRequest = requestQueue;
+  const previousRequest = protondbRequestQueue;
   let resolve;
-  requestQueue = new Promise(r => { resolve = r; });
+  protondbRequestQueue = new Promise(r => { resolve = r; });
 
   await previousRequest;
-  await new Promise(r => setTimeout(r, REQUEST_DELAY_MS));
+  await new Promise(r => setTimeout(r, PROTONDB_REQUEST_DELAY_MS));
   resolve();
 }
 
