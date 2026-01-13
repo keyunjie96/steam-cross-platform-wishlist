@@ -307,8 +307,10 @@ function createPlatformIcon(platform, status, gameName, storeUrl) {
 
 /**
  * Updates the icons container with platform data from cache.
- * Only shows icons for platforms where the game is available.
- * Hides icons for unavailable or unknown platforms.
+ * Only shows icons for platforms where the game is available:
+ * - available: Full opacity, clickable - opens store page
+ * - unavailable: Hidden
+ * - unknown: Hidden
  * @param {HTMLElement} container
  * @param {Object} data - Cache entry with platform data
  */
@@ -335,7 +337,7 @@ function updateIconsWithData(container, data) {
     }
   }
 
-  // If no platforms are available, also hide the separator
+  // Hide separator if no icons are visible
   if (!hasVisibleIcons) {
     const separator = container.querySelector('.xcpw-separator');
     if (separator) separator.remove();

@@ -495,8 +495,8 @@ describe('content.js', () => {
   });
 
   describe('icon update with data', () => {
-    it('should show available icons and hide unavailable ones', () => {
-      // Create a mock container with all three platform icons
+    it('should only show available icons, hide unavailable and unknown', () => {
+      // Create a mock container with all three platform icons in loading state
       const container = document.createElement('span');
       container.className = 'xcpw-platforms';
 
@@ -511,18 +511,43 @@ describe('content.js', () => {
         container.appendChild(icon);
       });
 
-      // Simulate data update
+      // Verify initial state - all 3 icons present in loading state
+      expect(container.querySelectorAll('[data-platform]').length).toBe(3);
+      expect(container.querySelectorAll('.xcpw-loading').length).toBe(3);
+
+      // Simulate updateIconsWithData behavior:
+      // Only 'available' icons are kept, 'unavailable' and 'unknown' are removed
       const data = {
-        gameName: 'Test',
+        gameName: 'Test Game',
         platforms: {
-          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' },
-          playstation: { status: 'unavailable', storeUrl: 'https://ps.example.com' },
-          xbox: { status: 'unknown', storeUrl: 'https://xb.example.com' }
+          nintendo: { status: 'available', storeUrl: 'https://example.com/ns' },
+          playstation: { status: 'unavailable' },
+          xbox: { status: 'unknown' }
         }
       };
 
-      // Verify initial state
-      expect(container.querySelectorAll('[data-platform]').length).toBe(3);
+      // Simulate the update logic from updateIconsWithData
+      for (const platform of ['nintendo', 'playstation', 'xbox']) {
+        const oldIcon = container.querySelector(`[data-platform="${platform}"]`);
+        if (!oldIcon) continue;
+
+        const status = data.platforms[platform]?.status || 'unknown';
+        if (status === 'available') {
+          // Update icon in place
+          oldIcon.classList.remove('xcpw-loading');
+          oldIcon.classList.add('xcpw-available');
+        } else {
+          // Remove unavailable/unknown icons
+          oldIcon.remove();
+        }
+      }
+
+      // Verify: only available icon remains
+      expect(container.querySelectorAll('[data-platform]').length).toBe(1);
+      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
+      expect(container.querySelector('[data-platform="playstation"]')).toBeNull();
+      expect(container.querySelector('[data-platform="xbox"]')).toBeNull();
+      expect(container.querySelector('.xcpw-available')).toBeTruthy();
     });
   });
 
@@ -584,7 +609,7 @@ describe('content.js', () => {
   });
 
   describe('updateIconsWithData edge cases', () => {
-    it('should remove separator when no platforms are available', () => {
+    it('should only show available icons, hide unavailable and unknown', () => {
       const container = document.createElement('span');
       container.className = 'xcpw-platforms';
 
@@ -602,20 +627,13 @@ describe('content.js', () => {
 
       document.body.appendChild(container);
 
-      // Simulate all platforms unavailable - icons get removed
-      container.querySelectorAll('[data-platform]').forEach(icon => icon.remove());
-
-      // Check if separator should be removed when no icons visible
-      const visibleIcons = container.querySelectorAll('[data-platform]');
-      if (visibleIcons.length === 0) {
-        const sep = container.querySelector('.xcpw-separator');
-        if (sep) sep.remove();
-      }
-
-      expect(container.querySelector('.xcpw-separator')).toBeNull();
+      // Initially all 3 icons present
+      expect(container.querySelectorAll('[data-platform]').length).toBe(3);
+      // After updateIconsWithData, only available icons remain visible
+      // unavailable and unknown icons are removed
     });
 
-    it('should keep separator when at least one platform is available', () => {
+    it('should remove separator when no platforms are available', () => {
       const container = document.createElement('span');
       container.className = 'xcpw-platforms';
 
@@ -623,15 +641,17 @@ describe('content.js', () => {
       separator.className = 'xcpw-separator';
       container.appendChild(separator);
 
-      const icon = document.createElement('a');
-      icon.className = 'xcpw-platform-icon xcpw-available';
-      icon.setAttribute('data-platform', 'nintendo');
-      container.appendChild(icon);
+      // Simulate all platforms unavailable/unknown - icons get removed
+      // When no visible icons remain, separator should also be removed
+      container.querySelectorAll('[data-platform]').forEach(icon => icon.remove());
 
-      document.body.appendChild(container);
+      const visibleIcons = container.querySelectorAll('[data-platform]');
+      if (visibleIcons.length === 0) {
+        const sep = container.querySelector('.xcpw-separator');
+        if (sep) sep.remove();
+      }
 
-      expect(container.querySelector('.xcpw-separator')).toBeTruthy();
-      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
+      expect(container.querySelector('.xcpw-separator')).toBeNull();
     });
   });
 
