@@ -87,20 +87,20 @@
  * No special color overrides needed - the xcpw-available class handles this.
  */
 
-/* Steam Deck icons: not clickable, no hover animation, just tooltip */
+/* Steam Deck icons: informational only - no click, no hover animation */
 .xcpw-platform-icon[data-platform="steamdeck"] {
   cursor: default !important;
 }
 
-/* Keep solid Steam Deck icons at full opacity on hover */
-.xcpw-platform-icon.xcpw-available[data-platform="steamdeck"]:hover {
+.xcpw-platform-icon[data-platform="steamdeck"]:hover {
   transform: none !important;
+}
+
+.xcpw-platform-icon.xcpw-available[data-platform="steamdeck"]:hover {
   opacity: 1 !important;
 }
 
-/* Keep dimmed Steam Deck icons at dimmed opacity on hover */
 .xcpw-platform-icon.xcpw-unavailable[data-platform="steamdeck"]:hover {
-  transform: none !important;
   opacity: 0.35 !important;
 }
 

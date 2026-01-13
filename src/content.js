@@ -254,26 +254,19 @@ function updateIconsWithData(container, data) {
 
     // Special handling for Steam Deck - use pre-extracted SSR data
     if (platform === 'steamdeck' && SteamDeck && appid && steamDeckData) {
-      // Get status from pre-extracted data (no fetch needed!)
       const deckResult = SteamDeck.getDeckStatus(steamDeckData, appid);
       const displayStatus = SteamDeck.statusToDisplayStatus(deckResult.status);
 
-      if (displayStatus === 'available') {
-        // Verified - show white
-        const newIcon = createPlatformIcon(platform, 'available', gameName,
-          `https://store.steampowered.com/app/${appid}`, deckResult.status);
-        oldIcon.replaceWith(newIcon);
-        hasVisibleIcons = true;
-      } else if (displayStatus === 'unavailable') {
-        // Playable - show dimmed
-        const newIcon = createPlatformIcon(platform, 'unavailable', gameName,
-          `https://store.steampowered.com/app/${appid}`, deckResult.status);
-        oldIcon.replaceWith(newIcon);
-        hasVisibleIcons = true;
-      } else {
-        // Unknown/unsupported - hide
+      // Hide unknown/unsupported Steam Deck games
+      if (displayStatus === 'unknown') {
         oldIcon.remove();
+        continue;
       }
+
+      // Show verified (available) or playable (unavailable) with appropriate styling
+      const newIcon = createPlatformIcon(platform, displayStatus, gameName, null, deckResult.status);
+      oldIcon.replaceWith(newIcon);
+      hasVisibleIcons = true;
       continue;
     }
 
@@ -647,18 +640,10 @@ async function init() {
   // Load user settings first
   await loadUserSettings();
 
-  // Wait for Steam Deck data from page script (runs in MAIN world, has access to window.SSR)
+  // Load Steam Deck data from page script (runs in MAIN world)
   const SteamDeck = globalThis.XCPW_SteamDeck;
-  if (DEBUG) {
-    console.log(`${LOG_PREFIX} SteamDeck client loaded:`, !!SteamDeck);
-    console.log(`${LOG_PREFIX} showSteamDeck setting:`, userSettings.showSteamDeck);
-  }
   if (SteamDeck && userSettings.showSteamDeck) {
-    console.log(`${LOG_PREFIX} Waiting for Steam Deck data...`);
     steamDeckData = await SteamDeck.waitForDeckData();
-    console.log(`${LOG_PREFIX} Loaded Steam Deck data for ${steamDeckData.size} games`);
-  } else {
-    console.log(`${LOG_PREFIX} Skipping Steam Deck (client: ${!!SteamDeck}, setting: ${userSettings.showSteamDeck})`);
   }
 
   // Process existing items
