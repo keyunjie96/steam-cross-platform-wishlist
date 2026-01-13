@@ -48,7 +48,7 @@ describe('background.js', () => {
     globalThis.importScripts = jest.fn();
 
     // Load background.js
-    require('../../background.js');
+    require('../../src/background.js');
 
     // Capture the message handler that was registered
     messageHandler = chrome.runtime.onMessage.addListener.mock.calls[0][0];

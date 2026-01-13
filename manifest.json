@@ -9,18 +9,18 @@
     "https://query.wikidata.org/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://store.steampowered.com/wishlist/*"],
-      "js": ["icons.js", "content.js"],
-      "css": ["styles.css"],
+      "js": ["src/icons.js", "src/content.js"],
+      "css": ["src/styles.css"],
       "run_at": "document_idle"
     }
   ],
   "options_ui": {
-    "page": "options.html",
+    "page": "src/options.html",
     "open_in_tab": true
   }
 }

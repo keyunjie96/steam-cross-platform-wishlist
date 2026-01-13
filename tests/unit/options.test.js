@@ -54,7 +54,7 @@ describe('options.js', () => {
     global.confirm = jest.fn(() => true);
 
     // Load options.js
-    require('../../options.js');
+    require('../../src/options.js');
   });
 
   afterEach(() => {

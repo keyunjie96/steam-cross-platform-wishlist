@@ -6,7 +6,7 @@ describe('types.js', () => {
   beforeEach(() => {
     // Load the module fresh for each test
     jest.resetModules();
-    require('../../types.js');
+    require('../../src/types.js');
   });
 
   describe('StoreUrls', () => {

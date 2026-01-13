@@ -54,7 +54,7 @@ describe('content.js', () => {
     });
 
     // Load content.js - this will run init() if DOM is ready
-    require('../../content.js');
+    require('../../src/content.js');
   });
 
   afterEach(() => {
@@ -114,7 +114,7 @@ describe('content.js', () => {
       globalThis.XCPW_Icons = mockIcons;
       globalThis.XCPW_PlatformInfo = mockPlatformInfo;
       globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../content.js');
+      require('../../src/content.js');
 
       const styleElements = document.querySelectorAll('#xcpw-styles');
       expect(styleElements.length).toBe(1);
@@ -468,7 +468,7 @@ describe('content.js', () => {
       jest.resetModules();
       globalThis.XCPW_PlatformInfo = mockPlatformInfo;
       globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../content.js');
+      require('../../src/content.js');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Missing icon definitions')
@@ -484,7 +484,7 @@ describe('content.js', () => {
       jest.resetModules();
       globalThis.XCPW_Icons = mockIcons;
       globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../content.js');
+      require('../../src/content.js');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Missing icon definitions')

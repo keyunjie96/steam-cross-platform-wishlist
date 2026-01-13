@@ -13,8 +13,7 @@ module.exports = {
 
   // Coverage configuration
   collectCoverageFrom: [
-    '*.js',
-    '!jest.config.js',
+    'src/**/*.js',
     '!tests/**',
     '!coverage/**'
   ],
@@ -30,43 +29,43 @@ module.exports = {
       statements: 65
     },
     // Stricter thresholds for well-tested modules
-    './cache.js': {
+    './src/cache.js': {
       branches: 85,
       functions: 100,
       lines: 95,
       statements: 95
     },
-    './types.js': {
+    './src/types.js': {
       branches: 25,
       functions: 100,
       lines: 75,
       statements: 75
     },
-    './icons.js': {
+    './src/icons.js': {
       branches: 50,
       functions: 100,
       lines: 100,
       statements: 100
     },
-    './resolver.js': {
+    './src/resolver.js': {
       branches: 70,
       functions: 100,
       lines: 90,
       statements: 90
     },
-    './wikidataClient.js': {
+    './src/wikidataClient.js': {
       branches: 85,
       functions: 90,
       lines: 90,
       statements: 90
     },
-    './background.js': {
+    './src/background.js': {
       branches: 85,
       functions: 80,
       lines: 90,
       statements: 90
     },
-    './options.js': {
+    './src/options.js': {
       branches: 85,
       functions: 100,
       lines: 100,

@@ -8,7 +8,7 @@ describe('icons.js', () => {
     jest.resetModules();
     // icons.js uses window, so set it up
     global.window = global;
-    require('../../icons.js');
+    require('../../src/icons.js');
   });
 
   afterEach(() => {
