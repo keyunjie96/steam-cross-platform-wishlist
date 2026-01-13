@@ -2,12 +2,6 @@
 
 ## Critical Bugs (Necessity: 10)
 
-### BUG-1: Icons removed for unavailable/unknown states
-**File:** `src/content.js:315-335`
-**Issue:** `updateIconsWithData()` calls `oldIcon.remove()` for any status that isn't `available`. Users only see icons for platforms where the game IS available - defeating the entire purpose of showing cross-platform status.
-**README contradiction:** README documents 3 icon states (Available/Unknown/Unavailable) but only Available is ever shown.
-**Fix:** Update icons in-place with correct class/tooltip instead of removing them.
-
 ### BUG-2: All icons blanked on any failure
 **File:** `src/content.js:532-535`
 **Issue:** If `response.data` is null/undefined, we call `iconsContainer.replaceChildren()` which removes ALL icons. User sees nothing instead of graceful degradation.
@@ -306,6 +300,7 @@
 - [x] CLAUDE.md project context file
 - [x] ROADMAP.md with detailed specs
 - [x] src/ directory reorganization
+- [x] BUG-1: Fix icons removed for unavailable/unknown states
 
 ---
 
@@ -313,7 +308,6 @@
 
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
-| BUG-1 | Icons removed for unavailable/unknown | 10 | 10 | 100 | Low |
 | DOC-1 | README privacy incorrect | 9 | 10 | 90 | Trivial |
 | PERF-1 | Batch resolution unused | 8 | 10 | 80 | Medium |
 | BUG-2 | Blank icons on failure | 6 | 9 | 54 | Low |

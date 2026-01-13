@@ -166,8 +166,25 @@ Set to `true` for verbose logging during development.
 2. **Cache TTL**: 7 days - games that become available on new platforms won't update until cache expires
 3. **Wikidata Coverage**: Not all games have platform data in Wikidata
 
+## Roadmap Maintenance
+
+**IMPORTANT:** When completing bug fixes, features, or other items from `ROADMAP.md`:
+1. Remove the completed item from its original section
+2. Add it to the "Completed" section at the bottom
+3. Remove it from the Priority Matrix table
+4. Commit these changes alongside the fix
+
+This ensures the roadmap stays current and future agents know what's been done.
+
 ## Future Roadmap Ideas
 
+See `ROADMAP.md` for detailed specifications of:
+- Critical bugs and documentation issues
+- Performance and reliability improvements
+- Feature enhancements with risk assessments
+- Technical debt items
+
+Quick highlights:
 - Steam Deck verification status
 - Popup UI for quick access
 - User preferences for platform visibility
