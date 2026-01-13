@@ -118,7 +118,8 @@ All store URLs auto-redirect to the user's local store:
 
 ## Testing Data
 
-Eight games have manual overrides in `cache.js` for development testing:
+Eight games have manual overrides in `cache.js` for development testing.
+**Note:** Overrides only work when `CACHE_DEBUG = true` in `src/cache.js`.
 
 | Appid | Game | NS | PS | XB |
 |-------|------|----|----|-----|
@@ -146,6 +147,7 @@ Each module has a debug flag at the top:
 const DEBUG = false;           // src/content.js
 const RESOLVER_DEBUG = false;  // src/resolver.js
 const WIKIDATA_DEBUG = false;  // src/wikidataClient.js
+const CACHE_DEBUG = false;     // src/cache.js (enables manual test overrides)
 ```
 
 Set to `true` for verbose logging during development.
@@ -154,7 +156,7 @@ Set to `true` for verbose logging during development.
 
 | File | Lines | Functions |
 |------|-------|-----------|
-| src/cache.js | 95% | 100% |
+| src/cache.js | 90% | 80% |
 | src/resolver.js | 90% | 100% |
 | src/wikidataClient.js | 90% | 90% |
 | src/background.js | 90% | 80% |
