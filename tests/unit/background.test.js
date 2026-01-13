@@ -68,7 +68,7 @@ describe('background.js', () => {
 
     it('should call importScripts for dependencies', () => {
       expect(globalThis.importScripts).toHaveBeenCalledWith(
-        'src/types.js', 'src/cache.js', 'src/wikidataClient.js', 'src/resolver.js'
+        './types.js', './cache.js', './wikidataClient.js', './resolver.js'
       );
     });
   });
