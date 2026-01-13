@@ -78,7 +78,7 @@
 2. Extend cache entry with optional `hltbData` field
 3. Add message handler in background.js
 4. Display completion time badge/tooltip in icon row
-**Risk:** High - No official HLTB API (reverse-engineered, may break). Name matching is fuzzy (might return wrong game). UI already crowded with 3-4 platform icons. Cache TTL should differ from platform data.
+**Risk:** High - No official HLTB API (reverse-engineered, may break). Name matching is fuzzy (might return wrong game). UI already crowded with 3-4 platform icons. Cache TTL can be same as platform data.
 
 ### FEAT-8: Firefox/Edge browser support
 **Priority:** P3 (Lower Priority)
