@@ -10,13 +10,7 @@
 
 ## Performance Issues (Necessity: 8)
 
-### PERF-1: Batch resolution not utilized
-**Files:** `src/content.js:518-525`, `src/background.js:45-66`, `src/wikidataClient.js:13,198`
-**Issue:** Content script sends 1 `GET_PLATFORM_DATA` message per wishlist item. Wikidata client enforces 500ms delay between requests.
-**Impact:** Cold cache with N items = minimum 0.5×N seconds. 200 items = 100+ seconds.
-**Already implemented but unused:** `wikidataClient.js:300` has `BATCH_SIZE = 20`, `resolver.js:248` exports `batchResolvePlatformData()`.
-**Fix:** Add `GET_PLATFORM_DATA_BATCH` message handler; aggregate appids; call batch resolver.
-**Potential improvement:** ~20× reduction in Wikidata requests.
+*No pending performance issues - batch resolution implemented.*
 
 ---
 
@@ -247,11 +241,12 @@
 - [x] Region-agnostic store URLs
 - [x] Store ID extraction from Wikidata
 - [x] Options page with cache management
-- [x] Comprehensive test suite (239 tests)
+- [x] Comprehensive test suite (240 tests)
 - [x] CI/CD with GitHub Actions
 - [x] CLAUDE.md project context file
 - [x] ROADMAP.md with detailed specs
 - [x] src/ directory reorganization
+- [x] PERF-1: Batch resolution for Wikidata queries (~20× improvement)
 - [x] BUG-1: Fix icons removed for unavailable/unknown states
 - [x] DOC-1: README privacy section corrected for Chrome Web Store disclosure
 - [x] BUG-2: Keep icons in unknown state on failure instead of blanking
@@ -265,7 +260,6 @@
 
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
-| PERF-1 | Batch resolution unused | 8 | 10 | 80 | Medium |
 | FEAT-3 | Direct store links (verify) | 7 | 8 | 56 | Trivial |
 | FEAT-2 | User preferences | 6 | 9 | 54 | Low |
 | FEAT-1 | Steam Deck status | 7 | 7 | 49 | Medium |

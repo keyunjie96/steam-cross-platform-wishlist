@@ -219,6 +219,17 @@ function updateIconsWithData(container, data) {
   }
 }
 
+/**
+ * Removes loading state from icons, keeping them as unknown.
+ * Icons remain visible and clickable, linking to store search pages.
+ * @param {HTMLElement} container - Icons container element
+ */
+function removeLoadingState(container) {
+  for (const icon of container.querySelectorAll('.xcpw-loading')) {
+    icon.classList.remove('xcpw-loading');
+  }
+}
+
 /** Steam platform icon title patterns */
 const STEAM_PLATFORM_TITLES = ['Windows', 'macOS', 'Linux', 'SteamOS', 'Steam Deck', 'VR'];
 
@@ -285,7 +296,7 @@ function findInjectionPoint(item) {
 // ============================================================================
 
 /**
- * Requests platform data from background service worker
+ * Requests platform data from background service worker (legacy single-item)
  * @param {string} appid
  * @param {string} gameName
  * @returns {Promise<Object | null>}
@@ -305,6 +316,103 @@ async function requestPlatformData(appid, gameName) {
   } catch (error) {
     // Service worker may be inactive - fail silently
     return null;
+  }
+}
+
+// ============================================================================
+// Batch Processing
+// ============================================================================
+
+/** Pending items waiting for batch resolution */
+const pendingItems = new Map();
+
+/** Debounce timer for batch requests */
+let batchDebounceTimer = null;
+
+/** Debounce delay in ms - wait for more items before sending batch */
+const BATCH_DEBOUNCE_MS = 100;
+
+/**
+ * Queues an item for batch platform data resolution.
+ * Uses debouncing to collect multiple items before sending a single batch request.
+ * @param {string} appid
+ * @param {string} gameName
+ * @param {HTMLElement} iconsContainer
+ */
+function queueForBatchResolution(appid, gameName, iconsContainer) {
+  pendingItems.set(appid, { gameName, container: iconsContainer });
+
+  // Reset debounce timer
+  if (batchDebounceTimer) {
+    clearTimeout(batchDebounceTimer);
+  }
+
+  batchDebounceTimer = setTimeout(() => {
+    processPendingBatch();
+  }, BATCH_DEBOUNCE_MS);
+}
+
+/**
+ * Processes all pending items in a single batch request
+ */
+async function processPendingBatch() {
+  if (pendingItems.size === 0) {
+    return;
+  }
+
+  // Collect all pending items
+  const games = [];
+  const containerMap = new Map();
+
+  for (const [appid, { gameName, container }] of pendingItems) {
+    games.push({ appid, gameName });
+    containerMap.set(appid, { container, gameName });
+  }
+
+  // Clear pending items before async operation
+  pendingItems.clear();
+  batchDebounceTimer = null;
+
+  if (DEBUG) console.log(`${LOG_PREFIX} Sending batch request for ${games.length} games`);
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: 'GET_PLATFORM_DATA_BATCH',
+      games
+    });
+
+    if (response?.success && response.results) {
+      // Update icons for each result
+      for (const [appid, result] of Object.entries(response.results)) {
+        const itemInfo = containerMap.get(appid);
+        if (!itemInfo) continue;
+
+        const { container, gameName } = itemInfo;
+        if (result.data) {
+          if (DEBUG) console.log(`${LOG_PREFIX} Updating icons for appid ${appid}`);
+          updateIconsWithData(container, result.data);
+
+          const source = result.fromCache ? 'cache' : 'new';
+          console.log(`${LOG_PREFIX} Rendered (${source}): ${appid} - ${gameName}`);
+        } else {
+          // No data available - keep icons as unknown (still link to store search)
+          removeLoadingState(container);
+          if (DEBUG) console.log(`${LOG_PREFIX} No data for appid ${appid}, keeping icons as unknown`);
+        }
+      }
+    } else {
+      // Batch request failed - keep icons as unknown (still link to store search)
+      console.warn(`${LOG_PREFIX} Batch request failed`);
+      for (const { container } of containerMap.values()) {
+        removeLoadingState(container);
+      }
+    }
+  } catch (error) {
+    // Service worker may be inactive - keep icons as unknown
+    console.warn(`${LOG_PREFIX} Batch request error:`, error.message);
+    for (const { container } of containerMap.values()) {
+      removeLoadingState(container);
+    }
   }
 }
 
@@ -392,28 +500,10 @@ async function processItem(item) {
   item.setAttribute(ICONS_INJECTED_ATTR, 'true');
   injectedAppIds.add(appId);
 
-  // Request platform data from background (async)
-  if (DEBUG) console.log(`${LOG_PREFIX} Sending message to background for appid ${appId}`);
-  const response = await requestPlatformData(appId, gameName);
-
-  if (response?.data) {
-    if (DEBUG) console.log(`${LOG_PREFIX} Updating icons for appid ${appId} with data:`, response.data.platforms);
-    // Update icons with actual data
-    updateIconsWithData(iconsContainer, response.data);
-
-    // Only log on first injection, not re-injections
-    if (isNewAppId) {
-      const source = response.fromCache ? 'cache' : 'new';
-      console.log(`${LOG_PREFIX} Rendered (${source}): ${appId} - ${gameName}`);
-    }
-  } else {
-    // No data available - keep icons in loading state removed, show as unknown
-    // Icons still link to store search pages for manual verification
-    for (const icon of iconsContainer.querySelectorAll('.xcpw-loading')) {
-      icon.classList.remove('xcpw-loading');
-    }
-    if (DEBUG) console.log(`${LOG_PREFIX} No data for appid ${appId}, keeping icons as unknown`);
-  }
+  // Queue for batch resolution instead of individual request
+  // This dramatically reduces Wikidata API calls by batching multiple games together
+  if (DEBUG) console.log(`${LOG_PREFIX} Queuing appid ${appId} for batch resolution`);
+  queueForBatchResolution(appId, gameName, iconsContainer);
 }
 
 /**
@@ -487,4 +577,16 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
+}
+
+// Export internal functions for testing (not used in production)
+if (typeof globalThis !== 'undefined') {
+  globalThis.XCPW_ContentTestExports = {
+    queueForBatchResolution,
+    processPendingBatch,
+    pendingItems,
+    updateIconsWithData,
+    createIconsContainer,
+    createPlatformIcon
+  };
 }
