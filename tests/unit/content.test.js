@@ -745,4 +745,249 @@ describe('content.js', () => {
       expect(styleElement).toBeTruthy();
     });
   });
+
+  describe('batch processing', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+      // Clear pending items between tests
+      if (globalThis.XCPW_ContentTestExports?.pendingItems) {
+        globalThis.XCPW_ContentTestExports.pendingItems.clear();
+      }
+    });
+
+    it('should send GET_PLATFORM_DATA_BATCH message type', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        results: {
+          '12345': {
+            data: {
+              gameName: 'Test Game',
+              platforms: {
+                nintendo: { status: 'available', storeUrl: 'https://example.com/ns' },
+                playstation: { status: 'unavailable', storeUrl: null },
+                xbox: { status: 'unknown', storeUrl: null }
+              }
+            },
+            fromCache: false
+          }
+        }
+      });
+
+      await chrome.runtime.sendMessage({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [{ appid: '12345', gameName: 'Test Game' }]
+      });
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [{ appid: '12345', gameName: 'Test Game' }]
+      });
+    });
+
+    it('should handle batch response with multiple games', async () => {
+      const batchResponse = {
+        success: true,
+        results: {
+          '12345': {
+            data: {
+              gameName: 'Game 1',
+              platforms: {
+                nintendo: { status: 'available', storeUrl: 'https://ns.example.com/1' },
+                playstation: { status: 'unavailable', storeUrl: null },
+                xbox: { status: 'unknown', storeUrl: null }
+              }
+            },
+            fromCache: true
+          },
+          '67890': {
+            data: {
+              gameName: 'Game 2',
+              platforms: {
+                nintendo: { status: 'unavailable', storeUrl: null },
+                playstation: { status: 'available', storeUrl: 'https://ps.example.com/2' },
+                xbox: { status: 'available', storeUrl: 'https://xb.example.com/2' }
+              }
+            },
+            fromCache: false
+          }
+        }
+      };
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce(batchResponse);
+
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [
+          { appid: '12345', gameName: 'Game 1' },
+          { appid: '67890', gameName: 'Game 2' }
+        ]
+      });
+
+      expect(response.success).toBe(true);
+      expect(response.results['12345'].data.gameName).toBe('Game 1');
+      expect(response.results['67890'].data.gameName).toBe('Game 2');
+      expect(response.results['12345'].fromCache).toBe(true);
+      expect(response.results['67890'].fromCache).toBe(false);
+    });
+
+    it('should handle failed batch response gracefully', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: false,
+        results: {}
+      });
+
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [{ appid: '12345', gameName: 'Test' }]
+      });
+
+      expect(response.success).toBe(false);
+      expect(response.results).toEqual({});
+    });
+
+    it('should handle batch request network errors', async () => {
+      chrome.runtime.sendMessage.mockRejectedValueOnce(
+        new Error('Extension context invalidated')
+      );
+
+      let result = null;
+      try {
+        result = await chrome.runtime.sendMessage({
+          type: 'GET_PLATFORM_DATA_BATCH',
+          games: [{ appid: '12345', gameName: 'Test' }]
+        });
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
+    });
+
+    it('should queue items for batch resolution', () => {
+      const { queueForBatchResolution, pendingItems } = globalThis.XCPW_ContentTestExports;
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+
+      queueForBatchResolution('12345', 'Test Game', container);
+
+      expect(pendingItems.size).toBe(1);
+      expect(pendingItems.has('12345')).toBe(true);
+    });
+
+    it('should process pending batch after debounce', async () => {
+      const { queueForBatchResolution, pendingItems } = globalThis.XCPW_ContentTestExports;
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        results: {
+          '12345': {
+            data: {
+              gameName: 'Test Game',
+              platforms: {
+                nintendo: { status: 'available', storeUrl: null },
+                playstation: { status: 'unavailable', storeUrl: null },
+                xbox: { status: 'unknown', storeUrl: null }
+              }
+            },
+            fromCache: false
+          }
+        }
+      });
+
+      queueForBatchResolution('12345', 'Test Game', container);
+      expect(pendingItems.size).toBe(1);
+
+      // Fast-forward past debounce timer
+      jest.advanceTimersByTime(150);
+
+      // Wait for async processPendingBatch to complete
+      await Promise.resolve();
+
+      // Items should be cleared after processing
+      expect(pendingItems.size).toBe(0);
+    });
+
+    it('should batch multiple items together', () => {
+      const { queueForBatchResolution, pendingItems } = globalThis.XCPW_ContentTestExports;
+
+      const container1 = document.createElement('span');
+      const container2 = document.createElement('span');
+      const container3 = document.createElement('span');
+
+      queueForBatchResolution('111', 'Game 1', container1);
+      queueForBatchResolution('222', 'Game 2', container2);
+      queueForBatchResolution('333', 'Game 3', container3);
+
+      expect(pendingItems.size).toBe(3);
+      expect(pendingItems.has('111')).toBe(true);
+      expect(pendingItems.has('222')).toBe(true);
+      expect(pendingItems.has('333')).toBe(true);
+    });
+
+    it('should call processPendingBatch with empty pending items', async () => {
+      const { processPendingBatch, pendingItems } = globalThis.XCPW_ContentTestExports;
+
+      // Ensure pending items is empty
+      pendingItems.clear();
+
+      // Should return early without making any requests
+      await processPendingBatch();
+
+      // sendMessage should not have been called for batch
+      const batchCalls = chrome.runtime.sendMessage.mock.calls.filter(
+        call => call[0]?.type === 'GET_PLATFORM_DATA_BATCH'
+      );
+      expect(batchCalls.length).toBe(0);
+    });
+
+    it('should handle batch failure and clear containers', async () => {
+      const { queueForBatchResolution, pendingItems } = globalThis.XCPW_ContentTestExports;
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+      container.innerHTML = '<span class="loading">Loading...</span>';
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: false,
+        results: {}
+      });
+
+      queueForBatchResolution('12345', 'Test Game', container);
+
+      // Fast-forward past debounce timer
+      jest.advanceTimersByTime(150);
+
+      // Wait for async processPendingBatch to complete
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Items should be cleared
+      expect(pendingItems.size).toBe(0);
+    });
+
+    it('should handle batch network error and clear containers', async () => {
+      const { queueForBatchResolution, pendingItems } = globalThis.XCPW_ContentTestExports;
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+
+      chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Network error'));
+
+      queueForBatchResolution('12345', 'Test Game', container);
+
+      // Fast-forward past debounce timer
+      jest.advanceTimersByTime(150);
+
+      // Wait for async processPendingBatch to complete
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Items should be cleared even on error
+      expect(pendingItems.size).toBe(0);
+    });
+  });
 });

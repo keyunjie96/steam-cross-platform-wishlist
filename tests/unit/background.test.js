@@ -249,6 +249,178 @@ describe('background.js', () => {
     });
   });
 
+  describe('GET_PLATFORM_DATA_BATCH', () => {
+    beforeEach(() => {
+      // Add batchResolvePlatformData to mock resolver
+      mockResolver.batchResolvePlatformData = jest.fn().mockResolvedValue(
+        new Map([
+          ['12345', {
+            entry: {
+              appid: '12345',
+              gameName: 'Test Game 1',
+              platforms: {
+                nintendo: { status: 'available', storeUrl: 'https://ns.example.com' },
+                playstation: { status: 'unavailable', storeUrl: 'https://ps.example.com' },
+                xbox: { status: 'unknown', storeUrl: 'https://xb.example.com' }
+              },
+              source: 'wikidata'
+            },
+            fromCache: false
+          }],
+          ['67890', {
+            entry: {
+              appid: '67890',
+              gameName: 'Test Game 2',
+              platforms: {
+                nintendo: { status: 'unavailable', storeUrl: 'https://ns.example.com' },
+                playstation: { status: 'available', storeUrl: 'https://ps.example.com' },
+                xbox: { status: 'available', storeUrl: 'https://xb.example.com' }
+              },
+              source: 'cache'
+            },
+            fromCache: true
+          }]
+        ])
+      );
+    });
+
+    it('should return true for async response', () => {
+      const sendResponse = jest.fn();
+      const result = messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [
+          { appid: '12345', gameName: 'Test Game 1' },
+          { appid: '67890', gameName: 'Test Game 2' }
+        ]
+      }, {}, sendResponse);
+
+      expect(result).toBe(true);
+    });
+
+    it('should call batchResolvePlatformData with games array', async () => {
+      const sendResponse = jest.fn();
+      const games = [
+        { appid: '12345', gameName: 'Test Game 1' },
+        { appid: '67890', gameName: 'Test Game 2' }
+      ];
+
+      messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(mockResolver.batchResolvePlatformData).toHaveBeenCalledWith(games);
+    });
+
+    it('should send success response with results object', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [
+          { appid: '12345', gameName: 'Test Game 1' },
+          { appid: '67890', gameName: 'Test Game 2' }
+        ]
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        results: {
+          '12345': {
+            data: expect.objectContaining({ appid: '12345' }),
+            fromCache: false
+          },
+          '67890': {
+            data: expect.objectContaining({ appid: '67890' }),
+            fromCache: true
+          }
+        }
+      });
+    });
+
+    it('should fail when games is missing', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        results: {}
+      });
+    });
+
+    it('should fail when games is not an array', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: 'not-an-array'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        results: {}
+      });
+    });
+
+    it('should fail when games array is empty', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: []
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        results: {}
+      });
+    });
+
+    it('should fail when resolver is not available', async () => {
+      delete globalThis.XCPW_Resolver;
+
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [{ appid: '12345', gameName: 'Test' }]
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        results: {},
+        error: 'Resolver not loaded'
+      });
+    });
+
+    it('should handle batchResolvePlatformData errors', async () => {
+      mockResolver.batchResolvePlatformData.mockRejectedValueOnce(new Error('Batch resolution failed'));
+
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_PLATFORM_DATA_BATCH',
+        games: [{ appid: '12345', gameName: 'Test' }]
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        results: {}
+      });
+    });
+  });
+
   describe('UPDATE_CACHE', () => {
     it('should return true for async response', () => {
       const sendResponse = jest.fn();
