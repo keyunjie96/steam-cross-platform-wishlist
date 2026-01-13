@@ -24,6 +24,9 @@ let userSettings = {
   showSteamDeck: true
 };
 
+/** Pre-extracted Steam Deck data from page SSR (Map of appId -> category) */
+let steamDeckData = null;
+
 /**
  * Gets the list of enabled platforms based on user settings
  * @returns {string[]}
@@ -57,7 +60,7 @@ async function loadUserSettings() {
 const PLATFORM_ICONS = globalThis.XCPW_Icons;
 const PLATFORM_INFO = globalThis.XCPW_PlatformInfo;
 const STATUS_INFO = globalThis.XCPW_StatusInfo;
-const PROTONDB_TIERS = globalThis.XCPW_ProtonDBTiers;
+const STEAM_DECK_TIERS = globalThis.XCPW_SteamDeckTiers;
 
 // ============================================================================
 // Appid Extraction
@@ -195,18 +198,19 @@ function createIconsContainer(appid, gameName) {
  */
 function createPlatformIcon(platform, status, gameName, storeUrl, tier) {
   const url = storeUrl || globalThis.XCPW_StoreUrls[platform](gameName);
-  const isClickable = status !== 'unavailable';
+  // Steam Deck icons are not clickable (just informational)
+  // Console platforms: clickable when available or unknown (to search)
+  const isClickable = platform !== 'steamdeck' && status !== 'unavailable';
   const icon = document.createElement(isClickable ? 'a' : 'span');
 
   icon.className = `xcpw-platform-icon xcpw-${status}`;
   icon.setAttribute('data-platform', platform);
 
-  // Special handling for Steam Deck tier-based tooltip and color
-  if (platform === 'steamdeck' && tier && PROTONDB_TIERS && PROTONDB_TIERS[tier]) {
-    const tierInfo = PROTONDB_TIERS[tier];
-    icon.setAttribute('title', `Steam Deck: ${tierInfo.label} - ${tierInfo.tooltip}`);
+  // Special handling for Steam Deck tier-based tooltip
+  if (platform === 'steamdeck' && tier && STEAM_DECK_TIERS && STEAM_DECK_TIERS[tier]) {
+    const tierInfo = STEAM_DECK_TIERS[tier];
+    icon.setAttribute('title', tierInfo.tooltip);
     icon.setAttribute('data-tier', tier);
-    icon.style.color = tierInfo.color;
   } else {
     icon.setAttribute('title', STATUS_INFO[status].tooltip(platform));
   }
@@ -227,30 +231,60 @@ function createPlatformIcon(platform, status, gameName, storeUrl, tier) {
 
 /**
  * Updates the icons container with platform data from cache.
+ * Steam Deck icons are fetched separately from Steam's store pages.
  * Only shows icons for platforms where the game is available:
  * - available: Full opacity, clickable - opens store page
- * - unavailable: Hidden
+ * - unavailable: Dimmed, shows issues
  * - unknown: Hidden
  * @param {HTMLElement} container
  * @param {Object} data - Cache entry with platform data
  */
 function updateIconsWithData(container, data) {
   const gameName = data.gameName;
+  const appid = container.getAttribute('data-appid');
   let hasVisibleIcons = false;
   const enabledPlatforms = getEnabledPlatforms();
+
+  // Get Steam Deck client if available
+  const SteamDeck = globalThis.XCPW_SteamDeck;
 
   for (const platform of enabledPlatforms) {
     const oldIcon = container.querySelector(`[data-platform="${platform}"]`);
     if (!oldIcon) continue;
 
+    // Special handling for Steam Deck - use pre-extracted SSR data
+    if (platform === 'steamdeck' && SteamDeck && appid && steamDeckData) {
+      // Get status from pre-extracted data (no fetch needed!)
+      const deckResult = SteamDeck.getDeckStatus(steamDeckData, appid);
+      const displayStatus = SteamDeck.statusToDisplayStatus(deckResult.status);
+
+      if (displayStatus === 'available') {
+        // Verified - show white
+        const newIcon = createPlatformIcon(platform, 'available', gameName,
+          `https://store.steampowered.com/app/${appid}`, deckResult.status);
+        oldIcon.replaceWith(newIcon);
+        hasVisibleIcons = true;
+      } else if (displayStatus === 'unavailable') {
+        // Playable - show dimmed
+        const newIcon = createPlatformIcon(platform, 'unavailable', gameName,
+          `https://store.steampowered.com/app/${appid}`, deckResult.status);
+        oldIcon.replaceWith(newIcon);
+        hasVisibleIcons = true;
+      } else {
+        // Unknown/unsupported - hide
+        oldIcon.remove();
+      }
+      continue;
+    }
+
+    // Console platforms - use Wikidata data
     const platformData = data.platforms[platform];
     const status = platformData?.status || 'unknown';
     const storeUrl = platformData?.storeUrl;
-    const tier = platformData?.tier;  // ProtonDB tier for Steam Deck
 
     // Only show icons for available platforms
     if (status === 'available') {
-      const newIcon = createPlatformIcon(platform, status, gameName, storeUrl, tier);
+      const newIcon = createPlatformIcon(platform, status, gameName, storeUrl);
       oldIcon.replaceWith(newIcon);
       hasVisibleIcons = true;
     } else {
@@ -612,6 +646,20 @@ async function init() {
 
   // Load user settings first
   await loadUserSettings();
+
+  // Wait for Steam Deck data from page script (runs in MAIN world, has access to window.SSR)
+  const SteamDeck = globalThis.XCPW_SteamDeck;
+  if (DEBUG) {
+    console.log(`${LOG_PREFIX} SteamDeck client loaded:`, !!SteamDeck);
+    console.log(`${LOG_PREFIX} showSteamDeck setting:`, userSettings.showSteamDeck);
+  }
+  if (SteamDeck && userSettings.showSteamDeck) {
+    console.log(`${LOG_PREFIX} Waiting for Steam Deck data...`);
+    steamDeckData = await SteamDeck.waitForDeckData();
+    console.log(`${LOG_PREFIX} Loaded Steam Deck data for ${steamDeckData.size} games`);
+  } else {
+    console.log(`${LOG_PREFIX} Skipping Steam Deck (client: ${!!SteamDeck}, setting: ${userSettings.showSteamDeck})`);
+  }
 
   // Process existing items
   processWishlistItems();

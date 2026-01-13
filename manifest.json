@@ -2,12 +2,11 @@
   "manifest_version": 3,
   "name": "Steam Cross-Platform Wishlist",
   "version": "0.5.0",
-  "description": "Shows cross-platform availability (Switch/PlayStation/Xbox/Steam Deck) on Steam wishlist pages using Wikidata and ProtonDB",
+  "description": "Shows cross-platform availability (Switch/PlayStation/Xbox/Steam Deck) on Steam wishlist pages using Wikidata and Steam",
   "permissions": ["storage"],
   "host_permissions": [
     "https://store.steampowered.com/*",
-    "https://query.wikidata.org/*",
-    "https://www.protondb.com/*"
+    "https://query.wikidata.org/*"
   ],
   "background": {
     "service_worker": "src/background.js"
@@ -15,7 +14,7 @@
   "content_scripts": [
     {
       "matches": ["https://store.steampowered.com/wishlist/*"],
-      "js": ["src/types.js", "src/icons.js", "src/content.js"],
+      "js": ["src/types.js", "src/icons.js", "src/steamDeckClient.js", "src/content.js"],
       "css": ["src/styles.css"],
       "run_at": "document_idle"
     }
@@ -23,5 +22,11 @@
   "options_ui": {
     "page": "src/options.html",
     "open_in_tab": true
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/steamDeckPageScript.js"],
+      "matches": ["https://store.steampowered.com/*"]
+    }
+  ]
 }

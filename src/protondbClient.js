@@ -107,7 +107,8 @@ async function queryByAppId(steamAppId) {
  * @returns {ProtonDBTier}
  */
 function normalizeTier(tier) {
-  const validTiers = ['native', 'platinum', 'gold', 'silver', 'bronze', 'borked', 'pending'];
+  // Include Steam Deck Verified program tiers: verified, playable, unsupported
+  const validTiers = ['native', 'platinum', 'gold', 'silver', 'bronze', 'borked', 'pending', 'verified', 'playable', 'unsupported'];
   const normalized = tier?.toLowerCase();
   return validTiers.includes(normalized) ? normalized : 'unknown';
 }
@@ -123,20 +124,28 @@ function getProtonDBUrl(steamAppId) {
 
 /**
  * Converts ProtonDB tier to status for display
+ * - available: Show icon in white (top tiers)
+ * - unavailable: Show icon dimmed (playable with issues)
+ * - unknown: Hide icon (problematic/unknown)
  * @param {ProtonDBTier} tier
  * @returns {'available' | 'unavailable' | 'unknown'}
  */
 function tierToStatus(tier) {
   switch (tier) {
+    // Top tiers - show white
+    case 'verified':
     case 'native':
     case 'platinum':
     case 'gold':
       return 'available';
+    // Playable with issues - show dimmed
+    case 'playable':
     case 'silver':
     case 'bronze':
-      return 'available'; // Still playable, but with caveats
-    case 'borked':
       return 'unavailable';
+    // Problematic/unknown - hide icon
+    case 'borked':
+    case 'unsupported':
     case 'pending':
     case 'unknown':
     default:

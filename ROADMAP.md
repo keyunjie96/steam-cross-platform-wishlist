@@ -14,6 +14,16 @@
 
 ---
 
+## Bugs (Necessity: 8)
+
+### BUG-3: Icons disappear when wishlist filter is applied
+**File:** `src/content.js`
+**Issue:** When Steam wishlist filters are applied (e.g., "On Sale", "Steam Deck Verified", platform filters), all of our injected console icons disappear.
+**Root Cause:** Steam's filter functionality re-renders the DOM, removing our injected icons. The MutationObserver should detect these changes, but may not be triggering correctly for filtered view re-renders.
+**Fix:** Investigate how Steam's filter affects the DOM and ensure our MutationObserver properly handles filtered view re-renders. May need to re-process items after filter changes. However, when Steam built-in Steamdeck filter is applied, our added Steamdeck icons should be hidden.
+
+---
+
 ## Reliability Issues (Necessity: 6)
 
 ### REL-1: Misleading initialization log
@@ -46,6 +56,18 @@
 ---
 
 ## Feature Enhancements
+
+### FEAT-9: ChromeOS support via ProtonDB
+**Priority:** P3 (Low Value)
+**Files:** New `src/protondbClient.js`, `src/content.js`, `src/icons.js`
+**Issue:** No visibility into Linux/ChromeOS/SteamOS compatibility for users on those platforms.
+**Data source:** ProtonDB API: `https://www.protondb.com/api/v1/reports/summaries/<appid>.json`
+**Fix:**
+1. Create `src/protondbClient.js` to fetch ProtonDB ratings
+2. Add ChromeOS icon to icons.js with tier-based styling (White:Playable/Hidden:Others)
+3. Show icon in content.js based on ProtonDB tier
+4. Consider caching with appropriate TTL
+**Risk:** Medium - ProtonDB API is unofficial but stable. Tier colors may conflict with existing dimmed/available styling.
 
 ### FEAT-2: User preferences (platform visibility)
 **Priority:** P2 (Medium Value)

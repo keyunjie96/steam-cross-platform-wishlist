@@ -343,25 +343,44 @@ async function batchResolvePlatformData(games) {
     return results;
   }
 
-  // 3. Batch query Wikidata
+  // 3. Batch query Wikidata and ProtonDB in parallel
   try {
     const appIds = needsResolution.map(g => g.appid);
-    const wikidataResults = await WikidataClient.batchQueryBySteamAppIds(appIds);
+
+    // Query Wikidata (batched) and ProtonDB (individual, but concurrent) in parallel
+    const [wikidataResults, ...steamDeckResults] = await Promise.all([
+      WikidataClient.batchQueryBySteamAppIds(appIds),
+      ...appIds.map(appid => getSteamDeckData(appid))
+    ]);
+
+    // Create a map of appid -> steamDeckData
+    const steamDeckDataMap = new Map();
+    appIds.forEach((appid, index) => {
+      steamDeckDataMap.set(appid, steamDeckResults[index]);
+    });
 
     for (const { appid, gameName } of needsResolution) {
       const wikidataResult = wikidataResults.get(appid);
+      const steamDeckData = steamDeckDataMap.get(appid);
+
       const entry = wikidataResult?.found
-        ? wikidataResultToCacheEntry(appid, gameName, wikidataResult)
-        : createFallbackEntry(appid, gameName);
+        ? wikidataResultToCacheEntry(appid, gameName, wikidataResult, steamDeckData)
+        : wikidataResultToCacheEntry(appid, gameName, {
+            found: false,
+            platforms: {},
+            storeIds: {},
+            wikidataId: null,
+            gameName: gameName
+          }, steamDeckData);
 
       await Cache.saveToCache(entry);
       results.set(appid, { entry, fromCache: false });
     }
 
-    console.log(`${RESOLVER_LOG_PREFIX} Wikidata batch resolved ${needsResolution.length} games`);
+    console.log(`${RESOLVER_LOG_PREFIX} Wikidata + ProtonDB batch resolved ${needsResolution.length} games`);
   } catch (error) {
-    // Batch Wikidata query failed - DON'T cache to allow retry
-    console.warn(`${RESOLVER_LOG_PREFIX} Batch Wikidata resolution failed, will retry later:`, error.message);
+    // Batch query failed - DON'T cache to allow retry
+    console.warn(`${RESOLVER_LOG_PREFIX} Batch resolution failed, will retry later:`, error.message);
     for (const { appid, gameName } of needsResolution) {
       if (!results.has(appid)) {
         const entry = createFallbackEntry(appid, gameName);
