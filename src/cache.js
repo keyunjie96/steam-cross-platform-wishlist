@@ -5,6 +5,7 @@
  * This module runs in the background service worker context.
  */
 
+const CACHE_DEBUG = false; // Set to true to enable manual test overrides
 const CACHE_KEY_PREFIX = 'xcpw_cache_';
 const DEFAULT_TTL_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -29,9 +30,9 @@ function platformStatus({ allAvailable = false, unavailable = [] } = {}) {
 /**
  * Manual override map for testing purposes.
  * These appids will show specific platform availability regardless of actual data.
- * In production, this would be empty and data would come from actual lookups.
+ * Only enabled when CACHE_DEBUG is true - in production, data comes from Wikidata.
  */
-const MANUAL_OVERRIDES = {
+const MANUAL_OVERRIDES = CACHE_DEBUG ? {
   '367520': platformStatus({ allAvailable: true }),   // Hollow Knight
   '1145360': platformStatus({ allAvailable: true }),  // Hades
   '504230': platformStatus({ allAvailable: true }),   // Celeste
@@ -40,7 +41,7 @@ const MANUAL_OVERRIDES = {
   '1245620': platformStatus({ allAvailable: true, unavailable: ['nintendo'] }), // Elden Ring
   '1086940': platformStatus({ allAvailable: true, unavailable: ['nintendo'] }), // Baldur's Gate 3
   '1091500': platformStatus({ allAvailable: true, unavailable: ['nintendo'] })  // Cyberpunk 2077
-};
+} : {};
 
 /**
  * Gets the cache key for a given appid

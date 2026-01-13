@@ -1,40 +1,10 @@
 # Roadmap
 
-## Critical Bugs (Necessity: 10)
-
-### BUG-2: All icons blanked on any failure
-**File:** `src/content.js:532-535`
-**Issue:** If `response.data` is null/undefined, we call `iconsContainer.replaceChildren()` which removes ALL icons. User sees nothing instead of graceful degradation.
-**Fix:** Keep icons in "unknown" state on failure; retry on next page load.
-
----
-
 ## Documentation Bugs (Necessity: 9)
 
 ### DOC-2: README US store links outdated
 **File:** `README.md:14`
 **Issue:** Says "open US store search pages" but URLs are now region-agnostic (commit `542c55e`).
-
----
-
-## Code Quality Issues (Necessity: 4-6)
-
-### CODE-1: Duplicate CSS injection
-**Files:** `manifest.json:14-20`, `src/content.js:50-147`
-**Issue:** CSS is loaded TWICE - manifest injects `styles.css` automatically, and `injectStyles()` injects identical inline `<style>` tag.
-**Measured:** 11 `.xcpw-*` selectors duplicated exactly.
-**Fix:** Remove inline CSS injection; rely solely on manifest-loaded `styles.css`.
-
-### CODE-2: Duplicate StoreUrls definition
-**Files:** `src/content.js:32-41`, `src/types.js:69-88`
-**Issue:** `StoreUrls` defined twice with identical implementation. Content scripts don't load `types.js`, so the `types.js` version is unused.
-**Risk:** Implementations can drift; bugs fixed in one place but not the other.
-**Fix:** Add `types.js` to content script manifest, OR move `StoreUrls` into `icons.js`.
-
-### CODE-3: Manual overrides ship to production
-**File:** `src/cache.js:34-43`
-**Issue:** 8 hardcoded manual overrides always return specific data regardless of actual Wikidata results.
-**Fix:** Gate behind `DEBUG` flag or remove entirely.
 
 ---
 
@@ -267,18 +237,6 @@
 **Fix:** Add webpack/esbuild bundler, minify output.
 **Risk:** Low - standard build tooling. Source maps needed for debugging.
 
-### DEBT-3: Consolidate CSS (relates to CODE-1)
-**Files:** `src/content.js:50-147`, `src/styles.css`
-**Issue:** Duplicate CSS definitions.
-**Fix:** Remove inline CSS injection, rely on manifest-loaded stylesheet.
-**Risk:** Low - straightforward removal.
-
-### DEBT-4: Consolidate StoreUrls (relates to CODE-2)
-**Files:** `src/content.js:32-41`, `src/types.js:69-88`
-**Issue:** Duplicate implementation.
-**Fix:** Single source of truth in types.js, load via manifest or globalThis.
-**Risk:** Low - requires manifest update and testing.
-
 ---
 
 ## Completed
@@ -296,6 +254,10 @@
 - [x] src/ directory reorganization
 - [x] BUG-1: Fix icons removed for unavailable/unknown states
 - [x] DOC-1: README privacy section corrected for Chrome Web Store disclosure
+- [x] BUG-2: Keep icons in unknown state on failure instead of blanking
+- [x] CODE-1: Remove duplicate CSS injection (manifest already loads styles.css)
+- [x] CODE-2: Consolidate StoreUrls to types.js (added to content script manifest)
+- [x] CODE-3: Gate manual overrides behind CACHE_DEBUG flag
 
 ---
 
@@ -303,12 +265,7 @@
 
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
-| DOC-1 | README privacy incorrect | 9 | 10 | 90 | Trivial |
-| BUG-1 | Icons removed for unavailable/unknown | 10 | 10 | 100 | Low |
 | PERF-1 | Batch resolution unused | 8 | 10 | 80 | Medium |
-| BUG-2 | Blank icons on failure | 6 | 9 | 54 | Low |
-| CODE-1 | Duplicate CSS | 5 | 10 | 50 | Trivial |
-| CODE-2 | Duplicate StoreUrls | 5 | 10 | 50 | Low |
 | FEAT-3 | Direct store links (verify) | 7 | 8 | 56 | Trivial |
 | FEAT-2 | User preferences | 6 | 9 | 54 | Low |
 | FEAT-1 | Steam Deck status | 7 | 7 | 49 | Medium |

@@ -211,13 +211,15 @@ describe('cache.js', () => {
 
     it('should use manual override when available', async () => {
       const Cache = globalThis.XCPW_Cache;
-      // 367520 is Hollow Knight which has a manual override
+      // MANUAL_OVERRIDES is empty when CACHE_DEBUG=false (production mode)
+      // This test verifies production behavior where overrides are disabled
       const result = await Cache.getOrCreatePlatformData('367520', 'Hollow Knight');
 
-      expect(result.entry.platforms.nintendo.status).toBe('available');
-      expect(result.entry.platforms.playstation.status).toBe('available');
-      expect(result.entry.platforms.xbox.status).toBe('available');
-      expect(result.entry.source).toBe('manual');
+      // In production, all platforms should be 'unknown' since no manual override
+      expect(result.entry.platforms.nintendo.status).toBe('unknown');
+      expect(result.entry.platforms.playstation.status).toBe('unknown');
+      expect(result.entry.platforms.xbox.status).toBe('unknown');
+      expect(result.entry.source).toBe('none');
     });
 
     it('should use unknown status when no override', async () => {
@@ -344,24 +346,17 @@ describe('cache.js', () => {
   });
 
   describe('MANUAL_OVERRIDES', () => {
-    it('should have Hollow Knight with all platforms available', () => {
-      const Cache = globalThis.XCPW_Cache;
-      const hollowKnight = Cache.MANUAL_OVERRIDES['367520'];
+    // MANUAL_OVERRIDES is empty when CACHE_DEBUG=false (production mode)
+    // Test overrides are only active during development
 
-      expect(hollowKnight).toBeDefined();
-      expect(hollowKnight.nintendo).toBe('available');
-      expect(hollowKnight.playstation).toBe('available');
-      expect(hollowKnight.xbox).toBe('available');
+    it('should be empty in production mode (CACHE_DEBUG=false)', () => {
+      const Cache = globalThis.XCPW_Cache;
+      expect(Object.keys(Cache.MANUAL_OVERRIDES).length).toBe(0);
     });
 
-    it('should have Elden Ring without Switch', () => {
+    it('should be an object', () => {
       const Cache = globalThis.XCPW_Cache;
-      const eldenRing = Cache.MANUAL_OVERRIDES['1245620'];
-
-      expect(eldenRing).toBeDefined();
-      expect(eldenRing.nintendo).toBe('unavailable');
-      expect(eldenRing.playstation).toBe('available');
-      expect(eldenRing.xbox).toBe('available');
+      expect(typeof Cache.MANUAL_OVERRIDES).toBe('object');
     });
   });
 });

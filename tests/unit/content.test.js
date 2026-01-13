@@ -40,6 +40,13 @@ describe('content.js', () => {
     };
     globalThis.XCPW_StatusInfo = mockStatusInfo;
 
+    // Mock StoreUrls (loaded from types.js)
+    globalThis.XCPW_StoreUrls = {
+      nintendo: (gameName) => `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}`,
+      playstation: (gameName) => `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
+      xbox: (gameName) => `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`
+    };
+
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage = jest.fn().mockResolvedValue({
       success: true,
@@ -61,63 +68,16 @@ describe('content.js', () => {
     delete globalThis.XCPW_Icons;
     delete globalThis.XCPW_PlatformInfo;
     delete globalThis.XCPW_StatusInfo;
+    delete globalThis.XCPW_StoreUrls;
   });
 
-  describe('style injection', () => {
-    it('should inject styles into the document head', () => {
+  describe('styles', () => {
+    // Note: CSS is now loaded via manifest.json content_scripts.css, not injected inline.
+    // These tests verify we don't inject duplicate inline styles.
+
+    it('should not inject inline styles (CSS loaded via manifest)', () => {
       const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement.tagName).toBe('STYLE');
-    });
-
-    it('should include CSS for xcpw-platforms class', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-platforms');
-    });
-
-    it('should include CSS for xcpw-platform-icon class', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-platform-icon');
-    });
-
-    it('should include CSS for available, unavailable, and unknown states', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-available');
-      expect(styleElement.textContent).toContain('.xcpw-unavailable');
-      expect(styleElement.textContent).toContain('.xcpw-unknown');
-    });
-
-    it('should include CSS for loading animation', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-loading');
-      expect(styleElement.textContent).toContain('@keyframes xcpw-pulse');
-    });
-
-    it('should include reduced motion support', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('prefers-reduced-motion');
-    });
-
-    it('should include separator styling', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-separator');
-    });
-
-    it('should include order:9999 for flex positioning', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('order: 9999');
-    });
-
-    it('should not inject styles twice', () => {
-      // Re-require to test idempotency
-      jest.resetModules();
-      globalThis.XCPW_Icons = mockIcons;
-      globalThis.XCPW_PlatformInfo = mockPlatformInfo;
-      globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../src/content.js');
-
-      const styleElements = document.querySelectorAll('#xcpw-styles');
-      expect(styleElements.length).toBe(1);
+      expect(styleElement).toBeFalsy();
     });
   });
 
@@ -444,19 +404,13 @@ describe('content.js', () => {
     });
   });
 
-  describe('StoreUrls fallback', () => {
-    it('should have StoreUrls defined locally', () => {
-      // content.js defines its own StoreUrls object
-      // These URLs are for search pages when we don't have official URLs
-      const expectedPatterns = {
-        nintendo: /nintendo\.com\/search/,
-        playstation: /store\.playstation\.com\/search/,
-        xbox: /xbox\.com\/search/
-      };
-
-      // Verify the module defines search URL patterns (via style check)
-      const styleContent = document.getElementById('xcpw-styles')?.textContent || '';
-      expect(styleContent).toContain('.xcpw-platform-icon');
+  describe('StoreUrls', () => {
+    it('should use StoreUrls from globalThis', () => {
+      // content.js uses XCPW_StoreUrls from globalThis (loaded via types.js)
+      expect(globalThis.XCPW_StoreUrls).toBeDefined();
+      expect(typeof globalThis.XCPW_StoreUrls.nintendo).toBe('function');
+      expect(typeof globalThis.XCPW_StoreUrls.playstation).toBe('function');
+      expect(typeof globalThis.XCPW_StoreUrls.xbox).toBe('function');
     });
   });
 
@@ -741,8 +695,11 @@ describe('content.js', () => {
       // Test that init runs when DOM is already ready
       expect(document.readyState).not.toBe('loading');
       // content.js should have already run init() since DOM was ready
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement).toBeTruthy();
+      // (No inline CSS injection anymore - CSS is loaded via manifest)
+      // Verify globals are available (as init would have checked)
+      expect(globalThis.XCPW_Icons).toBeDefined();
+      expect(globalThis.XCPW_PlatformInfo).toBeDefined();
+      expect(globalThis.XCPW_StatusInfo).toBeDefined();
     });
   });
 });
