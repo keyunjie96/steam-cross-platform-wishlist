@@ -652,7 +652,7 @@ async function init() {
   // Set up observer for dynamic content
   setupObserver();
 
-  console.log(`${LOG_PREFIX} Initialization complete. Found ${processedAppIds.size} appids.`);
+  console.log(`${LOG_PREFIX} Initialization complete. Started processing items.`);
 }
 
 // Run when DOM is ready

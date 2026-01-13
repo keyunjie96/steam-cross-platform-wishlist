@@ -24,10 +24,7 @@
 
 ## Reliability Issues (Necessity: 6)
 
-### REL-1: Misleading initialization log
-**File:** `src/content.js:587-605`
-**Issue:** `processWishlistItems()` launches async `processItem()` calls without awaiting. Log says "Initialization complete. Found X appids" but `processedAppIds.size` may still be 0.
-**Fix:** Log "Started processing X items" instead, or await all processing.
+*No pending reliability issues.*
 
 ---
 
@@ -44,13 +41,6 @@
 **Issue:** No quick-access popup. Users must open options page for cache stats.
 **Fix:** Create minimal popup with cache stats and quick-clear button.
 **Risk:** Low - isolated feature, no impact on core functionality.
-
-### MISSING-3: Offline mode toggle
-**Files:** `src/options.html`, `src/options.js`, `src/resolver.js`
-**Issue:** No way to disable Wikidata lookups for privacy-conscious users.
-**Fix:** Add toggle in options; when enabled, resolver skips Wikidata and returns "unknown" for all platforms. Icons still link to store searches.
-**Risk:** Low - simple conditional in resolver.
-
 ---
 
 ## Feature Enhancements
@@ -174,6 +164,7 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] FEAT-3: Direct store links (Nintendo/PS/Xbox IDs → direct URLs via Wikidata)
 - [x] FEAT-1: Steam Deck Verified status (via page SSR data extraction)
 - [x] DOC-2: README US store links outdated (fixed: region-agnostic links)
+- [x] REL-1: Misleading initialization log (now says "Started processing items")
 
 ---
 
@@ -183,4 +174,5 @@ Features below were evaluated and declined because established extensions (Augme
 |----|------|-----------|------------|-------|--------|
 | FEAT-2 | User preferences | 6 | 9 | 54 | Low |
 | FEAT-8 | Firefox/Edge | 5 | 6 | 30 | Medium |
+| FEAT-9 | ChromeOS/ProtonDB | 4 | 5 | 20 | Medium |
 | FEAT-5 | HLTB integration | 5 | 4 | 20 | High |
