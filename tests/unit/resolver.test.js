@@ -21,9 +21,11 @@ describe('resolver.js', () => {
         '367520': { // Hollow Knight
           nintendo: 'available',
           playstation: 'available',
-          xbox: 'available'
+          xbox: 'available',
+          steamdeck: 'available'
         }
-      }
+      },
+      PLATFORMS: ['nintendo', 'playstation', 'xbox', 'steamdeck']
     };
     globalThis.XCPW_Cache = mockCache;
 
@@ -33,7 +35,7 @@ describe('resolver.js', () => {
         found: false,
         wikidataId: null,
         gameName: '',
-        platforms: { nintendo: false, playstation: false, xbox: false },
+        platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
         storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null }
       }),
       batchQueryBySteamAppIds: jest.fn().mockResolvedValue(new Map()),
@@ -45,7 +47,8 @@ describe('resolver.js', () => {
     mockStoreUrls = {
       nintendo: jest.fn((name) => `https://nintendo.example.com/search/${encodeURIComponent(name)}`),
       playstation: jest.fn((name) => `https://playstation.example.com/search/${encodeURIComponent(name)}`),
-      xbox: jest.fn((name) => `https://xbox.example.com/search/${encodeURIComponent(name)}`)
+      xbox: jest.fn((name) => `https://xbox.example.com/search/${encodeURIComponent(name)}`),
+      steamdeck: jest.fn((name) => `https://steamdeck.example.com/search/${encodeURIComponent(name)}`)
     };
     globalThis.XCPW_StoreUrls = mockStoreUrls;
 
@@ -85,6 +88,7 @@ describe('resolver.js', () => {
       expect(entry.platforms.nintendo.status).toBe('unknown');
       expect(entry.platforms.playstation.status).toBe('unknown');
       expect(entry.platforms.xbox.status).toBe('unknown');
+      expect(entry.platforms.steamdeck.status).toBe('unknown');
       expect(entry.source).toBe('fallback');
     });
 
@@ -95,9 +99,11 @@ describe('resolver.js', () => {
       expect(entry.platforms.nintendo.storeUrl).toContain('nintendo');
       expect(entry.platforms.playstation.storeUrl).toContain('playstation');
       expect(entry.platforms.xbox.storeUrl).toContain('xbox');
+      expect(entry.platforms.steamdeck.storeUrl).toContain('steamdeck');
 
       expect(mockStoreUrls.nintendo).toHaveBeenCalledWith('Test Game');
       expect(mockStoreUrls.playstation).toHaveBeenCalledWith('Test Game');
+      expect(mockStoreUrls.steamdeck).toHaveBeenCalledWith('Test Game');
       expect(mockStoreUrls.xbox).toHaveBeenCalledWith('Test Game');
     });
 
@@ -156,7 +162,8 @@ describe('resolver.js', () => {
         platforms: {
           nintendo: { status: 'unknown', storeUrl: 'https://old-url/ns' },
           playstation: { status: 'available', storeUrl: 'https://official-url/ps' },
-          xbox: { status: 'unknown', storeUrl: 'https://old-url/xb' }
+          xbox: { status: 'unknown', storeUrl: 'https://old-url/xb' },
+          steamdeck: { status: 'unknown', storeUrl: 'https://old-url/sd' }
         },
         source: 'wikidata',
         resolvedAt: Date.now(),
@@ -188,6 +195,7 @@ describe('resolver.js', () => {
       expect(result.entry.platforms.nintendo.status).toBe('available');
       expect(result.entry.platforms.playstation.status).toBe('available');
       expect(result.entry.platforms.xbox.status).toBe('available');
+      expect(result.entry.platforms.steamdeck.status).toBe('available');
 
       // Should save to cache
       expect(mockCache.saveToCache).toHaveBeenCalled();
@@ -200,7 +208,7 @@ describe('resolver.js', () => {
         found: true,
         wikidataId: 'Q12345',
         gameName: 'Test Game',
-        platforms: { nintendo: true, playstation: false, xbox: true },
+        platforms: { nintendo: true, playstation: false, xbox: true, steamdeck: false },
         storeIds: { eshop: 'test-eshop', psStore: null, xbox: 'test-xbox' }
       });
 
@@ -234,7 +242,7 @@ describe('resolver.js', () => {
         found: false,
         wikidataId: null,
         gameName: '',
-        platforms: { nintendo: false, playstation: false, xbox: false },
+        platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
         storeIds: {}
       });
 
@@ -296,7 +304,7 @@ describe('resolver.js', () => {
         found: true,
         wikidataId: 'Q12345',
         gameName: 'Q12345', // QID instead of actual name
-        platforms: { nintendo: true, playstation: false, xbox: false },
+        platforms: { nintendo: true, playstation: false, xbox: false, steamdeck: false },
         storeIds: {}
       });
 
@@ -338,7 +346,7 @@ describe('resolver.js', () => {
         found: true,
         wikidataId: 'Q22222',
         gameName: 'New Game',
-        platforms: { nintendo: false, playstation: true, xbox: false },
+        platforms: { nintendo: false, playstation: true, xbox: false, steamdeck: false },
         storeIds: {}
       });
       mockWikidataClient.batchQueryBySteamAppIds.mockResolvedValueOnce(wikidataResults);
@@ -432,7 +440,7 @@ describe('resolver.js', () => {
         found: true,
         wikidataId: 'Q12345',
         gameName: 'Fresh Game',
-        platforms: { nintendo: true, playstation: true, xbox: true },
+        platforms: { nintendo: true, playstation: true, xbox: true, steamdeck: false },
         storeIds: {}
       });
 
@@ -453,7 +461,7 @@ describe('resolver.js', () => {
         found: false,
         wikidataId: null,
         gameName: '',
-        platforms: { nintendo: false, playstation: false, xbox: false },
+        platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
         storeIds: {}
       });
 
@@ -475,7 +483,7 @@ describe('resolver.js', () => {
         found: true,
         wikidataId: 'Q99999',
         gameName: 'Test',
-        platforms: { nintendo: true, playstation: false, xbox: false },
+        platforms: { nintendo: true, playstation: false, xbox: false, steamdeck: false },
         storeIds: {}
       });
 

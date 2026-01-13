@@ -47,19 +47,6 @@
 
 ## Feature Enhancements
 
-### FEAT-1: Steam Deck verification + ProtonDB tiers
-**Priority:** P1 (High Value)
-**Files:** `src/types.js`, `src/icons.js`, New `src/protondbClient.js`, `src/content.js`, `src/options.html/js`
-**Issue:** Users want to see Steam Deck/Linux compatibility alongside console platforms.
-**Data source:** ProtonDB API (`https://protondb.com/api/v1/reports/latest?appId={steamAppId}`). Free, no auth required. Returns tier: `platinum`, `gold`, `silver`, `bronze`, `borked`, or `native`.
-**Fix:**
-1. Add `'steamdeck'` to `PLATFORMS` array
-2. Create `src/protondbClient.js` with `queryByAppId()` function
-3. Add Steam Deck SVG icon with tier color coding (Green=Platinum/Native, Gold, Silver, Bronze, Red=Borked)
-4. Add opt-in toggle in options (disabled by default - not all users care about Deck)
-5. Use shorter cache TTL (1-2 days vs 7 days for console platforms)
-**Risk:** Medium - Community-reported data can be outdated. Adds 4th icon to row.
-
 ### FEAT-2: User preferences (platform visibility)
 **Priority:** P2 (Medium Value)
 **Files:** `src/options.html`, `src/options.js`, `src/content.js:315-343`, `src/background.js`
@@ -165,6 +152,7 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] CODE-2: Consolidate StoreUrls to types.js (added to content script manifest)
 - [x] CODE-3: Gate manual overrides behind CACHE_DEBUG flag
 - [x] FEAT-3: Direct store links (Nintendo/PS/Xbox IDs → direct URLs via Wikidata)
+- [x] FEAT-1: Steam Deck verification with ProtonDB tiers (native/platinum/gold/silver/bronze/borked)
 
 ---
 
@@ -173,6 +161,5 @@ Features below were evaluated and declined because established extensions (Augme
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
 | FEAT-2 | User preferences | 6 | 9 | 54 | Low |
-| FEAT-1 | Steam Deck + ProtonDB | 7 | 7 | 49 | Medium |
 | FEAT-8 | Firefox/Edge | 5 | 6 | 30 | Medium |
 | FEAT-5 | HLTB integration | 5 | 4 | 20 | High |

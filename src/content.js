@@ -17,7 +17,7 @@ const DEBUG = false; // Set to true for verbose debugging
 const processedAppIds = new Set();
 
 /** Platforms in display order */
-const PLATFORMS = ['nintendo', 'playstation', 'xbox'];
+const PLATFORMS = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
 // Definitions loaded from types.js and icons.js
 // Note: StoreUrls is declared in types.js, access via globalThis to avoid redeclaration

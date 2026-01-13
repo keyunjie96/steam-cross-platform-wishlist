@@ -23,6 +23,7 @@ const PLATFORM_QIDS = {
   XBOX_ONE: 'Q13361286',
   XBOX_SERIES_X: 'Q64513817',
   XBOX_SERIES_S: 'Q98973368',
+  STEAM_DECK: 'Q92920695',
   WINDOWS: 'Q1406',
   MACOS: 'Q14116',
   LINUX: 'Q388',
@@ -125,6 +126,7 @@ const STORE_URL_BUILDERS = {
  * @property {boolean} platforms.nintendo - Nintendo Switch availability
  * @property {boolean} platforms.playstation - PS4/PS5 availability
  * @property {boolean} platforms.xbox - Xbox One/Series availability
+ * @property {boolean} platforms.steamdeck - Steam Deck availability
  * @property {Object} storeIds - Store IDs for URL construction
  * @property {string | null} storeIds.eshop - Nintendo eShop ID
  * @property {string | null} storeIds.psStore - PlayStation Store ID
@@ -137,7 +139,7 @@ const EMPTY_RESULT = {
   wikidataId: null,
   gameName: '',
   found: false,
-  platforms: { nintendo: false, playstation: false, xbox: false },
+  platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
   storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null }
 };
 
@@ -158,6 +160,7 @@ function parseBindingToResult(binding) {
   const hasXboxP400 = platformQIDs.includes(PLATFORM_QIDS.XBOX_ONE) ||
                       platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_X) ||
                       platformQIDs.includes(PLATFORM_QIDS.XBOX_SERIES_S);
+  const hasSteamDeckP400 = platformQIDs.includes(PLATFORM_QIDS.STEAM_DECK);
 
   const hasSwitchStoreId = !!(binding.switchTitle?.value || binding.eshopEu?.value || binding.eshopUs?.value);
   const hasPSStoreId = !!(binding.psStoreEu?.value || binding.psStoreNa?.value ||
@@ -176,7 +179,8 @@ function parseBindingToResult(binding) {
     platforms: {
       nintendo: hasSwitchP400 || hasSwitchStoreId,
       playstation: hasPSP400 || hasPSStoreId,
-      xbox: hasXboxP400 || hasXboxStoreId
+      xbox: hasXboxP400 || hasXboxStoreId,
+      steamdeck: hasSteamDeckP400
     },
     storeIds: {
       eshop: binding.eshopUs?.value || binding.eshopEu?.value || null,
@@ -282,8 +286,8 @@ async function queryBySteamAppId(steamAppId) {
   if (WIKIDATA_DEBUG) {
     console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${gameResult.wikidataId}:`, gameResult.platforms);
   } else {
-    const { nintendo, playstation, xbox } = gameResult.platforms;
-    console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${gameResult.wikidataId}: NS=${nintendo}, PS=${playstation}, XB=${xbox}`);
+    const { nintendo, playstation, xbox, steamdeck } = gameResult.platforms;
+    console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${gameResult.wikidataId}: NS=${nintendo}, PS=${playstation}, XB=${xbox}, SD=${steamdeck}`);
   }
 
   return gameResult;

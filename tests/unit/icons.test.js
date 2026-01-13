@@ -21,17 +21,18 @@ describe('icons.js', () => {
       expect(typeof window.XCPW_Icons).toBe('object');
     });
 
-    it('should have all three platform icons', () => {
+    it('should have all four platform icons', () => {
       const icons = window.XCPW_Icons;
       expect(icons.nintendo).toBeDefined();
       expect(icons.playstation).toBeDefined();
       expect(icons.xbox).toBeDefined();
+      expect(icons.steamdeck).toBeDefined();
     });
 
     describe('SVG format validation', () => {
       it('should have valid SVG strings for all platforms', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toMatch(/^<svg/);
@@ -41,7 +42,7 @@ describe('icons.js', () => {
 
       it('should use currentColor for fill', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('fill="currentColor"');
@@ -50,7 +51,7 @@ describe('icons.js', () => {
 
       it('should have 16x16 dimensions', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('width="16"');
@@ -60,7 +61,7 @@ describe('icons.js', () => {
 
       it('should have aria-hidden for accessibility', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('aria-hidden="true"');
@@ -69,7 +70,7 @@ describe('icons.js', () => {
 
       it('should have focusable="false" for accessibility', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('focusable="false"');
@@ -78,7 +79,7 @@ describe('icons.js', () => {
 
       it('should have xmlns attribute', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('xmlns="http://www.w3.org/2000/svg"');
@@ -93,17 +94,18 @@ describe('icons.js', () => {
       expect(typeof window.XCPW_PlatformInfo).toBe('object');
     });
 
-    it('should have info for all three platforms', () => {
+    it('should have info for all four platforms', () => {
       const info = window.XCPW_PlatformInfo;
       expect(info.nintendo).toBeDefined();
       expect(info.playstation).toBeDefined();
       expect(info.xbox).toBeDefined();
+      expect(info.steamdeck).toBeDefined();
     });
 
     describe('platform info structure', () => {
       it('should have name, abbr, and searchLabel for each platform', () => {
         const info = window.XCPW_PlatformInfo;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(info[platform].name).toBeDefined();
@@ -134,6 +136,13 @@ describe('icons.js', () => {
         expect(info.xbox.name).toBe('Xbox');
         expect(info.xbox.abbr).toBe('XB');
         expect(info.xbox.searchLabel).toContain('Xbox');
+      });
+
+      it('should have correct Steam Deck info', () => {
+        const info = window.XCPW_PlatformInfo;
+        expect(info.steamdeck.name).toBe('Steam Deck');
+        expect(info.steamdeck.abbr).toBe('SD');
+        expect(info.steamdeck.searchLabel).toContain('ProtonDB');
       });
     });
   });

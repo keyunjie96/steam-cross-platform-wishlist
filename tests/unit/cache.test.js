@@ -243,7 +243,8 @@ describe('cache.js', () => {
         platforms: {
           nintendo: { status: 'available', storeUrl: 'old-url' },
           playstation: { status: 'available', storeUrl: 'old-url' },
-          xbox: { status: 'available', storeUrl: 'old-url' }
+          xbox: { status: 'available', storeUrl: 'old-url' },
+          steamdeck: { status: 'available', storeUrl: 'old-url' }
         }
       };
 

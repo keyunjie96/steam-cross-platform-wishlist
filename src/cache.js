@@ -9,7 +9,7 @@ const CACHE_DEBUG = false; // Set to true to enable manual test overrides
 const CACHE_KEY_PREFIX = 'xcpw_cache_';
 const DEFAULT_TTL_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const PLATFORMS = ['nintendo', 'playstation', 'xbox'];
+const PLATFORMS = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
 /**
  * Creates a platform availability object
