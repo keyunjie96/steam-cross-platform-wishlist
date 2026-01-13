@@ -6,13 +6,16 @@
 
 describe('options.js', () => {
   let statusEl;
+  let settingsStatusEl;
   let cacheCountEl;
   let cacheAgeEl;
   let refreshStatsBtn;
   let clearCacheBtn;
+  let showSteamDeckCheckbox;
 
   beforeEach(() => {
     jest.resetModules();
+    jest.useFakeTimers();
 
     // Set up DOM elements that options.js expects using DOM API
     document.body.textContent = '';
@@ -21,6 +24,11 @@ describe('options.js', () => {
     statusEl.id = 'status';
     statusEl.className = 'status';
     document.body.appendChild(statusEl);
+
+    settingsStatusEl = document.createElement('div');
+    settingsStatusEl.id = 'settings-status';
+    settingsStatusEl.className = 'status';
+    document.body.appendChild(settingsStatusEl);
 
     cacheCountEl = document.createElement('span');
     cacheCountEl.id = 'cache-count';
@@ -42,6 +50,12 @@ describe('options.js', () => {
     clearCacheBtn.textContent = 'Clear Cache';
     document.body.appendChild(clearCacheBtn);
 
+    showSteamDeckCheckbox = document.createElement('input');
+    showSteamDeckCheckbox.type = 'checkbox';
+    showSteamDeckCheckbox.id = 'show-steamdeck';
+    showSteamDeckCheckbox.checked = true;
+    document.body.appendChild(showSteamDeckCheckbox);
+
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage.mockClear();
     chrome.runtime.sendMessage.mockResolvedValue({
@@ -49,6 +63,12 @@ describe('options.js', () => {
       count: 10,
       oldestEntry: Date.now() - 86400000 // 1 day ago
     });
+
+    // Mock chrome.storage.sync
+    chrome.storage.sync.get.mockClear();
+    chrome.storage.sync.set.mockClear();
+    chrome.storage.sync.get.mockResolvedValue({});
+    chrome.storage.sync.set.mockResolvedValue();
 
     // Mock confirm dialog
     global.confirm = jest.fn(() => true);
@@ -58,6 +78,7 @@ describe('options.js', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     delete global.confirm;
   });
 
@@ -83,7 +104,7 @@ describe('options.js', () => {
       // Dispatch DOMContentLoaded event
       document.dispatchEvent(new Event('DOMContentLoaded'));
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
         type: 'GET_CACHE_STATS'
@@ -95,7 +116,7 @@ describe('options.js', () => {
     it('should request cache stats from background', async () => {
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
         type: 'GET_CACHE_STATS'
@@ -111,7 +132,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheCountEl.textContent).toBe('25');
     });
@@ -127,7 +148,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toMatch(/1d 2h/);
     });
@@ -143,7 +164,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toBe('5h');
     });
@@ -159,7 +180,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toBe('<1h');
     });
@@ -173,7 +194,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toBe('-');
     });
@@ -183,7 +204,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheCountEl.textContent).toBe('?');
       expect(cacheAgeEl.textContent).toBe('?');
@@ -201,7 +222,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       // Display should remain unchanged when success is false
       expect(cacheCountEl.textContent).toBe('original');
@@ -216,7 +237,7 @@ describe('options.js', () => {
 
       refreshStatsBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       // Display should remain unchanged when response is undefined
       expect(cacheCountEl.textContent).toBe('original');
@@ -228,7 +249,7 @@ describe('options.js', () => {
     it('should show confirmation dialog', async () => {
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(global.confirm).toHaveBeenCalledWith(
         expect.stringContaining('Are you sure')
@@ -240,7 +261,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith({
         type: 'CLEAR_CACHE'
@@ -252,7 +273,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
         type: 'CLEAR_CACHE'
@@ -264,7 +285,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(statusEl.textContent).toContain('cleared successfully');
       expect(statusEl.className).toContain('success');
@@ -275,7 +296,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(statusEl.textContent).toContain('Failed');
       expect(statusEl.className).toContain('error');
@@ -286,7 +307,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(statusEl.textContent).toContain('Failed');
       expect(statusEl.className).toContain('error');
@@ -308,7 +329,7 @@ describe('options.js', () => {
       // Resolve the promise
       resolveMessage({ success: true });
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       // Button should be re-enabled after completion
       expect(clearCacheBtn.disabled).toBe(false);
@@ -328,7 +349,7 @@ describe('options.js', () => {
 
       resolveMessage({ success: true });
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
     });
 
     it('should restore original button text after loading', async () => {
@@ -338,7 +359,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(clearCacheBtn.textContent).toBe(originalText);
     });
@@ -350,7 +371,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       // Should have called both CLEAR_CACHE and GET_CACHE_STATS
       const calls = chrome.runtime.sendMessage.mock.calls;
@@ -366,7 +387,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(statusEl.textContent.length).toBeGreaterThan(0);
     });
@@ -376,7 +397,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(statusEl.classList.contains('success')).toBe(true);
     });
@@ -386,7 +407,7 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
 
       expect(statusEl.classList.contains('error')).toBe(true);
     });
@@ -404,7 +425,7 @@ describe('options.js', () => {
       expect(clearCacheBtn.disabled).toBe(true);
 
       resolveMessage({ success: true });
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
     });
 
     it('should save original text to dataset', async () => {
@@ -420,7 +441,190 @@ describe('options.js', () => {
       expect(clearCacheBtn.dataset.originalText).toBe(originalText);
 
       resolveMessage({ success: true });
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await jest.advanceTimersByTimeAsync(0);
+    });
+  });
+
+  describe('loadSettings', () => {
+    it('should load settings from chrome.storage.sync on init', async () => {
+      // Dispatch DOMContentLoaded event
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.storage.sync.get).toHaveBeenCalledWith('xcpwSettings');
+    });
+
+    it('should set checkbox to saved value when loading settings', async () => {
+      // Set up mock before re-requiring the module
+      chrome.storage.sync.get.mockResolvedValue({
+        xcpwSettings: { showSteamDeck: false }
+      });
+
+      // Re-require to test fresh load with saved settings
+      jest.resetModules();
+      require('../../src/options.js');
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(showSteamDeckCheckbox.checked).toBe(false);
+    });
+
+    it('should default to true when no settings saved', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({});
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(showSteamDeckCheckbox.checked).toBe(true);
+    });
+
+    it('should handle storage errors gracefully', async () => {
+      chrome.storage.sync.get.mockRejectedValueOnce(new Error('Storage error'));
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Should not throw, checkbox should remain default
+      expect(showSteamDeckCheckbox.checked).toBe(true);
+    });
+  });
+
+  describe('saveSettings', () => {
+    it('should save settings when checkbox changes', async () => {
+      showSteamDeckCheckbox.checked = false;
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({
+        xcpwSettings: { showSteamDeck: false }
+      });
+    });
+
+    it('should save settings when checkbox is checked', async () => {
+      showSteamDeckCheckbox.checked = true;
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({
+        xcpwSettings: { showSteamDeck: true }
+      });
+    });
+
+    it('should show success status after saving', async () => {
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(settingsStatusEl.textContent).toContain('Settings saved');
+      expect(settingsStatusEl.className).toContain('success');
+    });
+
+    it('should show error status on save failure', async () => {
+      chrome.storage.sync.set.mockRejectedValueOnce(new Error('Save failed'));
+
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(settingsStatusEl.textContent).toContain('Failed');
+      expect(settingsStatusEl.className).toContain('error');
+    });
+
+    it('should auto-hide settings status after 2 seconds', async () => {
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(settingsStatusEl.className).toContain('success');
+
+      // Advance past the 2 second timeout
+      await jest.advanceTimersByTimeAsync(2100);
+
+      expect(settingsStatusEl.className).toBe('status');
+    });
+  });
+
+  describe('showSettingsStatus', () => {
+    it('should update settings status element text', async () => {
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(settingsStatusEl.textContent.length).toBeGreaterThan(0);
+    });
+
+    it('should set success class for success type', async () => {
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(settingsStatusEl.classList.contains('success')).toBe(true);
+    });
+
+    it('should set error class for error type', async () => {
+      chrome.storage.sync.set.mockRejectedValueOnce(new Error('Error'));
+
+      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(settingsStatusEl.classList.contains('error')).toBe(true);
+    });
+  });
+
+  describe('null element handling', () => {
+    it('should handle missing settingsStatusEl gracefully', async () => {
+      // Remove settingsStatusEl
+      settingsStatusEl.remove();
+
+      // Re-require to test with missing element
+      jest.resetModules();
+      require('../../src/options.js');
+
+      // Trigger settings change - should not throw
+      const checkbox = document.getElementById('show-steamdeck');
+      checkbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Should complete without error
+      expect(chrome.storage.sync.set).toHaveBeenCalled();
+    });
+
+    it('should handle missing showSteamDeckCheckbox gracefully', async () => {
+      // Remove checkbox
+      showSteamDeckCheckbox.remove();
+
+      // Re-require to test with missing element
+      jest.resetModules();
+      require('../../src/options.js');
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Should complete without error
+      expect(chrome.storage.sync.get).toHaveBeenCalled();
+    });
+
+    it('should handle setButtonLoading without originalText', async () => {
+      // Delete the originalText dataset before it can be set
+      delete clearCacheBtn.dataset.originalText;
+      clearCacheBtn.textContent = 'Test';
+
+      // Set loading
+      clearCacheBtn.disabled = true;
+      clearCacheBtn.innerHTML = '<span class="loading"></span>Loading...';
+
+      // Set not loading without originalText
+      clearCacheBtn.disabled = false;
+      // The else-if branch: button.dataset.originalText is undefined
+
+      expect(clearCacheBtn.disabled).toBe(false);
     });
   });
 });

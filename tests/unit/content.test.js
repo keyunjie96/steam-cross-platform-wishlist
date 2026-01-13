@@ -22,14 +22,16 @@ describe('content.js', () => {
     mockIcons = {
       nintendo: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><rect/></svg>',
       playstation: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path/></svg>',
-      xbox: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle/></svg>'
+      xbox: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle/></svg>',
+      steamdeck: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><rect/></svg>'
     };
     globalThis.XCPW_Icons = mockIcons;
 
     mockPlatformInfo = {
       nintendo: { name: 'Nintendo Switch', abbr: 'NS', searchLabel: 'Search Nintendo' },
       playstation: { name: 'PlayStation', abbr: 'PS', searchLabel: 'Search PlayStation' },
-      xbox: { name: 'Xbox', abbr: 'XB', searchLabel: 'Search Xbox' }
+      xbox: { name: 'Xbox', abbr: 'XB', searchLabel: 'Search Xbox' },
+      steamdeck: { name: 'Steam Deck', abbr: 'SD', searchLabel: 'View on ProtonDB' }
     };
     globalThis.XCPW_PlatformInfo = mockPlatformInfo;
 
@@ -44,8 +46,12 @@ describe('content.js', () => {
     globalThis.XCPW_StoreUrls = {
       nintendo: (gameName) => `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}`,
       playstation: (gameName) => `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
-      xbox: (gameName) => `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`
+      xbox: (gameName) => `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`,
+      steamdeck: (gameName) => `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}`
     };
+
+    // Mock chrome.storage.sync for user settings
+    chrome.storage.sync.get.mockResolvedValue({ xcpwSettings: { showSteamDeck: true } });
 
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage = jest.fn().mockResolvedValue({
@@ -55,7 +61,8 @@ describe('content.js', () => {
         platforms: {
           nintendo: { status: 'available', storeUrl: 'https://example.com/ns' },
           playstation: { status: 'unavailable', storeUrl: 'https://example.com/ps' },
-          xbox: { status: 'unknown', storeUrl: 'https://example.com/xb' }
+          xbox: { status: 'unknown', storeUrl: 'https://example.com/xb' },
+          steamdeck: { status: 'available', storeUrl: 'https://example.com/sd' }
         }
       }
     });
@@ -458,16 +465,16 @@ describe('content.js', () => {
       separator.className = 'xcpw-separator';
       container.appendChild(separator);
 
-      ['nintendo', 'playstation', 'xbox'].forEach(platform => {
+      ['nintendo', 'playstation', 'xbox', 'steamdeck'].forEach(platform => {
         const icon = document.createElement('a');
         icon.className = 'xcpw-platform-icon xcpw-loading';
         icon.setAttribute('data-platform', platform);
         container.appendChild(icon);
       });
 
-      // Verify initial state - all 3 icons present in loading state
-      expect(container.querySelectorAll('[data-platform]').length).toBe(3);
-      expect(container.querySelectorAll('.xcpw-loading').length).toBe(3);
+      // Verify initial state - all 4 icons present in loading state
+      expect(container.querySelectorAll('[data-platform]').length).toBe(4);
+      expect(container.querySelectorAll('.xcpw-loading').length).toBe(4);
 
       // Simulate updateIconsWithData behavior:
       // Only 'available' icons are kept, 'unavailable' and 'unknown' are removed
@@ -476,12 +483,13 @@ describe('content.js', () => {
         platforms: {
           nintendo: { status: 'available', storeUrl: 'https://example.com/ns' },
           playstation: { status: 'unavailable' },
-          xbox: { status: 'unknown' }
+          xbox: { status: 'unknown' },
+          steamdeck: { status: 'unavailable' }
         }
       };
 
       // Simulate the update logic from updateIconsWithData
-      for (const platform of ['nintendo', 'playstation', 'xbox']) {
+      for (const platform of ['nintendo', 'playstation', 'xbox', 'steamdeck']) {
         const oldIcon = container.querySelector(`[data-platform="${platform}"]`);
         if (!oldIcon) continue;
 
@@ -572,7 +580,7 @@ describe('content.js', () => {
       container.appendChild(separator);
 
       // Add icons in loading state
-      ['nintendo', 'playstation', 'xbox'].forEach(platform => {
+      ['nintendo', 'playstation', 'xbox', 'steamdeck'].forEach(platform => {
         const icon = document.createElement('a');
         icon.className = 'xcpw-platform-icon xcpw-loading';
         icon.setAttribute('data-platform', platform);
@@ -581,8 +589,8 @@ describe('content.js', () => {
 
       document.body.appendChild(container);
 
-      // Initially all 3 icons present
-      expect(container.querySelectorAll('[data-platform]').length).toBe(3);
+      // Initially all 4 icons present
+      expect(container.querySelectorAll('[data-platform]').length).toBe(4);
       // After updateIconsWithData, only available icons remain visible
       // unavailable and unknown icons are removed
     });
@@ -1521,7 +1529,7 @@ describe('content.js', () => {
 
       expect(container.classList.contains('xcpw-platforms')).toBe(true);
       expect(container.getAttribute('data-appid')).toBe('12345');
-      expect(container.querySelectorAll('.xcpw-loading').length).toBe(3);
+      expect(container.querySelectorAll('.xcpw-loading').length).toBe(4);
       expect(container.querySelector('.xcpw-separator')).toBeTruthy();
     });
 

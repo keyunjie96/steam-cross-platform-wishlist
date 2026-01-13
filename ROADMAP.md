@@ -2,9 +2,7 @@
 
 ## Documentation Bugs (Necessity: 9)
 
-### DOC-2: README US store links outdated
-**File:** `README.md:14`
-**Issue:** Says "open US store search pages" but URLs are now region-agnostic (commit `542c55e`).
+*No pending documentation bugs.*
 
 ---
 
@@ -14,12 +12,19 @@
 
 ---
 
+## Bugs (Necessity: 8)
+
+### BUG-3: Icons disappear when wishlist filter is applied
+**File:** `src/content.js`
+**Issue:** When Steam wishlist filters are applied (e.g., "On Sale", "Steam Deck Verified", platform filters), all of our injected console icons disappear.
+**Root Cause:** Steam's filter functionality re-renders the DOM, removing our injected icons. The MutationObserver should detect these changes, but may not be triggering correctly for filtered view re-renders.
+**Fix:** Investigate how Steam's filter affects the DOM and ensure our MutationObserver properly handles filtered view re-renders. May need to re-process items after filter changes. However, when Steam built-in Steamdeck filter is applied, our added Steamdeck icons should be hidden.
+
+---
+
 ## Reliability Issues (Necessity: 6)
 
-### REL-1: Misleading initialization log
-**File:** `src/content.js:587-605`
-**Issue:** `processWishlistItems()` launches async `processItem()` calls without awaiting. Log says "Initialization complete. Found X appids" but `processedAppIds.size` may still be 0.
-**Fix:** Log "Started processing X items" instead, or await all processing.
+*No pending reliability issues.*
 
 ---
 
@@ -36,29 +41,32 @@
 **Issue:** No quick-access popup. Users must open options page for cache stats.
 **Fix:** Create minimal popup with cache stats and quick-clear button.
 **Risk:** Low - isolated feature, no impact on core functionality.
-
-### MISSING-3: Offline mode toggle
-**Files:** `src/options.html`, `src/options.js`, `src/resolver.js`
-**Issue:** No way to disable Wikidata lookups for privacy-conscious users.
-**Fix:** Add toggle in options; when enabled, resolver skips Wikidata and returns "unknown" for all platforms. Icons still link to store searches.
-**Risk:** Low - simple conditional in resolver.
-
 ---
 
 ## Feature Enhancements
 
-### FEAT-1: Steam Deck verification + ProtonDB tiers
-**Priority:** P1 (High Value)
-**Files:** `src/types.js`, `src/icons.js`, New `src/protondbClient.js`, `src/content.js`, `src/options.html/js`
-**Issue:** Users want to see Steam Deck/Linux compatibility alongside console platforms.
-**Data source:** ProtonDB API (`https://protondb.com/api/v1/reports/latest?appId={steamAppId}`). Free, no auth required. Returns tier: `platinum`, `gold`, `silver`, `bronze`, `borked`, or `native`.
+### UX-1: Refine icon loading state
+**Priority:** P2 (Visual Polish)
+**Files:** `src/content.js`, `src/styles.css`
+**Issue:** When page loads, all 4 platform icons appear in "loading" (dimmed) state, then snap to reality. This causes visual noise and layout shift.
 **Fix:**
-1. Add `'steamdeck'` to `PLATFORMS` array
-2. Create `src/protondbClient.js` with `queryByAppId()` function
-3. Add Steam Deck SVG icon with tier color coding (Green=Platinum/Native, Gold, Silver, Bronze, Red=Borked)
-4. Add opt-in toggle in options (disabled by default - not all users care about Deck)
-5. Use shorter cache TTL (1-2 days vs 7 days for console platforms)
-**Risk:** Medium - Community-reported data can be outdated. Adds 4th icon to row.
+1. Default to hidden or single subtle loader instead of 4 placeholders.
+2. Only render specific platform icons once data is resolved.
+3. Update `createIconsContainer` to return empty/loading container.
+4. Update `updateIconsWithData` to inject icons dynamically.
+**Risk:** Low - purely restart of rendering logic.
+
+### FEAT-9: ChromeOS support via ProtonDB
+**Priority:** P3 (Low Value)
+**Files:** New `src/protondbClient.js`, `src/content.js`, `src/icons.js`
+**Issue:** No visibility into Linux/ChromeOS/SteamOS compatibility for users on those platforms.
+**Data source:** ProtonDB API: `https://www.protondb.com/api/v1/reports/summaries/<appid>.json`
+**Fix:**
+1. Create `src/protondbClient.js` to fetch ProtonDB ratings
+2. Add ChromeOS icon to icons.js with tier-based styling (White:Playable/Hidden:Others)
+3. Show icon in content.js based on ProtonDB tier
+4. Consider caching with appropriate TTL
+**Risk:** Medium - ProtonDB API is unofficial but stable. Tier colors may conflict with existing dimmed/available styling.
 
 ### FEAT-2: User preferences (platform visibility)
 **Priority:** P2 (Medium Value)
@@ -81,7 +89,7 @@
 2. Extend cache entry with optional `hltbData` field
 3. Add message handler in background.js
 4. Display completion time badge/tooltip in icon row
-**Risk:** High - No official HLTB API (reverse-engineered, may break). Name matching is fuzzy (might return wrong game). UI already crowded with 3-4 platform icons. Cache TTL should differ from platform data.
+**Risk:** High - No official HLTB API (reverse-engineered, may break). Name matching is fuzzy (might return wrong game). UI already crowded with 3-4 platform icons. Cache TTL can be same as platform data.
 
 ### FEAT-8: Firefox/Edge browser support
 **Priority:** P3 (Lower Priority)
@@ -165,6 +173,9 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] CODE-2: Consolidate StoreUrls to types.js (added to content script manifest)
 - [x] CODE-3: Gate manual overrides behind CACHE_DEBUG flag
 - [x] FEAT-3: Direct store links (Nintendo/PS/Xbox IDs → direct URLs via Wikidata)
+- [x] FEAT-1: Steam Deck Verified status (via page SSR data extraction)
+- [x] DOC-2: README US store links outdated (fixed: region-agnostic links)
+- [x] REL-1: Misleading initialization log (now says "Started processing items")
 
 ---
 
@@ -172,7 +183,8 @@ Features below were evaluated and declined because established extensions (Augme
 
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
+| UX-1 | Improve loading state | 7 | 10 | 70 | Low |
 | FEAT-2 | User preferences | 6 | 9 | 54 | Low |
-| FEAT-1 | Steam Deck + ProtonDB | 7 | 7 | 49 | Medium |
 | FEAT-8 | Firefox/Edge | 5 | 6 | 30 | Medium |
+| FEAT-9 | ChromeOS/ProtonDB | 4 | 5 | 20 | Medium |
 | FEAT-5 | HLTB integration | 5 | 4 | 20 | High |

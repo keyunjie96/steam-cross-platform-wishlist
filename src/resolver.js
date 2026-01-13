@@ -1,12 +1,15 @@
 /**
  * Steam Cross-Platform Wishlist - Resolver
  *
- * Coordinates between Wikidata and the cache system.
+ * Coordinates between Wikidata and the cache system for console platforms.
  * Resolution priority:
  *   1. Cache (if valid)
  *   2. Manual overrides
  *   3. Wikidata (no auth required)
  *   4. Fallback (unknown status with search URLs)
+ *
+ * Note: Steam Deck data is extracted directly from SSR in the content script,
+ * not through this resolver.
  */
 
 const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
@@ -100,6 +103,8 @@ function createManualOverrideEntry(appid, gameName, override) {
   };
 }
 
+
+
 /**
  * Converts Wikidata result to cache entry format
  * @param {string} appid
@@ -125,13 +130,15 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
     return officialUrl || StoreUrls[platform](displayName);
   }
 
+  const platforms = createPlatformsObject((platform) => ({
+    status: getPlatformStatus(wikidataResult.platforms[platform], wikidataResult.found),
+    storeUrl: getUrl(platform)
+  }));
+
   return {
     appid,
     gameName: displayName,
-    platforms: createPlatformsObject((platform) => ({
-      status: getPlatformStatus(wikidataResult.platforms[platform], wikidataResult.found),
-      storeUrl: getUrl(platform)
-    })),
+    platforms,
     source: wikidataResult.found ? 'wikidata' : 'fallback',
     wikidataId: wikidataResult.wikidataId,
     resolvedAt: Date.now(),
@@ -292,9 +299,16 @@ async function batchResolvePlatformData(games) {
 
     for (const { appid, gameName } of needsResolution) {
       const wikidataResult = wikidataResults.get(appid);
+
       const entry = wikidataResult?.found
         ? wikidataResultToCacheEntry(appid, gameName, wikidataResult)
-        : createFallbackEntry(appid, gameName);
+        : wikidataResultToCacheEntry(appid, gameName, {
+          found: false,
+          platforms: {},
+          storeIds: {},
+          wikidataId: null,
+          gameName: gameName
+        });
 
       await Cache.saveToCache(entry);
       results.set(appid, { entry, fromCache: false });
@@ -302,8 +316,8 @@ async function batchResolvePlatformData(games) {
 
     console.log(`${RESOLVER_LOG_PREFIX} Wikidata batch resolved ${needsResolution.length} games`);
   } catch (error) {
-    // Batch Wikidata query failed - DON'T cache to allow retry
-    console.warn(`${RESOLVER_LOG_PREFIX} Batch Wikidata resolution failed, will retry later:`, error.message);
+    // Batch query failed - DON'T cache to allow retry
+    console.warn(`${RESOLVER_LOG_PREFIX} Batch resolution failed, will retry later:`, error.message);
     for (const { appid, gameName } of needsResolution) {
       if (!results.has(appid)) {
         const entry = createFallbackEntry(appid, gameName);

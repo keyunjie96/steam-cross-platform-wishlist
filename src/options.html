@@ -186,6 +186,52 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .toggle-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      padding: 12px;
+      border-radius: 4px;
+      background: #1e3a46;
+      border: 1px solid #3d4f5f;
+      transition: background-color 0.15s;
+    }
+
+    .toggle-row:hover {
+      background: #234552;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: #66c0f4;
+      cursor: pointer;
+    }
+
+    .toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toggle-label strong {
+      color: #ffffff;
+      font-size: 14px;
+    }
+
+    .toggle-desc {
+      font-size: 12px;
+      color: #8f98a0;
+    }
   </style>
 </head>
 <body>
@@ -200,12 +246,31 @@
   <div class="section">
     <h2 class="section-title">Data Source</h2>
     <div class="info-box success-box">
-      <strong>Powered by Wikidata</strong>
+      <strong>Powered by Wikidata &amp; Steam</strong>
       <p style="margin: 8px 0 0 0;">
         This extension uses <a href="https://www.wikidata.org" target="_blank" rel="noopener noreferrer" class="help-link">Wikidata</a>
-        to look up platform availability. No configuration required.
+        for console platform availability and Steam data for Steam Deck compatibility. No configuration required.
       </p>
     </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Platform Settings</h2>
+    <p class="help-text" style="margin-top: 0;">
+      Choose which platforms to display on your wishlist.
+    </p>
+
+    <div class="toggle-group">
+      <label class="toggle-row">
+        <input type="checkbox" id="show-steamdeck" checked>
+        <span class="toggle-label">
+          <strong>Steam Deck Compatibility</strong>
+          <span class="toggle-desc">Show verified status (Verified, Playable, Unsupported)</span>
+        </span>
+      </label>
+    </div>
+
+    <div id="settings-status" class="status"></div>
   </div>
 
   <div class="section">

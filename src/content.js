@@ -16,14 +16,51 @@ const DEBUG = false; // Set to true for verbose debugging
 /** Set of appids that have been processed to avoid duplicate logging */
 const processedAppIds = new Set();
 
-/** Platforms in display order */
-const PLATFORMS = ['nintendo', 'playstation', 'xbox'];
+/** All available platforms in display order */
+const ALL_PLATFORMS = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
+
+/** User settings (loaded from storage) */
+let userSettings = {
+  showSteamDeck: true
+};
+
+/** Pre-extracted Steam Deck data from page SSR (Map of appId -> category) */
+let steamDeckData = null;
+
+/**
+ * Gets the list of enabled platforms based on user settings
+ * @returns {string[]}
+ */
+function getEnabledPlatforms() {
+  return ALL_PLATFORMS.filter(platform => {
+    if (platform === 'steamdeck') {
+      return userSettings.showSteamDeck;
+    }
+    return true; // Other platforms always shown
+  });
+}
+
+/**
+ * Loads user settings from chrome.storage.sync
+ */
+async function loadUserSettings() {
+  try {
+    const result = await chrome.storage.sync.get('xcpwSettings');
+    if (result.xcpwSettings) {
+      userSettings = { ...userSettings, ...result.xcpwSettings };
+    }
+    if (DEBUG) console.log(`${LOG_PREFIX} Loaded settings:`, userSettings);
+  } catch (error) {
+    console.error(`${LOG_PREFIX} Error loading settings:`, error);
+  }
+}
 
 // Definitions loaded from types.js and icons.js
 // Note: StoreUrls is declared in types.js, access via globalThis to avoid redeclaration
 const PLATFORM_ICONS = globalThis.XCPW_Icons;
 const PLATFORM_INFO = globalThis.XCPW_PlatformInfo;
 const STATUS_INFO = globalThis.XCPW_StatusInfo;
+const STEAM_DECK_TIERS = globalThis.XCPW_SteamDeckTiers;
 
 // ============================================================================
 // Appid Extraction
@@ -139,8 +176,9 @@ function createIconsContainer(appid, gameName) {
   separator.className = 'xcpw-separator';
   container.appendChild(separator);
 
-  // Add platform icons in loading state
-  for (const platform of PLATFORMS) {
+  // Add platform icons in loading state (only enabled platforms)
+  const enabledPlatforms = getEnabledPlatforms();
+  for (const platform of enabledPlatforms) {
     const icon = createPlatformIcon(platform, 'unknown', gameName);
     icon.classList.add('xcpw-loading');
     container.appendChild(icon);
@@ -151,20 +189,31 @@ function createIconsContainer(appid, gameName) {
 
 /**
  * Creates a single platform icon element
- * @param {string} platform - 'nintendo' | 'playstation' | 'xbox'
+ * @param {string} platform - 'nintendo' | 'playstation' | 'xbox' | 'steamdeck'
  * @param {string} status - 'available' | 'unavailable' | 'unknown'
  * @param {string} gameName - Game name for search URL
  * @param {string} [storeUrl] - Optional direct store URL
+ * @param {string} [tier] - Optional ProtonDB tier for Steam Deck
  * @returns {HTMLElement}
  */
-function createPlatformIcon(platform, status, gameName, storeUrl) {
+function createPlatformIcon(platform, status, gameName, storeUrl, tier) {
   const url = storeUrl || globalThis.XCPW_StoreUrls[platform](gameName);
-  const isClickable = status !== 'unavailable';
+  // Steam Deck icons are not clickable (just informational)
+  // Console platforms: clickable when available or unknown (to search)
+  const isClickable = platform !== 'steamdeck' && status !== 'unavailable';
   const icon = document.createElement(isClickable ? 'a' : 'span');
 
   icon.className = `xcpw-platform-icon xcpw-${status}`;
   icon.setAttribute('data-platform', platform);
-  icon.setAttribute('title', STATUS_INFO[status].tooltip(platform));
+
+  // Special handling for Steam Deck tier-based tooltip
+  if (platform === 'steamdeck' && tier && STEAM_DECK_TIERS && STEAM_DECK_TIERS[tier]) {
+    const tierInfo = STEAM_DECK_TIERS[tier];
+    icon.setAttribute('title', tierInfo.tooltip);
+    icon.setAttribute('data-tier', tier);
+  } else {
+    icon.setAttribute('title', STATUS_INFO[status].tooltip(platform));
+  }
 
   const svg = parseSvg(PLATFORM_ICONS[platform]);
   if (svg) {
@@ -182,21 +231,46 @@ function createPlatformIcon(platform, status, gameName, storeUrl) {
 
 /**
  * Updates the icons container with platform data from cache.
+ * Steam Deck icons are fetched separately from Steam's store pages.
  * Only shows icons for platforms where the game is available:
  * - available: Full opacity, clickable - opens store page
- * - unavailable: Hidden
+ * - unavailable: Dimmed, shows issues
  * - unknown: Hidden
  * @param {HTMLElement} container
  * @param {Object} data - Cache entry with platform data
  */
 function updateIconsWithData(container, data) {
   const gameName = data.gameName;
+  const appid = container.getAttribute('data-appid');
   let hasVisibleIcons = false;
+  const enabledPlatforms = getEnabledPlatforms();
 
-  for (const platform of PLATFORMS) {
+  // Get Steam Deck client if available
+  const SteamDeck = globalThis.XCPW_SteamDeck;
+
+  for (const platform of enabledPlatforms) {
     const oldIcon = container.querySelector(`[data-platform="${platform}"]`);
     if (!oldIcon) continue;
 
+    // Special handling for Steam Deck - use pre-extracted SSR data
+    if (platform === 'steamdeck' && SteamDeck && appid && steamDeckData) {
+      const deckResult = SteamDeck.getDeckStatus(steamDeckData, appid);
+      const displayStatus = SteamDeck.statusToDisplayStatus(deckResult.status);
+
+      // Hide unknown/unsupported Steam Deck games
+      if (displayStatus === 'unknown') {
+        oldIcon.remove();
+        continue;
+      }
+
+      // Show verified (available) or playable (unavailable) with appropriate styling
+      const newIcon = createPlatformIcon(platform, displayStatus, gameName, null, deckResult.status);
+      oldIcon.replaceWith(newIcon);
+      hasVisibleIcons = true;
+      continue;
+    }
+
+    // Console platforms - use Wikidata data
     const platformData = data.platforms[platform];
     const status = platformData?.status || 'unknown';
     const storeUrl = platformData?.storeUrl;
@@ -555,12 +629,21 @@ function setupObserver() {
 /**
  * Main initialization function.
  */
-function init() {
+async function init() {
   console.log(`${LOG_PREFIX} Initializing...`);
 
   if (!PLATFORM_ICONS || !PLATFORM_INFO || !STATUS_INFO) {
     console.error(`${LOG_PREFIX} Missing icon definitions (icons.js not loaded?)`);
     return;
+  }
+
+  // Load user settings first
+  await loadUserSettings();
+
+  // Load Steam Deck data from page script (runs in MAIN world)
+  const SteamDeck = globalThis.XCPW_SteamDeck;
+  if (SteamDeck && userSettings.showSteamDeck) {
+    steamDeckData = await SteamDeck.waitForDeckData();
   }
 
   // Process existing items
@@ -569,7 +652,7 @@ function init() {
   // Set up observer for dynamic content
   setupObserver();
 
-  console.log(`${LOG_PREFIX} Initialization complete. Found ${processedAppIds.size} appids.`);
+  console.log(`${LOG_PREFIX} Initialization complete. Started processing items.`);
 }
 
 // Run when DOM is ready

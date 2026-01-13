@@ -12,12 +12,13 @@ ET.register_namespace("", SVG_NS)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = REPO_ROOT / "assets" / "icons"
-ICONS_JS = REPO_ROOT / "icons.js"
+ICONS_JS = REPO_ROOT / "src" / "icons.js"
 
 KEY_MAP = {
     "ns": "nintendo",
     "ps": "playstation",
     "xbox": "xbox",
+    "sd": "steamdeck",
 }
 
 START_MARKER = "  // BEGIN GENERATED ICONS (scripts/normalize_icons.py)"

@@ -13,7 +13,8 @@
   margin-left: 6px;
   vertical-align: middle;
   color: #ffffff;
-  order: 9999; /* Always position after Steam's platform icons in flex container */
+  order: 9999;
+  /* Always position after Steam's platform icons in flex container */
 }
 
 /* Individual platform icon button/link */
@@ -65,16 +66,42 @@
   transform: scale(1.05);
 }
 
-/* Unavailable state - very dim, not interactive */
+/* Unavailable state - dimmed but still shows tooltip on hover */
 .xcpw-platform-icon.xcpw-unavailable {
   opacity: 0.35;
   cursor: default;
-  pointer-events: none;
 }
 
-/* Tooltip styling - native tooltip enhancement */
-.xcpw-platform-icon[title] {
-  /* Use native title attribute for tooltips */
+.xcpw-platform-icon.xcpw-unavailable:hover {
+  opacity: 0.5;
+  transform: scale(1.05);
+}
+
+/*
+ * Steam Deck tier-based styling (simplified):
+ * - Runnable tiers (verified, playable, native, platinum, gold, silver, bronze): white (inherit from parent)
+ * - Significant issues (borked, unsupported): dimmed via xcpw-unavailable class
+ * - Unknown/pending: hidden (removed from DOM by JS)
+ * 
+ * All runnable tiers use inherited white color from parent container.
+ * No special color overrides needed - the xcpw-available class handles this.
+ */
+
+/* Steam Deck icons: informational only - no click, no hover animation */
+.xcpw-platform-icon[data-platform="steamdeck"] {
+  cursor: default !important;
+}
+
+.xcpw-platform-icon[data-platform="steamdeck"]:hover {
+  transform: none !important;
+}
+
+.xcpw-platform-icon.xcpw-available[data-platform="steamdeck"]:hover {
+  opacity: 1 !important;
+}
+
+.xcpw-platform-icon.xcpw-unavailable[data-platform="steamdeck"]:hover {
+  opacity: 0.35 !important;
 }
 
 /* Custom tooltip (optional enhancement) */
@@ -114,8 +141,15 @@
 }
 
 @keyframes xcpw-pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* Separator line between Steam icons and our icons */

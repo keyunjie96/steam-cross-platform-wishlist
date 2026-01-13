@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Steam Cross-Platform Wishlist** is a Chrome extension (Manifest V3) that displays platform availability icons (Nintendo Switch, PlayStation, Xbox) on Steam wishlist pages using Wikidata as the data source.
+**Steam Cross-Platform Wishlist** is a Chrome extension (Manifest V3) that displays platform availability icons (Nintendo Switch, PlayStation, Xbox, Steam Deck) on Steam wishlist pages using Wikidata and Steam's SSR data.
 
 **Version:** 0.5.0
 **Status:** Production-ready
@@ -18,29 +18,22 @@
 │ - Extract appids    │     response with platform data    │ - Message routing    │
 │ - Inject icons      │                                    │ - Cache coordination │
 │ - Handle scroll     │                                    │                      │
-└─────────────────────┘                                    └──────────┬───────────┘
-                                                                      │
-                                                           ┌──────────▼───────────┐
-                                                           │   Resolver           │
-                                                           │   (resolver.js)      │
-                                                           │                      │
-                                                           │ Priority:            │
-                                                           │ 1. Cache             │
-                                                           │ 2. Manual Overrides  │
-                                                           │ 3. Wikidata Query    │
-                                                           │ 4. Unknown Fallback  │
-                                                           └──────────┬───────────┘
-                                                                      │
-                                    ┌─────────────────────────────────┴─────────────────────────────────┐
-                                    │                                                                   │
-                             ┌──────▼──────┐                                                     ┌──────▼──────────┐
-                             │ Cache       │                                                     │ WikidataClient  │
-                             │ (cache.js)  │                                                     │ (wikidata       │
-                             │             │                                                     │  Client.js)     │
-                             │ chrome.     │                                                     │                 │
-                             │ storage.    │                                                     │ SPARQL queries  │
-                             │ local       │                                                     │ Retry logic     │
-                             └─────────────┘                                                     └─────────────────┘
+└──────────┬──────────┘                                    └──────────┬───────────┘
+           │                                                          │
+   ┌───────▼───────────┐                                   ┌──────────▼───────────┐
+   │ SteamDeckClient   │                                   │   Resolver           │
+   │ (steamDeck        │                                   │   (resolver.js)      │
+   │  Client.js)       │                                   │                      │
+   │                   │                                   └──────────┬───────────┘
+   │ - Inject Page     │                                              │
+   │   Script          │                    ┌─────────────────────────┴─────────────────────────┐
+   │ - Read DOM        │                    │                                                   │
+   └───────┬───────────┘             ┌──────▼──────┐                                     ┌──────▼──────────┐
+           │                         │ Cache       │                                     │ WikidataClient  │
+   ┌───────▼────────────┐            │ (cache.js)  │                                     │ (wikidata       │
+   │ SteamDeckPageScript│            │             │                                     │  Client.js)     │
+   │ (Injected Script)  │            └─────────────┘                                     └─────────────────┘
+   └────────────────────┘
 ```
 
 ## Directory Structure
@@ -53,6 +46,8 @@
 │   ├── cache.js            # Cache module
 │   ├── resolver.js         # Resolution orchestrator
 │   ├── wikidataClient.js   # Wikidata SPARQL client
+│   ├── steamDeckClient.js  # Steam Deck data from page SSR
+│   ├── steamDeckPageScript.js # Injected script for SSR access
 │   ├── icons.js            # Icon definitions
 │   ├── types.js            # Type definitions
 │   ├── options.js          # Options page logic
@@ -72,6 +67,8 @@
 | `src/resolver.js` | Orchestrates data resolution | `resolvePlatformData()` |
 | `src/cache.js` | Chrome storage operations | `getFromCache()`, `saveToCache()`, `getOrCreatePlatformData()` |
 | `src/wikidataClient.js` | Wikidata SPARQL queries | `queryBySteamAppId()`, `executeSparqlQuery()` |
+| `src/steamDeckClient.js` | Steam Deck data extraction | `waitForDeckData()`, `getDeckStatus()` |
+| `src/steamDeckPageScript.js` | Page script for SSR access | `extractDeckData()` (runs in MAIN world) |
 | `src/icons.js` | SVG icons and platform info | `PLATFORM_ICONS`, `PLATFORM_INFO`, `STATUS_INFO` |
 | `src/types.js` | JSDoc type definitions, URL builders | `StoreUrls.nintendo()`, `.playstation()`, `.xbox()` |
 
@@ -100,9 +97,16 @@ npm run test:coverage       # Full coverage report
 ## Key Concepts
 
 ### Icon States
+
+**Console platforms (Nintendo/PlayStation/Xbox):**
 - **available**: Full opacity, clickable - opens store page
 - **unavailable**: Hidden (not displayed)
 - **unknown**: Hidden (not displayed)
+
+**Steam Deck:**
+- **verified**: Full opacity (white icon), not clickable
+- **playable**: Dimmed (35% opacity), not clickable
+- **unsupported/unknown**: Hidden
 
 ### Resolution Priority
 1. **Cache**: Check `chrome.storage.local` first (7-day TTL)
@@ -144,10 +148,11 @@ Eight games have manual overrides in `cache.js` for development testing.
 
 Each module has a debug flag at the top:
 ```javascript
-const DEBUG = false;           // src/content.js
-const RESOLVER_DEBUG = false;  // src/resolver.js
-const WIKIDATA_DEBUG = false;  // src/wikidataClient.js
-const CACHE_DEBUG = false;     // src/cache.js (enables manual test overrides)
+const DEBUG = false;              // src/content.js
+const RESOLVER_DEBUG = false;     // src/resolver.js
+const WIKIDATA_DEBUG = false;     // src/wikidataClient.js
+const CACHE_DEBUG = false;        // src/cache.js (enables manual test overrides)
+const STEAM_DECK_DEBUG = false;   // src/steamDeckClient.js
 ```
 
 Set to `true` for verbose logging during development.
@@ -161,6 +166,7 @@ Set to `true` for verbose logging during development.
 | src/wikidataClient.js | 90% | 90% |
 | src/background.js | 90% | 80% |
 | src/options.js | 100% | 100% |
+| src/steamDeckClient.js | 90% | 90% |
 
 ## Known Limitations
 
@@ -183,8 +189,42 @@ This ensures the roadmap stays current and future agents know what's been done.
 See `ROADMAP.md` for detailed specifications. Focus areas:
 - **Console platform availability** (Nintendo/PS/Xbox) - core differentiator
 - User preferences for platform visibility
-- Steam Deck + ProtonDB tiers (opt-in)
-- HLTB integration for backlog prioritization
+- Steam Deck Verified status (implemented via SSR data)
+- ChromeOS/Linux support via ProtonDB (potential future)
 - Firefox/Edge browser support
 
 Note: Features like price history, game notes, and wishlist categories were evaluated and declined - established extensions (Augmented Steam, SteamDB) already implement them well. See `ROADMAP.md` "Declined Features" section for details.
+
+## Documentation Maintenance
+
+**AI agents working on this project should actively maintain documentation:**
+
+### ROADMAP.md Updates
+
+1. **When you discover issues:** Add them to the appropriate section with:
+   - Unique ID (e.g., `BUG-4`, `REL-2`)
+   - Affected file(s)
+   - Clear description and proposed fix
+
+2. **When you complete items:** Move to "Completed" section with checkbox
+
+3. **When you find improvements:** Add to "Ideas to Explore" or "Technical Debt"
+
+4. **When you decline ideas:** Add to "Declined Features" with rationale
+
+### CLAUDE.md Updates
+
+Update this file when:
+- Adding new files (update Directory Structure and Key Files tables)
+- Adding new debug flags
+- Changing architecture or key concepts
+- Modifying icon states or resolution priority
+
+### README.md Updates
+
+Update when:
+- Adding new platforms or features users should know about
+- Changing icon behavior or states
+- Modifying privacy-relevant permissions
+
+**This proactive documentation ensures continuity across multiple agent sessions.**

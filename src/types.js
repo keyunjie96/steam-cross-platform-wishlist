@@ -4,7 +4,7 @@
  * JSDoc type definitions for type safety without TypeScript.
  */
 
-/** @typedef {'nintendo' | 'playstation' | 'xbox'} Platform */
+/** @typedef {'nintendo' | 'playstation' | 'xbox' | 'steamdeck'} Platform */
 
 /** @typedef {'available' | 'unavailable' | 'unknown'} PlatformStatus */
 
@@ -77,7 +77,11 @@ const StoreUrls = {
 
   /** @param {string} gameName */
   xbox: (gameName) =>
-    `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`
+    `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`,
+
+  /** @param {string} gameName */
+  steamdeck: (gameName) =>
+    `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}`
 };
 
 // Export globally for content scripts (ES modules not supported)

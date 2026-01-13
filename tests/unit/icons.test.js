@@ -21,17 +21,18 @@ describe('icons.js', () => {
       expect(typeof window.XCPW_Icons).toBe('object');
     });
 
-    it('should have all three platform icons', () => {
+    it('should have all four platform icons', () => {
       const icons = window.XCPW_Icons;
       expect(icons.nintendo).toBeDefined();
       expect(icons.playstation).toBeDefined();
       expect(icons.xbox).toBeDefined();
+      expect(icons.steamdeck).toBeDefined();
     });
 
     describe('SVG format validation', () => {
       it('should have valid SVG strings for all platforms', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toMatch(/^<svg/);
@@ -41,7 +42,7 @@ describe('icons.js', () => {
 
       it('should use currentColor for fill', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('fill="currentColor"');
@@ -50,7 +51,7 @@ describe('icons.js', () => {
 
       it('should have 16x16 dimensions', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('width="16"');
@@ -60,7 +61,7 @@ describe('icons.js', () => {
 
       it('should have aria-hidden for accessibility', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('aria-hidden="true"');
@@ -69,7 +70,7 @@ describe('icons.js', () => {
 
       it('should have focusable="false" for accessibility', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('focusable="false"');
@@ -78,7 +79,7 @@ describe('icons.js', () => {
 
       it('should have xmlns attribute', () => {
         const icons = window.XCPW_Icons;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(icons[platform]).toContain('xmlns="http://www.w3.org/2000/svg"');
@@ -93,17 +94,18 @@ describe('icons.js', () => {
       expect(typeof window.XCPW_PlatformInfo).toBe('object');
     });
 
-    it('should have info for all three platforms', () => {
+    it('should have info for all four platforms', () => {
       const info = window.XCPW_PlatformInfo;
       expect(info.nintendo).toBeDefined();
       expect(info.playstation).toBeDefined();
       expect(info.xbox).toBeDefined();
+      expect(info.steamdeck).toBeDefined();
     });
 
     describe('platform info structure', () => {
       it('should have name, abbr, and searchLabel for each platform', () => {
         const info = window.XCPW_PlatformInfo;
-        const platforms = ['nintendo', 'playstation', 'xbox'];
+        const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
           expect(info[platform].name).toBeDefined();
@@ -134,6 +136,13 @@ describe('icons.js', () => {
         expect(info.xbox.name).toBe('Xbox');
         expect(info.xbox.abbr).toBe('XB');
         expect(info.xbox.searchLabel).toContain('Xbox');
+      });
+
+      it('should have correct Steam Deck info', () => {
+        const info = window.XCPW_PlatformInfo;
+        expect(info.steamdeck.name).toBe('Steam Deck');
+        expect(info.steamdeck.abbr).toBe('SD');
+        expect(info.steamdeck.searchLabel).toContain('ProtonDB');
       });
     });
   });
@@ -188,6 +197,41 @@ describe('icons.js', () => {
         expect(status.unavailable.className).toBe('xcpw-unavailable');
         expect(status.unknown.className).toBe('xcpw-unknown');
       });
+    });
+  });
+
+  describe('STEAM_DECK_TIERS', () => {
+    it('should export STEAM_DECK_TIERS to window', () => {
+      expect(window.XCPW_SteamDeckTiers).toBeDefined();
+      expect(typeof window.XCPW_SteamDeckTiers).toBe('object');
+    });
+
+    it('should have all tier levels', () => {
+      const tiers = window.XCPW_SteamDeckTiers;
+      const expectedTiers = ['verified', 'playable', 'unsupported', 'unknown'];
+
+      expectedTiers.forEach(tier => {
+        expect(tiers[tier]).toBeDefined();
+      });
+    });
+
+    it('should have label and tooltip for each tier', () => {
+      const tiers = window.XCPW_SteamDeckTiers;
+
+      Object.keys(tiers).forEach(tier => {
+        expect(tiers[tier].label).toBeDefined();
+        expect(typeof tiers[tier].label).toBe('string');
+        expect(tiers[tier].tooltip).toBeDefined();
+        expect(typeof tiers[tier].tooltip).toBe('string');
+      });
+    });
+
+    it('should have correct labels for key tiers', () => {
+      const tiers = window.XCPW_SteamDeckTiers;
+      expect(tiers.verified.label).toBe('Verified');
+      expect(tiers.playable.label).toBe('Playable');
+      expect(tiers.unsupported.label).toBe('Unsupported');
+      expect(tiers.unknown.label).toBe('Unknown');
     });
   });
 });
