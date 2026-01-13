@@ -529,6 +529,30 @@ describe('background.js', () => {
       });
     });
 
+    // Regression test: handler must wrap cache response with success property
+    // Background: cache.js exports getCacheStats which returns {count, oldestEntry}.
+    // The handler must wrap this with {success: true, ...} for the options page.
+    // Previously, a function name collision caused the raw cache response to be sent.
+    it('should wrap cache response with success property (regression test)', async () => {
+      // Simulate cache returning raw data without success property
+      mockCache.getCacheStats.mockResolvedValueOnce({ count: 10, oldestEntry: 12345 });
+
+      const sendResponse = jest.fn();
+      messageHandler({ type: 'GET_CACHE_STATS' }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const response = sendResponse.mock.calls[0][0];
+
+      // Must have success property (not just count/oldestEntry from cache)
+      expect(response).toHaveProperty('success', true);
+      expect(response).toHaveProperty('count', 10);
+      expect(response).toHaveProperty('oldestEntry', 12345);
+
+      // Verify we're not just passing through the cache response
+      expect(Object.keys(response)).toContain('success');
+    });
+
     it('should handle errors', async () => {
       mockCache.getCacheStats.mockRejectedValueOnce(new Error('Stats failed'));
 
@@ -565,6 +589,22 @@ describe('background.js', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(sendResponse).toHaveBeenCalledWith({ success: true });
+    });
+
+    // Regression test: handler must return {success: true}, not undefined from cache.clearCache
+    // Previously, a function name collision caused undefined to be sent instead.
+    it('should return success object not cache return value (regression test)', async () => {
+      // cache.clearCache returns undefined
+      mockCache.clearCache.mockResolvedValueOnce(undefined);
+
+      const sendResponse = jest.fn();
+      messageHandler({ type: 'CLEAR_CACHE' }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const response = sendResponse.mock.calls[0][0];
+      expect(response).toEqual({ success: true });
+      expect(response).not.toBeUndefined();
     });
 
     it('should handle errors', async () => {

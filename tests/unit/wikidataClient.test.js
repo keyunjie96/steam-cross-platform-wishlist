@@ -535,6 +535,25 @@ describe('wikidataClient.js', () => {
       expect(results.size).toBe(0);
     });
 
+    it('should throw error when query fails (returns null)', async () => {
+      // Use real timers for this test since the rate limiting makes fake timers complex
+      jest.useRealTimers();
+
+      const Client = globalThis.XCPW_WikidataClient;
+
+      // Simulate query failure (fetch returns non-ok response)
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: 'Server error' })
+      });
+
+      const appIds = ['12345'];
+
+      // Use rejects matcher - the function should throw after the rate limit delay
+      await expect(Client.batchQueryBySteamAppIds(appIds)).rejects.toThrow('Wikidata batch query failed');
+    }, 10000); // Increase timeout to account for rate limiting delay
+
     it('should batch large arrays in chunks of 20', async () => {
       const Client = globalThis.XCPW_WikidataClient;
 
@@ -629,6 +648,21 @@ describe('wikidataClient.js', () => {
 
       const callUrl = mockFetch.mock.calls[0][0];
       expect(callUrl).toContain('620');
+    });
+
+    it('should return failure when connection errors', async () => {
+      const Client = globalThis.XCPW_WikidataClient;
+
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const testPromise = Client.testConnection();
+      await jest.advanceTimersByTimeAsync(600);
+      const result = await testPromise;
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Connection failed');
+      // The error gets wrapped by queryBySteamAppId before reaching testConnection
+      expect(result.message).toContain('will retry later');
     });
   });
 

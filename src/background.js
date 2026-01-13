@@ -56,11 +56,11 @@ function handleMessage(message, _sender, sendResponse) {
       return true;
 
     case 'GET_CACHE_STATS':
-      handleAsync(() => getCacheStats(), sendResponse, { success: false });
+      handleAsync(() => handleGetCacheStats(), sendResponse, { success: false });
       return true;
 
     case 'CLEAR_CACHE':
-      handleAsync(() => clearCache(), sendResponse, { success: false });
+      handleAsync(() => handleClearCache(), sendResponse, { success: false });
       return true;
 
     default:
@@ -150,19 +150,19 @@ async function updateCache(message) {
 }
 
 /**
- * Gets cache statistics
+ * Gets cache statistics (handler wrapper to avoid name collision with cache.js)
  * @returns {Promise<{success: boolean, count: number, oldestEntry: number | null}>}
  */
-async function getCacheStats() {
+async function handleGetCacheStats() {
   const stats = await globalThis.XCPW_Cache.getCacheStats();
   return { success: true, count: stats.count, oldestEntry: stats.oldestEntry };
 }
 
 /**
- * Clears all cached data
+ * Clears all cached data (handler wrapper to avoid name collision with cache.js)
  * @returns {Promise<{success: boolean}>}
  */
-async function clearCache() {
+async function handleClearCache() {
   await globalThis.XCPW_Cache.clearCache();
   console.log(`${LOG_PREFIX} Cache cleared`);
   return { success: true };

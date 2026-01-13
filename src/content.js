@@ -19,136 +19,11 @@ const processedAppIds = new Set();
 /** Platforms in display order */
 const PLATFORMS = ['nintendo', 'playstation', 'xbox'];
 
-// Icon definitions loaded from icons.js
+// Definitions loaded from types.js and icons.js
+// Note: StoreUrls is declared in types.js, access via globalThis to avoid redeclaration
 const PLATFORM_ICONS = globalThis.XCPW_Icons;
 const PLATFORM_INFO = globalThis.XCPW_PlatformInfo;
 const STATUS_INFO = globalThis.XCPW_StatusInfo;
-
-// ============================================================================
-// Store URL Builders
-// ============================================================================
-
-// Region-agnostic URLs - stores will redirect to user's local version
-const StoreUrls = {
-  nintendo: (gameName) =>
-    `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
-
-  playstation: (gameName) =>
-    `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
-
-  xbox: (gameName) =>
-    `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`
-};
-
-// ============================================================================
-// CSS Injection
-// ============================================================================
-
-/**
- * Injects our scoped CSS into the page
- */
-function injectStyles() {
-  if (document.getElementById('xcpw-styles')) {
-    return; // Already injected
-  }
-
-  const style = document.createElement('style');
-  style.id = 'xcpw-styles';
-  style.textContent = `
-    .xcpw-platforms {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      margin-left: 6px;
-      vertical-align: middle;
-      color: #ffffff;
-      order: 9999; /* Always position after Steam's platform icons in flex container */
-    }
-
-    .xcpw-platform-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 17px;
-      height: 17px;
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      text-decoration: none;
-      transition: opacity 0.15s ease, transform 0.15s ease;
-      position: relative;
-      color: inherit;
-    }
-
-    .xcpw-platform-icon:link,
-    .xcpw-platform-icon:visited {
-      color: inherit;
-    }
-
-    .xcpw-platform-icon svg {
-      width: 16px;
-      height: 16px;
-      display: block;
-    }
-
-    .xcpw-platform-icon.xcpw-available,
-    .xcpw-platform-icon.xcpw-unknown {
-      opacity: 1;
-    }
-
-    .xcpw-platform-icon.xcpw-available:hover,
-    .xcpw-platform-icon.xcpw-unknown:hover {
-      opacity: 1;
-      transform: scale(1.1);
-    }
-
-    .xcpw-platform-icon.xcpw-unavailable {
-      opacity: 0.35;
-      cursor: default;
-    }
-
-    .xcpw-platform-icon.xcpw-loading {
-      animation: xcpw-pulse 1s ease-in-out infinite;
-    }
-
-    @keyframes xcpw-pulse {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 0.6; }
-    }
-
-    .xcpw-separator {
-      width: 1px;
-      height: 12px;
-      background: #3d4450;
-      margin: 0 3px;
-      display: inline-block;
-      vertical-align: middle;
-    }
-
-    .xcpw-platform-icon:focus {
-      outline: 1px solid #66c0f4;
-      outline-offset: 2px;
-    }
-
-    .xcpw-platform-icon:focus:not(:focus-visible) {
-      outline: none;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .xcpw-platform-icon {
-        transition: none;
-      }
-      .xcpw-platform-icon.xcpw-loading {
-        animation: none;
-        opacity: 0.4;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-  console.log(`${LOG_PREFIX} Styles injected`);
-}
 
 // ============================================================================
 // Appid Extraction
@@ -283,7 +158,7 @@ function createIconsContainer(appid, gameName) {
  * @returns {HTMLElement}
  */
 function createPlatformIcon(platform, status, gameName, storeUrl) {
-  const url = storeUrl || StoreUrls[platform](gameName);
+  const url = storeUrl || globalThis.XCPW_StoreUrls[platform](gameName);
   const isClickable = status !== 'unavailable';
   const icon = document.createElement(isClickable ? 'a' : 'span');
 
@@ -341,6 +216,17 @@ function updateIconsWithData(container, data) {
   if (!hasVisibleIcons) {
     const separator = container.querySelector('.xcpw-separator');
     if (separator) separator.remove();
+  }
+}
+
+/**
+ * Removes loading state from icons, keeping them as unknown.
+ * Icons remain visible and clickable, linking to store search pages.
+ * @param {HTMLElement} container - Icons container element
+ */
+function removeLoadingState(container) {
+  for (const icon of container.querySelectorAll('.xcpw-loading')) {
+    icon.classList.remove('xcpw-loading');
   }
 }
 
@@ -509,22 +395,23 @@ async function processPendingBatch() {
           const source = result.fromCache ? 'cache' : 'new';
           console.log(`${LOG_PREFIX} Rendered (${source}): ${appid} - ${gameName}`);
         } else {
-          // No data available - hide icons
-          container.replaceChildren();
+          // No data available - keep icons as unknown (still link to store search)
+          removeLoadingState(container);
+          if (DEBUG) console.log(`${LOG_PREFIX} No data for appid ${appid}, keeping icons as unknown`);
         }
       }
     } else {
-      // Batch request failed - hide all loading icons
+      // Batch request failed - keep icons as unknown (still link to store search)
       console.warn(`${LOG_PREFIX} Batch request failed`);
       for (const { container } of containerMap.values()) {
-        container.replaceChildren();
+        removeLoadingState(container);
       }
     }
   } catch (error) {
-    // Service worker may be inactive - fail silently
+    // Service worker may be inactive - keep icons as unknown
     console.warn(`${LOG_PREFIX} Batch request error:`, error.message);
     for (const { container } of containerMap.values()) {
-      container.replaceChildren();
+      removeLoadingState(container);
     }
   }
 }
@@ -676,9 +563,6 @@ function init() {
     return;
   }
 
-  // Inject CSS first
-  injectStyles();
-
   // Process existing items
   processWishlistItems();
 
@@ -703,6 +587,12 @@ if (typeof globalThis !== 'undefined') {
     pendingItems,
     updateIconsWithData,
     createIconsContainer,
-    createPlatformIcon
+    createPlatformIcon,
+    extractAppId,
+    extractGameName,
+    parseSvg,
+    removeLoadingState,
+    findInjectionPoint,
+    requestPlatformData
   };
 }

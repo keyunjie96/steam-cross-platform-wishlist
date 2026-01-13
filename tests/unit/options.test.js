@@ -188,6 +188,40 @@ describe('options.js', () => {
       expect(cacheCountEl.textContent).toBe('?');
       expect(cacheAgeEl.textContent).toBe('?');
     });
+
+    it('should not update display when response.success is false', async () => {
+      cacheCountEl.textContent = 'original';
+      cacheAgeEl.textContent = 'original';
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: false,
+        count: 99,
+        oldestEntry: Date.now()
+      });
+
+      refreshStatsBtn.click();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Display should remain unchanged when success is false
+      expect(cacheCountEl.textContent).toBe('original');
+      expect(cacheAgeEl.textContent).toBe('original');
+    });
+
+    it('should not update display when response is undefined', async () => {
+      cacheCountEl.textContent = 'original';
+      cacheAgeEl.textContent = 'original';
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
+
+      refreshStatsBtn.click();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Display should remain unchanged when response is undefined
+      expect(cacheCountEl.textContent).toBe('original');
+      expect(cacheAgeEl.textContent).toBe('original');
+    });
   });
 
   describe('clearCache', () => {

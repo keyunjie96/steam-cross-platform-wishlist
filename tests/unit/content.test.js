@@ -40,6 +40,13 @@ describe('content.js', () => {
     };
     globalThis.XCPW_StatusInfo = mockStatusInfo;
 
+    // Mock StoreUrls (loaded from types.js)
+    globalThis.XCPW_StoreUrls = {
+      nintendo: (gameName) => `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}`,
+      playstation: (gameName) => `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
+      xbox: (gameName) => `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`
+    };
+
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage = jest.fn().mockResolvedValue({
       success: true,
@@ -61,63 +68,16 @@ describe('content.js', () => {
     delete globalThis.XCPW_Icons;
     delete globalThis.XCPW_PlatformInfo;
     delete globalThis.XCPW_StatusInfo;
+    delete globalThis.XCPW_StoreUrls;
   });
 
-  describe('style injection', () => {
-    it('should inject styles into the document head', () => {
+  describe('styles', () => {
+    // Note: CSS is now loaded via manifest.json content_scripts.css, not injected inline.
+    // These tests verify we don't inject duplicate inline styles.
+
+    it('should not inject inline styles (CSS loaded via manifest)', () => {
       const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement.tagName).toBe('STYLE');
-    });
-
-    it('should include CSS for xcpw-platforms class', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-platforms');
-    });
-
-    it('should include CSS for xcpw-platform-icon class', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-platform-icon');
-    });
-
-    it('should include CSS for available, unavailable, and unknown states', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-available');
-      expect(styleElement.textContent).toContain('.xcpw-unavailable');
-      expect(styleElement.textContent).toContain('.xcpw-unknown');
-    });
-
-    it('should include CSS for loading animation', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-loading');
-      expect(styleElement.textContent).toContain('@keyframes xcpw-pulse');
-    });
-
-    it('should include reduced motion support', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('prefers-reduced-motion');
-    });
-
-    it('should include separator styling', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('.xcpw-separator');
-    });
-
-    it('should include order:9999 for flex positioning', () => {
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement.textContent).toContain('order: 9999');
-    });
-
-    it('should not inject styles twice', () => {
-      // Re-require to test idempotency
-      jest.resetModules();
-      globalThis.XCPW_Icons = mockIcons;
-      globalThis.XCPW_PlatformInfo = mockPlatformInfo;
-      globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../src/content.js');
-
-      const styleElements = document.querySelectorAll('#xcpw-styles');
-      expect(styleElements.length).toBe(1);
+      expect(styleElement).toBeFalsy();
     });
   });
 
@@ -444,19 +404,13 @@ describe('content.js', () => {
     });
   });
 
-  describe('StoreUrls fallback', () => {
-    it('should have StoreUrls defined locally', () => {
-      // content.js defines its own StoreUrls object
-      // These URLs are for search pages when we don't have official URLs
-      const expectedPatterns = {
-        nintendo: /nintendo\.com\/search/,
-        playstation: /store\.playstation\.com\/search/,
-        xbox: /xbox\.com\/search/
-      };
-
-      // Verify the module defines search URL patterns (via style check)
-      const styleContent = document.getElementById('xcpw-styles')?.textContent || '';
-      expect(styleContent).toContain('.xcpw-platform-icon');
+  describe('StoreUrls', () => {
+    it('should use StoreUrls from globalThis', () => {
+      // content.js uses XCPW_StoreUrls from globalThis (loaded via types.js)
+      expect(globalThis.XCPW_StoreUrls).toBeDefined();
+      expect(typeof globalThis.XCPW_StoreUrls.nintendo).toBe('function');
+      expect(typeof globalThis.XCPW_StoreUrls.playstation).toBe('function');
+      expect(typeof globalThis.XCPW_StoreUrls.xbox).toBe('function');
     });
   });
 
@@ -741,8 +695,11 @@ describe('content.js', () => {
       // Test that init runs when DOM is already ready
       expect(document.readyState).not.toBe('loading');
       // content.js should have already run init() since DOM was ready
-      const styleElement = document.getElementById('xcpw-styles');
-      expect(styleElement).toBeTruthy();
+      // (No inline CSS injection anymore - CSS is loaded via manifest)
+      // Verify globals are available (as init would have checked)
+      expect(globalThis.XCPW_Icons).toBeDefined();
+      expect(globalThis.XCPW_PlatformInfo).toBeDefined();
+      expect(globalThis.XCPW_StatusInfo).toBeDefined();
     });
   });
 
@@ -988,6 +945,594 @@ describe('content.js', () => {
 
       // Items should be cleared even on error
       expect(pendingItems.size).toBe(0);
+    });
+  });
+
+  describe('extractAppId (exported function)', () => {
+    it('should extract appid from data-rfd-draggable-id (primary)', () => {
+      const { extractAppId } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      item.setAttribute('data-rfd-draggable-id', 'WishlistItem-12345-0');
+
+      expect(extractAppId(item)).toBe('12345');
+    });
+
+    it('should extract appid from app link when draggable-id is missing (fallback)', () => {
+      const { extractAppId } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = 'https://store.steampowered.com/app/570/Dota_2';
+      item.appendChild(link);
+
+      expect(extractAppId(item)).toBe('570');
+    });
+
+    it('should extract appid from app link when draggable-id does not match pattern', () => {
+      const { extractAppId } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      item.setAttribute('data-rfd-draggable-id', 'SomethingElse-123');
+      const link = document.createElement('a');
+      link.href = '/app/999/Test_Game';
+      item.appendChild(link);
+
+      expect(extractAppId(item)).toBe('999');
+    });
+
+    it('should return null when no appid can be extracted', () => {
+      const { extractAppId } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      item.textContent = 'No links or draggable id';
+
+      expect(extractAppId(item)).toBeNull();
+    });
+
+    it('should return null when app link exists but href has no appid', () => {
+      const { extractAppId } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = 'https://store.steampowered.com/about/';
+      item.appendChild(link);
+
+      expect(extractAppId(item)).toBeNull();
+    });
+  });
+
+  describe('extractGameName (exported function)', () => {
+    it('should extract game name from link text (primary)', () => {
+      const { extractGameName } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = '/app/12345/Test_Game';
+      link.textContent = 'Test Game Name';
+      item.appendChild(link);
+
+      expect(extractGameName(item)).toBe('Test Game Name');
+    });
+
+    it('should extract game name from URL slug when link text is empty', () => {
+      const { extractGameName } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = '/app/12345/Hollow_Knight';
+      link.textContent = '';
+      item.appendChild(link);
+
+      expect(extractGameName(item)).toBe('Hollow Knight');
+    });
+
+    it('should use title selector fallback when link has no slug', () => {
+      const { extractGameName } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = '/app/12345';
+      link.textContent = '';
+      item.appendChild(link);
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'Title';
+      titleEl.textContent = 'Fallback Title';
+      item.appendChild(titleEl);
+
+      expect(extractGameName(item)).toBe('Fallback Title');
+    });
+
+    it('should skip invalid title text (too short)', () => {
+      const { extractGameName } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = '/app/12345';
+      link.textContent = '';
+      item.appendChild(link);
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'Title';
+      titleEl.textContent = 'AB'; // Too short
+      item.appendChild(titleEl);
+
+      expect(extractGameName(item)).toBe('Unknown Game');
+    });
+
+    it('should skip title text that looks like a price', () => {
+      const { extractGameName } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      const link = document.createElement('a');
+      link.href = '/app/12345';
+      link.textContent = '';
+      item.appendChild(link);
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'Title';
+      titleEl.textContent = '$19.99';
+      item.appendChild(titleEl);
+
+      expect(extractGameName(item)).toBe('Unknown Game');
+    });
+
+    it('should return Unknown Game when no valid title found', () => {
+      const { extractGameName } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      item.textContent = 'No valid title elements';
+
+      expect(extractGameName(item)).toBe('Unknown Game');
+    });
+  });
+
+  describe('parseSvg (exported function)', () => {
+    it('should parse valid SVG string', () => {
+      const { parseSvg } = globalThis.XCPW_ContentTestExports;
+      const svgString = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect/></svg>';
+
+      const svg = parseSvg(svgString);
+
+      expect(svg).toBeTruthy();
+      expect(svg.tagName.toLowerCase()).toBe('svg');
+    });
+
+    it('should return null and log error for invalid SVG', () => {
+      const { parseSvg } = globalThis.XCPW_ContentTestExports;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // This malformed XML should trigger parsererror
+      const result = parseSvg('<svg><unclosed');
+
+      // DOMParser creates parsererror for invalid XML, which parseSvg detects
+      // and returns null after logging an error
+      expect(result).toBeNull();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('SVG parsing error')
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('removeLoadingState (exported function)', () => {
+    it('should remove xcpw-loading class from icons', () => {
+      const { removeLoadingState } = globalThis.XCPW_ContentTestExports;
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+
+      ['nintendo', 'playstation', 'xbox'].forEach(platform => {
+        const icon = document.createElement('a');
+        icon.className = 'xcpw-platform-icon xcpw-loading';
+        icon.setAttribute('data-platform', platform);
+        container.appendChild(icon);
+      });
+
+      expect(container.querySelectorAll('.xcpw-loading').length).toBe(3);
+
+      removeLoadingState(container);
+
+      expect(container.querySelectorAll('.xcpw-loading').length).toBe(0);
+      expect(container.querySelectorAll('.xcpw-platform-icon').length).toBe(3);
+    });
+
+    it('should handle container with no loading icons', () => {
+      const { removeLoadingState } = globalThis.XCPW_ContentTestExports;
+      const container = document.createElement('span');
+      container.className = 'xcpw-platforms';
+
+      // No icons with xcpw-loading class
+      const icon = document.createElement('a');
+      icon.className = 'xcpw-platform-icon xcpw-available';
+      container.appendChild(icon);
+
+      // Should not throw
+      removeLoadingState(container);
+
+      expect(container.querySelector('.xcpw-available')).toBeTruthy();
+    });
+  });
+
+  describe('updateIconsWithData (exported function)', () => {
+    it('should replace loading icons with available icons', () => {
+      const { updateIconsWithData, createIconsContainer } = globalThis.XCPW_ContentTestExports;
+      const container = createIconsContainer('12345', 'Test Game');
+      document.body.appendChild(container);
+
+      const data = {
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' },
+          playstation: { status: 'available', storeUrl: 'https://ps.example.com' },
+          xbox: { status: 'available', storeUrl: 'https://xb.example.com' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      expect(container.querySelectorAll('.xcpw-available').length).toBe(3);
+      expect(container.querySelectorAll('.xcpw-loading').length).toBe(0);
+    });
+
+    it('should remove unavailable icons', () => {
+      const { updateIconsWithData, createIconsContainer } = globalThis.XCPW_ContentTestExports;
+      const container = createIconsContainer('12345', 'Test Game');
+
+      const data = {
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' },
+          playstation: { status: 'unavailable' },
+          xbox: { status: 'unavailable' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
+      expect(container.querySelector('[data-platform="playstation"]')).toBeNull();
+      expect(container.querySelector('[data-platform="xbox"]')).toBeNull();
+    });
+
+    it('should remove unknown icons', () => {
+      const { updateIconsWithData, createIconsContainer } = globalThis.XCPW_ContentTestExports;
+      const container = createIconsContainer('12345', 'Test Game');
+
+      const data = {
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'unknown' },
+          playstation: { status: 'available', storeUrl: 'https://ps.example.com' },
+          xbox: { status: 'unknown' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      expect(container.querySelector('[data-platform="nintendo"]')).toBeNull();
+      expect(container.querySelector('[data-platform="playstation"]')).toBeTruthy();
+      expect(container.querySelector('[data-platform="xbox"]')).toBeNull();
+    });
+
+    it('should handle missing platform data (defaults to unknown)', () => {
+      const { updateIconsWithData, createIconsContainer } = globalThis.XCPW_ContentTestExports;
+      const container = createIconsContainer('12345', 'Test Game');
+
+      const data = {
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' }
+          // playstation and xbox are missing
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
+      // Missing platforms default to unknown and are removed
+      expect(container.querySelector('[data-platform="playstation"]')).toBeNull();
+      expect(container.querySelector('[data-platform="xbox"]')).toBeNull();
+    });
+
+    it('should remove separator when no icons are visible', () => {
+      const { updateIconsWithData, createIconsContainer } = globalThis.XCPW_ContentTestExports;
+      const container = createIconsContainer('12345', 'Test Game');
+
+      const data = {
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'unavailable' },
+          playstation: { status: 'unavailable' },
+          xbox: { status: 'unavailable' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      expect(container.querySelector('.xcpw-separator')).toBeNull();
+      expect(container.querySelectorAll('[data-platform]').length).toBe(0);
+    });
+
+    it('should keep separator when at least one icon is visible', () => {
+      const { updateIconsWithData, createIconsContainer } = globalThis.XCPW_ContentTestExports;
+      const container = createIconsContainer('12345', 'Test Game');
+
+      const data = {
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'unavailable' },
+          playstation: { status: 'available', storeUrl: 'https://ps.example.com' },
+          xbox: { status: 'unavailable' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      expect(container.querySelector('.xcpw-separator')).toBeTruthy();
+      expect(container.querySelectorAll('[data-platform]').length).toBe(1);
+    });
+  });
+
+  describe('requestPlatformData (exported function)', () => {
+    it('should return response when successful', async () => {
+      const { requestPlatformData } = globalThis.XCPW_ContentTestExports;
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        data: {
+          gameName: 'Test',
+          platforms: { nintendo: { status: 'available' } }
+        }
+      });
+
+      const result = await requestPlatformData('12345', 'Test');
+
+      expect(result).toBeTruthy();
+      expect(result.success).toBe(true);
+      expect(result.data.gameName).toBe('Test');
+    });
+
+    it('should return null when response.success is false', async () => {
+      const { requestPlatformData } = globalThis.XCPW_ContentTestExports;
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: false,
+        data: null
+      });
+
+      const result = await requestPlatformData('12345', 'Test');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when response.data is null', async () => {
+      const { requestPlatformData } = globalThis.XCPW_ContentTestExports;
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        data: null
+      });
+
+      const result = await requestPlatformData('12345', 'Test');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when response is undefined', async () => {
+      const { requestPlatformData } = globalThis.XCPW_ContentTestExports;
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
+
+      const result = await requestPlatformData('12345', 'Test');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null and not throw when service worker errors', async () => {
+      const { requestPlatformData } = globalThis.XCPW_ContentTestExports;
+
+      chrome.runtime.sendMessage.mockRejectedValueOnce(
+        new Error('Extension context invalidated')
+      );
+
+      const result = await requestPlatformData('12345', 'Test');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findInjectionPoint (exported function)', () => {
+    it('should find Steam platform icon by title', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+
+      const group = document.createElement('div');
+      group.className = 'platform-group';
+
+      const span = document.createElement('span');
+      span.title = 'Windows';
+      span.appendChild(document.createElement('svg'));
+      group.appendChild(span);
+
+      item.appendChild(group);
+
+      const result = findInjectionPoint(item);
+
+      expect(result.container).toBe(group);
+    });
+
+    it('should find Steam Deck icon', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+
+      const group = document.createElement('div');
+
+      const span = document.createElement('span');
+      span.title = 'Steam Deck';
+      span.appendChild(document.createElement('svg'));
+      group.appendChild(span);
+
+      item.appendChild(group);
+
+      const result = findInjectionPoint(item);
+
+      expect(result.container).toBe(group);
+    });
+
+    it('should find VR icon', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+
+      const group = document.createElement('div');
+
+      const span = document.createElement('span');
+      span.title = 'VR';
+      span.appendChild(document.createElement('svg'));
+      group.appendChild(span);
+
+      item.appendChild(group);
+
+      const result = findInjectionPoint(item);
+
+      expect(result.container).toBe(group);
+    });
+
+    it('should fall back to SVG group when no title match', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+
+      // Create span with title that doesn't match Steam platforms
+      const span = document.createElement('span');
+      span.title = 'Random Title';
+      item.appendChild(span);
+
+      // Create SVG group
+      const svgGroup = document.createElement('div');
+      for (let i = 0; i < 3; i++) {
+        const wrapper = document.createElement('span');
+        wrapper.appendChild(document.createElement('svg'));
+        svgGroup.appendChild(wrapper);
+      }
+      item.appendChild(svgGroup);
+
+      const result = findInjectionPoint(item);
+
+      expect(result.container).toBe(svgGroup);
+    });
+
+    it('should return item itself as fallback when no valid container', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+      item.textContent = 'No icons here';
+
+      const result = findInjectionPoint(item);
+
+      expect(result.container).toBe(item);
+      expect(result.insertAfter).toBeNull();
+    });
+
+    it('should skip span with title when parent is item itself', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+
+      // Span directly in item (no valid parent group)
+      const span = document.createElement('span');
+      span.title = 'Windows';
+      span.appendChild(document.createElement('svg'));
+      item.appendChild(span);
+
+      const result = findInjectionPoint(item);
+
+      // Should fall back since parent is item itself
+      expect(result.container).toBe(item);
+    });
+
+    it('should find largest SVG group when multiple groups exist', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+      const item = document.createElement('div');
+
+      // Small group with 1 SVG
+      const smallGroup = document.createElement('div');
+      const wrapper1 = document.createElement('span');
+      wrapper1.appendChild(document.createElement('svg'));
+      smallGroup.appendChild(wrapper1);
+      item.appendChild(smallGroup);
+
+      // Large group with 3 SVGs
+      const largeGroup = document.createElement('div');
+      for (let i = 0; i < 3; i++) {
+        const wrapper = document.createElement('span');
+        wrapper.appendChild(document.createElement('svg'));
+        largeGroup.appendChild(wrapper);
+      }
+      item.appendChild(largeGroup);
+
+      const result = findInjectionPoint(item);
+
+      expect(result.container).toBe(largeGroup);
+    });
+  });
+
+  describe('createPlatformIcon (exported function)', () => {
+    it('should create anchor for available status', () => {
+      const { createPlatformIcon } = globalThis.XCPW_ContentTestExports;
+
+      const icon = createPlatformIcon('nintendo', 'available', 'Test Game', 'https://ns.example.com');
+
+      expect(icon.tagName).toBe('A');
+      expect(icon.classList.contains('xcpw-available')).toBe(true);
+      expect(icon.getAttribute('href')).toBe('https://ns.example.com');
+      expect(icon.getAttribute('target')).toBe('_blank');
+    });
+
+    it('should create anchor for unknown status (links to search)', () => {
+      const { createPlatformIcon } = globalThis.XCPW_ContentTestExports;
+
+      const icon = createPlatformIcon('playstation', 'unknown', 'Test Game');
+
+      expect(icon.tagName).toBe('A');
+      expect(icon.classList.contains('xcpw-unknown')).toBe(true);
+      expect(icon.getAttribute('href')).toContain('Test%20Game');
+    });
+
+    it('should create span for unavailable status (not clickable)', () => {
+      const { createPlatformIcon } = globalThis.XCPW_ContentTestExports;
+
+      const icon = createPlatformIcon('xbox', 'unavailable', 'Test Game');
+
+      expect(icon.tagName).toBe('SPAN');
+      expect(icon.classList.contains('xcpw-unavailable')).toBe(true);
+      expect(icon.hasAttribute('href')).toBe(false);
+    });
+
+    it('should use store URL builder when no storeUrl provided', () => {
+      const { createPlatformIcon } = globalThis.XCPW_ContentTestExports;
+
+      const icon = createPlatformIcon('nintendo', 'available', 'Hollow Knight');
+
+      expect(icon.getAttribute('href')).toContain('Hollow%20Knight');
+    });
+
+    it('should include SVG in icon', () => {
+      const { createPlatformIcon } = globalThis.XCPW_ContentTestExports;
+
+      const icon = createPlatformIcon('nintendo', 'available', 'Test');
+
+      expect(icon.querySelector('svg')).toBeTruthy();
+    });
+  });
+
+  describe('createIconsContainer (exported function)', () => {
+    it('should create container with all platforms in loading state', () => {
+      const { createIconsContainer } = globalThis.XCPW_ContentTestExports;
+
+      const container = createIconsContainer('12345', 'Test Game');
+
+      expect(container.classList.contains('xcpw-platforms')).toBe(true);
+      expect(container.getAttribute('data-appid')).toBe('12345');
+      expect(container.querySelectorAll('.xcpw-loading').length).toBe(3);
+      expect(container.querySelector('.xcpw-separator')).toBeTruthy();
+    });
+
+    it('should include all three platform icons', () => {
+      const { createIconsContainer } = globalThis.XCPW_ContentTestExports;
+
+      const container = createIconsContainer('12345', 'Test Game');
+
+      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
+      expect(container.querySelector('[data-platform="playstation"]')).toBeTruthy();
+      expect(container.querySelector('[data-platform="xbox"]')).toBeTruthy();
     });
   });
 });

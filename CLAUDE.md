@@ -118,7 +118,8 @@ All store URLs auto-redirect to the user's local store:
 
 ## Testing Data
 
-Eight games have manual overrides in `cache.js` for development testing:
+Eight games have manual overrides in `cache.js` for development testing.
+**Note:** Overrides only work when `CACHE_DEBUG = true` in `src/cache.js`.
 
 | Appid | Game | NS | PS | XB |
 |-------|------|----|----|-----|
@@ -146,6 +147,7 @@ Each module has a debug flag at the top:
 const DEBUG = false;           // src/content.js
 const RESOLVER_DEBUG = false;  // src/resolver.js
 const WIKIDATA_DEBUG = false;  // src/wikidataClient.js
+const CACHE_DEBUG = false;     // src/cache.js (enables manual test overrides)
 ```
 
 Set to `true` for verbose logging during development.
@@ -154,7 +156,7 @@ Set to `true` for verbose logging during development.
 
 | File | Lines | Functions |
 |------|-------|-----------|
-| src/cache.js | 95% | 100% |
+| src/cache.js | 90% | 80% |
 | src/resolver.js | 90% | 100% |
 | src/wikidataClient.js | 90% | 90% |
 | src/background.js | 90% | 80% |
@@ -178,15 +180,11 @@ This ensures the roadmap stays current and future agents know what's been done.
 
 ## Future Roadmap Ideas
 
-See `ROADMAP.md` for detailed specifications of:
-- Critical bugs and documentation issues
-- Performance and reliability improvements
-- Feature enhancements with risk assessments
-- Technical debt items
-
-Quick highlights:
-- Steam Deck verification status
-- Popup UI for quick access
+See `ROADMAP.md` for detailed specifications. Focus areas:
+- **Console platform availability** (Nintendo/PS/Xbox) - core differentiator
 - User preferences for platform visibility
-- Batch Wikidata queries for efficiency
+- Steam Deck + ProtonDB tiers (opt-in)
+- HLTB integration for backlog prioritization
 - Firefox/Edge browser support
+
+Note: Features like price history, game notes, and wishlist categories were evaluated and declined - established extensions (Augmented Steam, SteamDB) already implement them well. See `ROADMAP.md` "Declined Features" section for details.

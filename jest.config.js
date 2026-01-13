@@ -29,11 +29,12 @@ module.exports = {
       statements: 65
     },
     // Stricter thresholds for well-tested modules
+    // Note: cache.js thresholds reduced after CACHE_DEBUG=false gating of test overrides
     './src/cache.js': {
-      branches: 85,
-      functions: 100,
-      lines: 95,
-      statements: 95
+      branches: 65,
+      functions: 80,
+      lines: 90,
+      statements: 85
     },
     './src/types.js': {
       branches: 25,
