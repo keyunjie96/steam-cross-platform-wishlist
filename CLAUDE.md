@@ -144,6 +144,12 @@ Eight games have manual overrides in `cache.js` for development testing.
 - **Privacy**: Wikidata queries for platform data, cache in local storage, no telemetry
 - **Accessibility**: ARIA labels, focus states, reduced motion support
 
+## Protected Files
+
+**Do NOT modify these files unless explicitly instructed by the user:**
+
+- `jest.config.js` - Test configuration and coverage thresholds are intentionally set. If tests fail coverage thresholds, add more tests instead of lowering thresholds.
+
 ## Debug Flags
 
 Each module has a debug flag at the top:

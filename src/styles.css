@@ -135,9 +135,21 @@
   display: none;
 }
 
-/* Loading state animation */
+/* Loading state animation (legacy - kept for backwards compatibility) */
 .xcpw-platform-icon.xcpw-loading {
   animation: xcpw-pulse 1s ease-in-out infinite;
+}
+
+/* Single subtle loader - replaces 4 pulsing icons for cleaner UX */
+.xcpw-loader {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  animation: xcpw-pulse 1s ease-in-out infinite;
+  vertical-align: middle;
 }
 
 @keyframes xcpw-pulse {
@@ -194,6 +206,11 @@
   }
 
   .xcpw-platform-icon.xcpw-loading {
+    animation: none;
+    opacity: 0.4;
+  }
+
+  .xcpw-loader {
     animation: none;
     opacity: 0.4;
   }

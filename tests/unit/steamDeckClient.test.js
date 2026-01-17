@@ -237,5 +237,31 @@ describe('steamDeckClient.js', () => {
             expect(result).toBeInstanceOf(Map);
             expect(result.size).toBe(0);
         });
+
+        it('should return empty Map when script injection fails', async () => {
+            jest.resetModules();
+
+            // Mock script element to trigger onerror instead of onload
+            const originalCreateElement = document.createElement.bind(document);
+            jest.spyOn(document, 'createElement').mockImplementation((tagName) => {
+                const element = originalCreateElement(tagName);
+                if (tagName === 'script') {
+                    // Trigger onerror immediately after append to simulate load failure
+                    setTimeout(() => {
+                        element.onerror && element.onerror(new Error('Load failed'));
+                    }, 0);
+                }
+                return element;
+            });
+
+            // Reload the module with new mock
+            require('../../src/steamDeckClient.js');
+            const SteamDeck = globalThis.XCPW_SteamDeck;
+
+            const result = await SteamDeck.waitForDeckData(100);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.size).toBe(0);
+        });
     });
 });

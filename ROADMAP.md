@@ -14,11 +14,7 @@
 
 ## Bugs (Necessity: 8)
 
-### BUG-3: Icons disappear when wishlist filter is applied
-**File:** `src/content.js`
-**Issue:** When Steam wishlist filters are applied (e.g., "On Sale", "Steam Deck Verified", platform filters), all of our injected console icons disappear.
-**Root Cause:** Steam's filter functionality re-renders the DOM, removing our injected icons. The MutationObserver should detect these changes, but may not be triggering correctly for filtered view re-renders.
-**Fix:** Investigate how Steam's filter affects the DOM and ensure our MutationObserver properly handles filtered view re-renders. May need to re-process items after filter changes. However, when Steam built-in Steamdeck filter is applied, our added Steamdeck icons should be hidden.
+*No pending bugs.*
 
 ---
 
@@ -44,17 +40,6 @@
 ---
 
 ## Feature Enhancements
-
-### UX-1: Refine icon loading state
-**Priority:** P2 (Visual Polish)
-**Files:** `src/content.js`, `src/styles.css`
-**Issue:** When page loads, all 4 platform icons appear in "loading" (dimmed) state, then snap to reality. This causes visual noise and layout shift.
-**Fix:**
-1. Default to hidden or single subtle loader instead of 4 placeholders.
-2. Only render specific platform icons once data is resolved.
-3. Update `createIconsContainer` to return empty/loading container.
-4. Update `updateIconsWithData` to inject icons dynamically.
-**Risk:** Low - purely restart of rendering logic.
 
 ### FEAT-9: ChromeOS support via ProtonDB
 **Priority:** P3 (Low Value)
@@ -176,6 +161,9 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] FEAT-1: Steam Deck Verified status (via page SSR data extraction)
 - [x] DOC-2: README US store links outdated (fixed: region-agnostic links)
 - [x] REL-1: Misleading initialization log (now says "Started processing items")
+- [x] BUG-3: Icons disappear when wishlist filter is applied (fixed: dual-strategy item detection)
+- [x] UX-1: Refine icon loading state (fixed: single loader, dynamic icon injection)
+- [x] LIFECYCLE-1: Icon lifecycle management (fixed: cleanupAllIcons on URL change, stale container validation, strengthened duplicate prevention)
 
 ---
 
@@ -183,7 +171,6 @@ Features below were evaluated and declined because established extensions (Augme
 
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
-| UX-1 | Improve loading state | 7 | 10 | 70 | Low |
 | FEAT-2 | User preferences | 6 | 9 | 54 | Low |
 | FEAT-8 | Firefox/Edge | 5 | 6 | 30 | Medium |
 | FEAT-9 | ChromeOS/ProtonDB | 4 | 5 | 20 | Medium |

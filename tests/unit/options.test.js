@@ -443,6 +443,25 @@ describe('options.js', () => {
       resolveMessage({ success: true });
       await jest.advanceTimersByTimeAsync(0);
     });
+
+    it('should restore original text when loading completes', async () => {
+      const originalText = clearCacheBtn.textContent;
+
+      // Mock both CLEAR_CACHE and the subsequent GET_CACHE_STATS call
+      chrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true }) // CLEAR_CACHE
+        .mockResolvedValueOnce({ success: true, count: 0, oldestEntry: null }); // GET_CACHE_STATS
+
+      clearCacheBtn.click();
+
+      // Wait for the async operations to complete
+      await jest.advanceTimersByTimeAsync(0);
+      await jest.advanceTimersByTimeAsync(0);
+
+      // After completion, original text should be restored
+      expect(clearCacheBtn.textContent).toBe(originalText);
+      expect(clearCacheBtn.disabled).toBe(false);
+    });
   });
 
   describe('loadSettings', () => {

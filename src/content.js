@@ -16,6 +16,62 @@ const DEBUG = false; // Set to true for verbose debugging
 /** Set of appids that have been processed to avoid duplicate logging */
 const processedAppIds = new Set();
 
+/** Track URL for detecting filter changes (Steam uses client-side routing) */
+let lastUrl = location.href;
+
+/** Debounce timer for MutationObserver to batch DOM updates */
+let observerDebounceTimer = null;
+
+/** Timer for debounced URL change handling */
+let urlChangeDebounceTimer = null;
+
+/** Delay before processing after URL change (let React settle) */
+const URL_CHANGE_DEBOUNCE_MS = 200;
+
+/**
+ * Removes all injected icon elements and clears tracking state.
+ * Called on URL changes (filter/sort) to prevent orphaned icons.
+ * This is critical because Steam's React-based UI can detach our containers
+ * while keeping them in shared parent elements.
+ */
+function cleanupAllIcons() {
+  // Clear any pending batch timer (prevent stale batch from firing)
+  if (batchDebounceTimer) {
+    clearTimeout(batchDebounceTimer);
+    batchDebounceTimer = null;
+  }
+
+  // Remove all icon containers from DOM
+  document.querySelectorAll('.xcpw-platforms').forEach(el => el.remove());
+
+  // Clear tracking state
+  injectedAppIds.clear();
+  processedAppIds.clear();
+
+  // Clear pending batch (stale container references)
+  pendingItems.clear();
+
+  // Clear processed attributes
+  document.querySelectorAll(`[${PROCESSED_ATTR}]`).forEach(el => {
+    el.removeAttribute(PROCESSED_ATTR);
+  });
+  document.querySelectorAll(`[${ICONS_INJECTED_ATTR}]`).forEach(el => {
+    el.removeAttribute(ICONS_INJECTED_ATTR);
+  });
+
+  if (DEBUG) console.log(`${LOG_PREFIX} Cleanup complete - all icons and tracking state cleared`);
+}
+
+/**
+ * Checks if Steam's Deck Verified filter is currently active.
+ * When this filter is on, we hide our own Deck icons to avoid redundancy.
+ * @returns {boolean}
+ */
+function checkDeckFilterActive() {
+  const url = new URL(location.href);
+  return url.searchParams.has('deck_filters');
+}
+
 /** All available platforms in display order */
 const ALL_PLATFORMS = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
@@ -28,13 +84,18 @@ let userSettings = {
 let steamDeckData = null;
 
 /**
- * Gets the list of enabled platforms based on user settings
+ * Gets the list of enabled platforms based on user settings and current URL.
+ * Hides Steam Deck icons when Steam's native Deck filter is active (deck_filters URL param)
+ * to avoid redundancy with Steam's built-in Deck badges.
  * @returns {string[]}
  */
 function getEnabledPlatforms() {
+  const isDeckFilterActive = checkDeckFilterActive();
+
   return ALL_PLATFORMS.filter(platform => {
     if (platform === 'steamdeck') {
-      return userSettings.showSteamDeck;
+      // Hide our Deck icons when Steam's Deck filter is active (shows native badges)
+      return userSettings.showSteamDeck && !isDeckFilterActive;
     }
     return true; // Other platforms always shown
   });
@@ -86,6 +147,67 @@ function extractAppId(item) {
   }
 
   return null;
+}
+
+// ============================================================================
+// Filtered View Detection
+// ============================================================================
+
+/**
+ * Walks up from a link element to find its parent wishlist row.
+ * In filtered view, rows don't have data-rfd-draggable-id, so we use heuristics.
+ * @param {Element} link - An app link element
+ * @returns {Element | null} - The row element or null
+ */
+function findWishlistRow(link) {
+  let current = link.parentElement;
+  let depth = 0;
+
+  while (current && depth < 10) {
+    // Row-like elements typically have role="button" or contain platform SVGs
+    const isRowLike = current.getAttribute('role') === 'button' ||
+                      (current.tagName === 'DIV' && current.querySelector('svg'));
+
+    // Must contain an app link and not be the body
+    if (isRowLike && current.querySelector('a[href*="/app/"]') && current !== document.body) {
+      return current;
+    }
+    current = current.parentElement;
+    depth++;
+  }
+  return null;
+}
+
+/**
+ * Finds all unprocessed wishlist items using multiple strategies.
+ * Strategy 1: Unfiltered view (data-rfd-draggable-id attribute)
+ * Strategy 2: Filtered view (walk up from app links)
+ * @param {Element} root - The root element to search in
+ * @returns {Element[]} - Array of wishlist item elements
+ */
+function findWishlistItems(root = document) {
+  const items = new Map();
+
+  // Strategy 1: Unfiltered view (existing selector - most reliable)
+  root.querySelectorAll(`[data-rfd-draggable-id^="WishlistItem-"]:not([${PROCESSED_ATTR}])`)
+    .forEach(item => {
+      const appid = extractAppId(item);
+      if (appid) items.set(appid, item);
+    });
+
+  // Strategy 2: Filtered view - find app links and walk up to row
+  root.querySelectorAll('a[href*="/app/"]').forEach(link => {
+    // Skip links that are inside already-processed items or our own icons
+    if (link.closest(`[${PROCESSED_ATTR}]`) || link.closest('.xcpw-platforms')) return;
+
+    const row = findWishlistRow(link);
+    if (row && !row.hasAttribute(PROCESSED_ATTR)) {
+      const appid = extractAppId(row);
+      if (appid && !items.has(appid)) items.set(appid, row);
+    }
+  });
+
+  return Array.from(items.values());
 }
 
 /** Price/discount pattern to filter out non-title text */
@@ -161,7 +283,9 @@ function parseSvg(svgString) {
 // ============================================================================
 
 /**
- * Creates the platform icons container with initial loading state
+ * Creates the platform icons container with a subtle loading indicator.
+ * Icons are added dynamically in updateIconsWithData() once data is resolved.
+ * This prevents visual noise from showing 4 pulsing icons that then disappear.
  * @param {string} appid
  * @param {string} gameName
  * @returns {HTMLElement}
@@ -170,19 +294,13 @@ function createIconsContainer(appid, gameName) {
   const container = document.createElement('span');
   container.className = 'xcpw-platforms';
   container.setAttribute('data-appid', appid);
+  container.setAttribute('data-game-name', gameName);
 
-  // Add separator
-  const separator = document.createElement('span');
-  separator.className = 'xcpw-separator';
-  container.appendChild(separator);
-
-  // Add platform icons in loading state (only enabled platforms)
-  const enabledPlatforms = getEnabledPlatforms();
-  for (const platform of enabledPlatforms) {
-    const icon = createPlatformIcon(platform, 'unknown', gameName);
-    icon.classList.add('xcpw-loading');
-    container.appendChild(icon);
-  }
+  // Single subtle loader instead of 4 platform icons
+  const loader = document.createElement('span');
+  loader.className = 'xcpw-loader';
+  loader.setAttribute('aria-hidden', 'true');
+  container.appendChild(loader);
 
   return container;
 }
@@ -231,42 +349,34 @@ function createPlatformIcon(platform, status, gameName, storeUrl, tier) {
 
 /**
  * Updates the icons container with platform data from cache.
+ * Dynamically adds icons for available platforms (none exist initially).
  * Steam Deck icons are fetched separately from Steam's store pages.
  * Only shows icons for platforms where the game is available:
  * - available: Full opacity, clickable - opens store page
- * - unavailable: Dimmed, shows issues
- * - unknown: Hidden
+ * - unavailable/unknown: Hidden (not displayed)
  * @param {HTMLElement} container
  * @param {Object} data - Cache entry with platform data
  */
 function updateIconsWithData(container, data) {
-  const gameName = data.gameName;
+  const gameName = data.gameName || container.getAttribute('data-game-name');
   const appid = container.getAttribute('data-appid');
-  let hasVisibleIcons = false;
   const enabledPlatforms = getEnabledPlatforms();
+  const iconsToAdd = [];
 
   // Get Steam Deck client if available
   const SteamDeck = globalThis.XCPW_SteamDeck;
 
   for (const platform of enabledPlatforms) {
-    const oldIcon = container.querySelector(`[data-platform="${platform}"]`);
-    if (!oldIcon) continue;
-
     // Special handling for Steam Deck - use pre-extracted SSR data
     if (platform === 'steamdeck' && SteamDeck && appid && steamDeckData) {
       const deckResult = SteamDeck.getDeckStatus(steamDeckData, appid);
       const displayStatus = SteamDeck.statusToDisplayStatus(deckResult.status);
 
-      // Hide unknown/unsupported Steam Deck games
-      if (displayStatus === 'unknown') {
-        oldIcon.remove();
-        continue;
+      // Skip unknown/unsupported Steam Deck games
+      if (displayStatus !== 'unknown') {
+        const icon = createPlatformIcon(platform, displayStatus, gameName, null, deckResult.status);
+        iconsToAdd.push(icon);
       }
-
-      // Show verified (available) or playable (unavailable) with appropriate styling
-      const newIcon = createPlatformIcon(platform, displayStatus, gameName, null, deckResult.status);
-      oldIcon.replaceWith(newIcon);
-      hasVisibleIcons = true;
       continue;
     }
 
@@ -275,33 +385,38 @@ function updateIconsWithData(container, data) {
     const status = platformData?.status || 'unknown';
     const storeUrl = platformData?.storeUrl;
 
-    // Only show icons for available platforms
+    // Only add icons for available platforms
     if (status === 'available') {
-      const newIcon = createPlatformIcon(platform, status, gameName, storeUrl);
-      oldIcon.replaceWith(newIcon);
-      hasVisibleIcons = true;
-    } else {
-      // Hide unavailable/unknown platforms
-      oldIcon.remove();
+      const icon = createPlatformIcon(platform, status, gameName, storeUrl);
+      iconsToAdd.push(icon);
     }
   }
 
-  // Hide separator if no icons are visible
-  if (!hasVisibleIcons) {
-    const separator = container.querySelector('.xcpw-separator');
-    if (separator) separator.remove();
+  // Remove the loader
+  const loader = container.querySelector('.xcpw-loader');
+  if (loader) loader.remove();
+
+  // Only add separator and icons if we have visible icons
+  if (iconsToAdd.length > 0) {
+    const separator = document.createElement('span');
+    separator.className = 'xcpw-separator';
+    container.appendChild(separator);
+
+    for (const icon of iconsToAdd) {
+      container.appendChild(icon);
+    }
   }
 }
 
 /**
- * Removes loading state from icons, keeping them as unknown.
- * Icons remain visible and clickable, linking to store search pages.
+ * Removes loading state from container when data fetch fails.
+ * Since we now use a single loader, this just removes the loader element.
+ * The container will be empty (no icons shown) on failure.
  * @param {HTMLElement} container - Icons container element
  */
 function removeLoadingState(container) {
-  for (const icon of container.querySelectorAll('.xcpw-loading')) {
-    icon.classList.remove('xcpw-loading');
-  }
+  const loader = container.querySelector('.xcpw-loader');
+  if (loader) loader.remove();
 }
 
 /** Steam platform icon title patterns */
@@ -462,6 +577,14 @@ async function processPendingBatch() {
         if (!itemInfo) continue;
 
         const { container, gameName } = itemInfo;
+
+        // Before updating, verify container is still in DOM (BUG-6, BUG-12)
+        // Container may have been detached by React re-render or filter change
+        if (!document.body.contains(container)) {
+          if (DEBUG) console.log(`${LOG_PREFIX} Skipping stale container for ${appid}`);
+          continue;
+        }
+
         if (result.data) {
           if (DEBUG) console.log(`${LOG_PREFIX} Updating icons for appid ${appid}`);
           updateIconsWithData(container, result.data);
@@ -509,6 +632,13 @@ const INJECTION_BASE_DELAY_MS = 150;
  */
 async function waitForInjectionPoint(item) {
   for (let attempt = 0; attempt <= INJECTION_MAX_RETRIES; attempt++) {
+    // Check if item is still in DOM (BUG-5, BUG-12)
+    // Item may have been removed by React re-render during our wait
+    if (!document.body.contains(item)) {
+      if (DEBUG) console.log(`${LOG_PREFIX} Item removed from DOM during wait`);
+      return null;
+    }
+
     if (item.querySelector('svg[class*="SVGIcon_"]')) {
       return findInjectionPoint(item);
     }
@@ -529,25 +659,44 @@ async function processItem(item) {
     return;
   }
 
-  // Mark as processed immediately to prevent duplicate processing
-  item.setAttribute(PROCESSED_ATTR, 'true');
-
   const appId = extractAppId(item);
   if (!appId) {
     return;
   }
+
+  // Check if icons actually exist in DOM for this item
+  const iconsExistInDom = item.querySelector('.xcpw-platforms');
+
+  // If injectedAppIds thinks icons exist, verify they're actually in DOM
+  // React virtualization can destroy DOM elements, desync'ing our tracking state
+  if (injectedAppIds.has(appId)) {
+    if (iconsExistInDom) {
+      // Icons actually exist - skip processing
+      if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - icons verified in DOM`);
+      item.setAttribute(PROCESSED_ATTR, 'true');
+      return;
+    } else {
+      // State desync: injectedAppIds says injected, but icons are gone (React destroyed them)
+      // Remove from tracking so we can re-inject
+      if (DEBUG) console.log(`${LOG_PREFIX} Re-injecting ${appId} - React destroyed icons`);
+      injectedAppIds.delete(appId);
+    }
+  } else if (iconsExistInDom) {
+    // Icons exist but not tracked - sync our state
+    if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - icons already in DOM (syncing)`);
+    injectedAppIds.add(appId);
+    item.setAttribute(PROCESSED_ATTR, 'true');
+    return;
+  }
+
+  // Mark as processed immediately to prevent duplicate processing
+  item.setAttribute(PROCESSED_ATTR, 'true');
 
   // Log new appids (deduplicated) - only on first discovery
   const isNewAppId = !processedAppIds.has(appId);
   if (isNewAppId) {
     processedAppIds.add(appId);
     console.log(`${LOG_PREFIX} Found appid: ${appId}`);
-  }
-
-  // Skip if icons already exist in DOM (React may have recreated the element)
-  // Check both our tracking set AND the DOM for existing icons
-  if (item.querySelector('.xcpw-platforms')) {
-    return;
   }
 
   const gameName = extractGameName(item);
@@ -582,10 +731,10 @@ async function processItem(item) {
 
 /**
  * Finds and processes all wishlist items in a given root element.
+ * Uses multiple detection strategies to support both unfiltered and filtered views.
  */
 function processWishlistItems(root = document) {
-  const selector = '[data-rfd-draggable-id^="WishlistItem-"]:not([' + PROCESSED_ATTR + '])';
-  const items = root.querySelectorAll(selector);
+  const items = findWishlistItems(root);
   items.forEach(item => processItem(item));
 }
 
@@ -595,22 +744,20 @@ function processWishlistItems(root = document) {
 
 /**
  * Sets up a MutationObserver for infinite scroll / virtualized list loading.
+ * Uses debouncing to batch rapid DOM updates (e.g., during scroll virtualization).
  */
 function setupObserver() {
   const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (node instanceof Element) {
-          // Check if the node itself is a wishlist item
-          if (node.hasAttribute?.('data-rfd-draggable-id') &&
-            node.getAttribute('data-rfd-draggable-id')?.startsWith('WishlistItem-')) {
-            processItem(node);
-          }
-          // Also check descendants
-          processWishlistItems(node);
-        }
-      }
-    }
+    // Only process if there are actually new nodes added
+    const hasNewNodes = mutations.some(m => m.addedNodes.length > 0);
+    if (!hasNewNodes) return;
+
+    // Debounce to batch rapid updates during scroll/filter changes
+    if (observerDebounceTimer) clearTimeout(observerDebounceTimer);
+
+    observerDebounceTimer = setTimeout(() => {
+      processWishlistItems();
+    }, 50);
   });
 
   // Observe the entire body since the wishlist uses virtualization
@@ -652,6 +799,40 @@ async function init() {
   // Set up observer for dynamic content
   setupObserver();
 
+  // Monitor URL changes for filter changes (Steam uses client-side routing)
+  // When filters change, we need to re-process items since the DOM structure changes
+  setInterval(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      if (DEBUG) console.log(`${LOG_PREFIX} URL changed, scheduling cleanup and re-processing`);
+
+      // Full cleanup immediately (remove old icons)
+      // Prevents orphaned icons and stale references (BUG-1, BUG-2, BUG-5, BUG-6)
+      cleanupAllIcons();
+
+      // Clear any existing debounce timer
+      if (urlChangeDebounceTimer) {
+        clearTimeout(urlChangeDebounceTimer);
+      }
+
+      // Debounce the processing to let React finish re-rendering
+      urlChangeDebounceTimer = setTimeout(async () => {
+        urlChangeDebounceTimer = null;
+        if (DEBUG) console.log(`${LOG_PREFIX} Processing after URL change debounce`);
+
+        // Refresh Steam Deck data (SSR may have updated with new filter results)
+        if (userSettings.showSteamDeck) {
+          const SteamDeck = globalThis.XCPW_SteamDeck;
+          if (SteamDeck) {
+            steamDeckData = await SteamDeck.waitForDeckData();
+          }
+        }
+
+        processWishlistItems();
+      }, URL_CHANGE_DEBOUNCE_MS);
+    }
+  }, 500);
+
   console.log(`${LOG_PREFIX} Initialization complete. Started processing items.`);
 }
 
@@ -676,6 +857,25 @@ if (typeof globalThis !== 'undefined') {
     parseSvg,
     removeLoadingState,
     findInjectionPoint,
-    requestPlatformData
+    requestPlatformData,
+    // New exports for BUG-3 fixes
+    findWishlistRow,
+    findWishlistItems,
+    checkDeckFilterActive,
+    // Icon lifecycle management exports (BUG-1, BUG-2, BUG-5, BUG-6, BUG-12)
+    cleanupAllIcons,
+    injectedAppIds,
+    processedAppIds,
+    // Timer exports for testing (getters since they're reassigned primitives)
+    getBatchDebounceTimer: () => batchDebounceTimer,
+    getUrlChangeDebounceTimer: () => urlChangeDebounceTimer,
+    setBatchDebounceTimer: (val) => { batchDebounceTimer = val; },
+    URL_CHANGE_DEBOUNCE_MS,
+    // Additional exports for coverage testing
+    processItem,
+    waitForInjectionPoint,
+    loadUserSettings,
+    setSteamDeckData: (val) => { steamDeckData = val; },
+    getSteamDeckData: () => steamDeckData
   };
 }

@@ -18,59 +18,13 @@ module.exports = {
     '!coverage/**'
   ],
 
-  // Coverage thresholds
-  // Note: Global thresholds accommodate DOM-heavy content.js (many fallback branches)
-  // Per-file thresholds ensure critical modules maintain high coverage
+  // Coverage thresholds (unified for all files)
   coverageThreshold: {
     global: {
-      branches: 40,
-      functions: 90,
-      lines: 65,
-      statements: 65
-    },
-    // Stricter thresholds for well-tested modules
-    // Note: cache.js thresholds reduced after CACHE_DEBUG=false gating of test overrides
-    './src/cache.js': {
-      branches: 65,
-      functions: 80,
-      lines: 90,
-      statements: 85
-    },
-    './src/types.js': {
-      branches: 25,
-      functions: 100,
-      lines: 75,
-      statements: 75
-    },
-    './src/icons.js': {
-      branches: 50,
-      functions: 100,
-      lines: 100,
-      statements: 100
-    },
-    './src/resolver.js': {
-      branches: 70,
-      functions: 100,
-      lines: 90,
-      statements: 90
-    },
-    './src/wikidataClient.js': {
-      branches: 85,
-      functions: 90,
-      lines: 90,
-      statements: 90
-    },
-    './src/background.js': {
-      branches: 85,
-      functions: 80,
-      lines: 90,
-      statements: 90
-    },
-    './src/options.js': {
-      branches: 85,
-      functions: 100,
-      lines: 100,
-      statements: 100
+      statements: 80,
+      branches: 75,
+      functions: 85,
+      lines: 80
     }
   },
 
