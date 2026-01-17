@@ -218,8 +218,6 @@ export type DeckStatus = 'unknown' | 'unsupported' | 'playable' | 'verified';
 
 // Export globally for content scripts (ES modules not fully supported in Chrome extensions)
 // Only set if not already defined (allows mocking in tests)
-if (typeof globalThis !== 'undefined' && !globalThis.XCPW_StoreUrls) {
+if (!globalThis.XCPW_StoreUrls) {
   globalThis.XCPW_StoreUrls = StoreUrls;
-} else if (typeof window !== 'undefined' && !window.XCPW_StoreUrls) {
-  window.XCPW_StoreUrls = StoreUrls;
 }
