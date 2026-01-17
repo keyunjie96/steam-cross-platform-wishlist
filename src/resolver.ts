@@ -12,30 +12,33 @@
  * not through this resolver.
  */
 
+import type { Platform, PlatformStatus, CacheEntry, PlatformData, WikidataResult, WikidataStoreIds } from './types';
+import { StoreUrls as TypeStoreUrls } from './types';
+
 const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
 const RESOLVER_DEBUG = false;
 
 // Helper to get PLATFORMS - uses cache module in service worker, fallback for tests
-function getPlatforms() {
+function getPlatforms(): Platform[] {
   return globalThis.XCPW_Cache?.PLATFORMS || ['nintendo', 'playstation', 'xbox'];
+}
+
+// Use globalThis.XCPW_StoreUrls for testability, fallback to imported StoreUrls
+function getStoreUrls(): typeof TypeStoreUrls {
+  return globalThis.XCPW_StoreUrls || TypeStoreUrls;
 }
 
 /**
  * Checks if a string looks like a Wikidata QID (e.g., "Q123456")
- * @param {string} str
- * @returns {boolean}
  */
-function isWikidataQID(str) {
+function isWikidataQID(str: string): boolean {
   return /^Q\d+$/.test(str);
 }
 
 /**
  * Gets platform status from Wikidata result
- * @param {boolean} available
- * @param {boolean} foundInWikidata
- * @returns {'available' | 'unavailable' | 'unknown'}
  */
-function getPlatformStatus(available, foundInWikidata) {
+function getPlatformStatus(available: boolean, foundInWikidata: boolean): PlatformStatus {
   if (!foundInWikidata) {
     return 'unknown';
   }
@@ -44,11 +47,9 @@ function getPlatformStatus(available, foundInWikidata) {
 
 /**
  * Creates a platform data object for all platforms
- * @param {function(string): {status: string, storeUrl: string}} platformMapper
- * @returns {Record<string, {status: string, storeUrl: string}>}
  */
-function createPlatformsObject(platformMapper) {
-  const platforms = {};
+function createPlatformsObject(platformMapper: (platform: Platform) => PlatformData): Record<Platform, PlatformData> {
+  const platforms = {} as Record<Platform, PlatformData>;
   for (const platform of getPlatforms()) {
     platforms[platform] = platformMapper(platform);
   }
@@ -58,13 +59,9 @@ function createPlatformsObject(platformMapper) {
 /**
  * Creates a fallback cache entry when resolution fails.
  * All platforms marked as "unknown".
- * @param {string} appid
- * @param {string} gameName
- * @returns {import('./types.js').CacheEntry}
  */
-function createFallbackEntry(appid, gameName) {
-  const StoreUrls = globalThis.XCPW_StoreUrls;
-
+function createFallbackEntry(appid: string, gameName: string): CacheEntry {
+  const StoreUrls = getStoreUrls();
   return {
     appid,
     gameName,
@@ -81,14 +78,9 @@ function createFallbackEntry(appid, gameName) {
 
 /**
  * Creates a cache entry from manual override data
- * @param {string} appid
- * @param {string} gameName
- * @param {Object} override
- * @returns {import('./types.js').CacheEntry}
  */
-function createManualOverrideEntry(appid, gameName, override) {
-  const StoreUrls = globalThis.XCPW_StoreUrls;
-
+function createManualOverrideEntry(appid: string, gameName: string, override: Record<Platform, PlatformStatus>): CacheEntry {
+  const StoreUrls = getStoreUrls();
   return {
     appid,
     gameName,
@@ -103,18 +95,12 @@ function createManualOverrideEntry(appid, gameName, override) {
   };
 }
 
-
-
 /**
  * Converts Wikidata result to cache entry format
- * @param {string} appid
- * @param {string} gameName
- * @param {Object} wikidataResult - Result from Wikidata client
- * @returns {import('./types.js').CacheEntry}
  */
-function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
-  const StoreUrls = globalThis.XCPW_StoreUrls;
+function wikidataResultToCacheEntry(appid: string, gameName: string, wikidataResult: WikidataResult): CacheEntry {
   const WikidataClient = globalThis.XCPW_WikidataClient;
+  const StoreUrls = getStoreUrls();
 
   // Use Wikidata game name only if it's not a QID (fallback for missing labels)
   const wikidataName = wikidataResult.gameName;
@@ -122,16 +108,14 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
 
   /**
    * Gets the best URL for a platform - official store URL or search fallback
-   * @param {string} platform
-   * @returns {string}
    */
-  function getUrl(platform) {
+  function getUrl(platform: Platform): string {
     const officialUrl = WikidataClient.getStoreUrl(platform, wikidataResult.storeIds);
     return officialUrl || StoreUrls[platform](displayName);
   }
 
   const platforms = createPlatformsObject((platform) => ({
-    status: getPlatformStatus(wikidataResult.platforms[platform], wikidataResult.found),
+    status: getPlatformStatus(wikidataResult.platforms[platform as keyof typeof wikidataResult.platforms], wikidataResult.found),
     storeUrl: getUrl(platform)
   }));
 
@@ -148,17 +132,14 @@ function wikidataResultToCacheEntry(appid, gameName, wikidataResult) {
 
 /**
  * Updates cache entry with new game name if changed
- * @param {import('./types.js').CacheEntry} cached
- * @param {string} gameName
- * @returns {Promise<import('./types.js').CacheEntry>}
  */
-async function updateCachedEntryIfNeeded(cached, gameName) {
+async function updateCachedEntryIfNeeded(cached: CacheEntry, gameName: string): Promise<CacheEntry> {
   if (cached.gameName === gameName) {
     return cached;
   }
 
-  const StoreUrls = globalThis.XCPW_StoreUrls;
   const Cache = globalThis.XCPW_Cache;
+  const StoreUrls = getStoreUrls();
 
   cached.gameName = gameName;
   // Update search URLs for unknown status only (don't override official URLs)
@@ -171,15 +152,16 @@ async function updateCachedEntryIfNeeded(cached, gameName) {
   return cached;
 }
 
+interface ResolveResult {
+  entry: CacheEntry;
+  fromCache: boolean;
+}
+
 /**
  * Resolves platform availability for a single game.
  * Priority: Cache -> Manual Override -> Wikidata -> Fallback
- *
- * @param {string} appid - Steam application ID
- * @param {string} gameName - Game name
- * @returns {Promise<{entry: import('./types.js').CacheEntry, fromCache: boolean}>}
  */
-async function resolvePlatformData(appid, gameName) {
+async function resolvePlatformData(appid: string, gameName: string): Promise<ResolveResult> {
   if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} resolvePlatformData called: appid=${appid}, gameName=${gameName}`);
 
   const Cache = globalThis.XCPW_Cache;
@@ -239,7 +221,8 @@ async function resolvePlatformData(appid, gameName) {
   } catch (error) {
     // Wikidata query failed (network error, 429, etc.)
     // DON'T cache - allow retry on next page load
-    console.warn(`${RESOLVER_LOG_PREFIX} Wikidata query failed for ${appid}, will retry later:`, error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn(`${RESOLVER_LOG_PREFIX} Wikidata query failed for ${appid}, will retry later:`, errorMessage);
     const entry = createFallbackEntry(appid, gameName);
     return { entry, fromCache: false };
   }
@@ -248,17 +231,14 @@ async function resolvePlatformData(appid, gameName) {
 /**
  * Batch resolves platform availability for multiple games.
  * More efficient for bulk operations.
- *
- * @param {Array<{appid: string, gameName: string}>} games
- * @returns {Promise<Map<string, {entry: import('./types.js').CacheEntry, fromCache: boolean}>>}
  */
-async function batchResolvePlatformData(games) {
+async function batchResolvePlatformData(games: Array<{ appid: string; gameName: string }>): Promise<Map<string, ResolveResult>> {
   const Cache = globalThis.XCPW_Cache;
   const WikidataClient = globalThis.XCPW_WikidataClient;
-  const results = new Map();
+  const results = new Map<string, ResolveResult>();
 
   // 1. Check cache for all games
-  const uncached = [];
+  const uncached: Array<{ appid: string; gameName: string }> = [];
   for (const { appid, gameName } of games) {
     const cached = await Cache.getFromCache(appid);
     if (cached) {
@@ -276,7 +256,7 @@ async function batchResolvePlatformData(games) {
   console.log(`${RESOLVER_LOG_PREFIX} Batch resolving ${uncached.length} games (${games.length - uncached.length} cached)`);
 
   // 2. Check for manual overrides
-  const needsResolution = [];
+  const needsResolution: Array<{ appid: string; gameName: string }> = [];
   for (const { appid, gameName } of uncached) {
     const override = Cache.MANUAL_OVERRIDES?.[appid];
     if (override) {
@@ -304,8 +284,8 @@ async function batchResolvePlatformData(games) {
         ? wikidataResultToCacheEntry(appid, gameName, wikidataResult)
         : wikidataResultToCacheEntry(appid, gameName, {
           found: false,
-          platforms: {},
-          storeIds: {},
+          platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
+          storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null },
           wikidataId: null,
           gameName: gameName
         });
@@ -317,7 +297,8 @@ async function batchResolvePlatformData(games) {
     console.log(`${RESOLVER_LOG_PREFIX} Wikidata batch resolved ${needsResolution.length} games`);
   } catch (error) {
     // Batch query failed - DON'T cache to allow retry
-    console.warn(`${RESOLVER_LOG_PREFIX} Batch resolution failed, will retry later:`, error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn(`${RESOLVER_LOG_PREFIX} Batch resolution failed, will retry later:`, errorMessage);
     for (const { appid, gameName } of needsResolution) {
       if (!results.has(appid)) {
         const entry = createFallbackEntry(appid, gameName);
@@ -331,11 +312,8 @@ async function batchResolvePlatformData(games) {
 
 /**
  * Forces a refresh of platform data, bypassing cache
- * @param {string} appid
- * @param {string} gameName
- * @returns {Promise<{entry: import('./types.js').CacheEntry, fromCache: boolean}>}
  */
-async function forceRefresh(appid, gameName) {
+async function forceRefresh(appid: string, gameName: string): Promise<ResolveResult> {
   const cacheKey = `xcpw_cache_${appid}`;
   await chrome.storage.local.remove(cacheKey);
   return resolvePlatformData(appid, gameName);
@@ -347,4 +325,16 @@ globalThis.XCPW_Resolver = {
   batchResolvePlatformData,
   forceRefresh,
   createFallbackEntry
+};
+
+// Also export for module imports in tests
+export {
+  resolvePlatformData,
+  batchResolvePlatformData,
+  forceRefresh,
+  createFallbackEntry,
+  wikidataResultToCacheEntry,
+  createManualOverrideEntry,
+  isWikidataQID,
+  getPlatformStatus
 };

@@ -1,12 +1,14 @@
-(() => {
-  /**
-   * Steam Cross-Platform Wishlist - Icon Definitions
-   *
-   * SVG icons generated from assets/icons via scripts/normalize_icons.py
-   * Normalized to 16x16 and currentColor for consistent styling.
-   */
+/**
+ * Steam Cross-Platform Wishlist - Icon Definitions
+ *
+ * SVG icons generated from assets/icons via scripts/normalize_icons.py
+ * Normalized to 16x16 and currentColor for consistent styling.
+ */
 
-  const PLATFORM_ICONS = {
+import type { Platform, PlatformStatus } from './types';
+
+(() => {
+  const PLATFORM_ICONS: Record<Platform, string> = {
     // BEGIN GENERATED ICONS (scripts/normalize_icons.py)
     nintendo: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M18.901 32h4.901c4.5 0 8.198-3.698 8.198-8.198v-15.604c0-4.5-3.698-8.198-8.198-8.198h-5c-0.099 0-0.203 0.099-0.203 0.198v31.604c0 0.099 0.099 0.198 0.302 0.198zM25 14.401c1.802 0 3.198 1.5 3.198 3.198 0 1.802-1.5 3.198-3.198 3.198-1.802 0-3.198-1.396-3.198-3.198-0.104-1.797 1.396-3.198 3.198-3.198zM15.198 0h-7c-4.5 0-8.198 3.698-8.198 8.198v15.604c0 4.5 3.698 8.198 8.198 8.198h7c0.099 0 0.203-0.099 0.203-0.198v-31.604c0-0.099-0.099-0.198-0.203-0.198zM12.901 29.401h-4.703c-3.099 0-5.599-2.5-5.599-5.599v-15.604c0-3.099 2.5-5.599 5.599-5.599h4.604zM5 9.599c0 1.698 1.302 3 3 3s3-1.302 3-3c0-1.698-1.302-3-3-3s-3 1.302-3 3z" />
@@ -17,7 +19,7 @@
   </svg>`,
 
     xbox: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.11 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.43 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.1-0.052l-0.003-0.001c-0.1-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.29-4.483 3.39-12.24 11.897-9.886 14.29z" />
+    <path d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.110 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.430 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.100-0.052l-0.003-0.001c-0.100-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.290-4.483 3.390-12.240 11.897-9.886 14.290z" />
   </svg>`,
 
     steamdeck: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 600.75 799.79" fill="currentColor" aria-hidden="true" focusable="false">
@@ -31,10 +33,16 @@
     // END GENERATED ICONS
   };
 
+  interface PlatformInfoEntry {
+    name: string;
+    abbr: string;
+    searchLabel: string;
+  }
+
   /**
    * Platform display names and abbreviations
    */
-  const PLATFORM_INFO = {
+  const PLATFORM_INFO: Record<Platform, PlatformInfoEntry> = {
     nintendo: {
       name: 'Nintendo Switch',
       abbr: 'NS',
@@ -57,27 +65,37 @@
     }
   };
 
+  interface StatusInfoEntry {
+    tooltip: (platform: Platform) => string;
+    className: string;
+  }
+
   /**
    * Creates a status info entry with tooltip and className
    */
-  function createStatusInfo(status, message) {
+  function createStatusInfo(status: PlatformStatus, message: string): StatusInfoEntry {
     return {
-      tooltip: (platform) => `${PLATFORM_INFO[platform].name}: ${message}`,
+      tooltip: (platform: Platform) => `${PLATFORM_INFO[platform].name}: ${message}`,
       className: `xcpw-${status}`
     };
   }
 
-  const STATUS_INFO = {
+  const STATUS_INFO: Record<PlatformStatus, StatusInfoEntry> = {
     available: createStatusInfo('available', 'Available - Click to view'),
     unavailable: createStatusInfo('unavailable', 'Not available'),
     unknown: createStatusInfo('unknown', 'Unknown - Click to search')
   };
 
+  interface SteamDeckTierInfo {
+    label: string;
+    tooltip: string;
+  }
+
   /**
- * Steam Deck Verified tier information
- * Based on Valve's official Steam Deck Verified program
- */
-  const STEAM_DECK_TIERS = {
+   * Steam Deck Verified tier information
+   * Based on Valve's official Steam Deck Verified program
+   */
+  const STEAM_DECK_TIERS: Record<string, SteamDeckTierInfo> = {
     verified: {
       label: 'Verified',
       tooltip: 'Steam Deck Verified - works great'

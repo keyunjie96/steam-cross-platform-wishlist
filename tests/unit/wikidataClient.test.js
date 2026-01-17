@@ -13,7 +13,7 @@ describe('wikidataClient.js', () => {
     global.fetch = mockFetch;
 
     // Load the module
-    require('../../src/wikidataClient.js');
+    require('../../dist/wikidataClient.js');
   });
 
   afterEach(() => {

@@ -42,7 +42,7 @@ describe('steamDeckPageScript.js', () => {
             };
 
             // Load the script
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             // Check that data element was created
             const dataEl = document.getElementById('xcpw-steamdeck-data');
@@ -68,7 +68,7 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -95,7 +95,7 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -122,7 +122,7 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -132,7 +132,7 @@ describe('steamDeckPageScript.js', () => {
 
         it('should handle missing SSR gracefully', () => {
             // No window.SSR set
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -148,7 +148,7 @@ describe('steamDeckPageScript.js', () => {
             };
 
             // Should not throw
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -171,7 +171,7 @@ describe('steamDeckPageScript.js', () => {
                 ]
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -200,7 +200,7 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);

@@ -76,7 +76,7 @@ describe('content.js', () => {
     });
 
     // Load content.js - this will run init() if DOM is ready
-    require('../../src/content.js');
+    require('../../dist/content.js');
   });
 
   afterEach(() => {
@@ -437,7 +437,7 @@ describe('content.js', () => {
       jest.resetModules();
       globalThis.XCPW_PlatformInfo = mockPlatformInfo;
       globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../src/content.js');
+      require('../../dist/content.js');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Missing icon definitions')
@@ -453,7 +453,7 @@ describe('content.js', () => {
       jest.resetModules();
       globalThis.XCPW_Icons = mockIcons;
       globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../src/content.js');
+      require('../../dist/content.js');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Missing icon definitions')
@@ -2075,7 +2075,7 @@ describe('content.js', () => {
       chrome.storage.sync.get.mockRejectedValueOnce(new Error('Storage error'));
 
       // Re-require to test loadUserSettings
-      require('../../src/content.js');
+      require('../../dist/content.js');
       const { loadUserSettings } = globalThis.XCPW_ContentTestExports;
 
       await loadUserSettings();

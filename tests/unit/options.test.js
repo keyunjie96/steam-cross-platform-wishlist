@@ -74,7 +74,7 @@ describe('options.js', () => {
     global.confirm = jest.fn(() => true);
 
     // Load options.js
-    require('../../src/options.js');
+    require('../../dist/options.js');
   });
 
   afterEach(() => {
@@ -482,7 +482,7 @@ describe('options.js', () => {
 
       // Re-require to test fresh load with saved settings
       jest.resetModules();
-      require('../../src/options.js');
+      require('../../dist/options.js');
 
       document.dispatchEvent(new Event('DOMContentLoaded'));
       await jest.advanceTimersByTimeAsync(0);
@@ -602,7 +602,7 @@ describe('options.js', () => {
 
       // Re-require to test with missing element
       jest.resetModules();
-      require('../../src/options.js');
+      require('../../dist/options.js');
 
       // Trigger settings change - should not throw
       const checkbox = document.getElementById('show-steamdeck');
@@ -620,7 +620,7 @@ describe('options.js', () => {
 
       // Re-require to test with missing element
       jest.resetModules();
-      require('../../src/options.js');
+      require('../../dist/options.js');
 
       document.dispatchEvent(new Event('DOMContentLoaded'));
 
