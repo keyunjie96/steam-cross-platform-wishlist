@@ -13,7 +13,14 @@
  */
 
 import type { Platform, PlatformStatus, CacheEntry, PlatformData, WikidataResult, WikidataStoreIds } from './types';
-import { StoreUrls as TypeStoreUrls } from './types';
+
+// Type for StoreUrls (used for type checking the globalThis value)
+type StoreUrlsType = {
+  nintendo: (gameName: string) => string;
+  playstation: (gameName: string) => string;
+  xbox: (gameName: string) => string;
+  steamdeck: (gameName: string) => string;
+};
 
 const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
 const RESOLVER_DEBUG = false;
@@ -23,9 +30,9 @@ function getPlatforms(): Platform[] {
   return globalThis.XCPW_Cache?.PLATFORMS || ['nintendo', 'playstation', 'xbox'];
 }
 
-// Use globalThis.XCPW_StoreUrls for testability, fallback to imported StoreUrls
-function getStoreUrls(): typeof TypeStoreUrls {
-  return globalThis.XCPW_StoreUrls || TypeStoreUrls;
+// Use globalThis.XCPW_StoreUrls (set by types.ts at runtime, can be mocked in tests)
+function getStoreUrls(): StoreUrlsType {
+  return globalThis.XCPW_StoreUrls;
 }
 
 /**

@@ -6,7 +6,9 @@
  */
 
 import type { Platform, PlatformStatus, CacheEntry, PlatformData } from './types';
-import { StoreUrls } from './types';
+
+// Use globalThis for StoreUrls (set by types.ts at runtime)
+const StoreUrls = globalThis.XCPW_StoreUrls;
 
 const CACHE_DEBUG = false; // Set to true to enable manual test overrides
 const CACHE_KEY_PREFIX = 'xcpw_cache_';
