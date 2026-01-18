@@ -2525,7 +2525,7 @@ describe('content.js', () => {
 
     beforeEach(() => {
       const { setUserSettings } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: true });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true });
       delete window.location;
     });
 
@@ -2535,7 +2535,7 @@ describe('content.js', () => {
 
     it('should return all platforms when showSteamDeck is true and no deck_filters', () => {
       const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: true });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true });
       window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
 
       const platforms = getEnabledPlatforms();
@@ -2547,7 +2547,7 @@ describe('content.js', () => {
 
     it('should exclude steamdeck when showSteamDeck is false', () => {
       const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: false });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false });
       window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
 
       const platforms = getEnabledPlatforms();
@@ -2559,7 +2559,7 @@ describe('content.js', () => {
 
     it('should exclude steamdeck when deck_filters URL param is present', () => {
       const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: true });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true });
       window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345?deck_filters=verified');
 
       const platforms = getEnabledPlatforms();
@@ -2568,13 +2568,62 @@ describe('content.js', () => {
       expect(platforms).toContain('xbox');
       expect(platforms).not.toContain('steamdeck');
     });
+
+    it('should exclude nintendo when showNintendo is false', () => {
+      const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showNintendo: false, showPlaystation: true, showXbox: true, showSteamDeck: true });
+      window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
+
+      const platforms = getEnabledPlatforms();
+      expect(platforms).not.toContain('nintendo');
+      expect(platforms).toContain('playstation');
+      expect(platforms).toContain('xbox');
+      expect(platforms).toContain('steamdeck');
+    });
+
+    it('should exclude playstation when showPlaystation is false', () => {
+      const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showPlaystation: false, showXbox: true, showSteamDeck: true });
+      window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
+
+      const platforms = getEnabledPlatforms();
+      expect(platforms).toContain('nintendo');
+      expect(platforms).not.toContain('playstation');
+      expect(platforms).toContain('xbox');
+      expect(platforms).toContain('steamdeck');
+    });
+
+    it('should exclude xbox when showXbox is false', () => {
+      const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: false, showSteamDeck: true });
+      window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
+
+      const platforms = getEnabledPlatforms();
+      expect(platforms).toContain('nintendo');
+      expect(platforms).toContain('playstation');
+      expect(platforms).not.toContain('xbox');
+      expect(platforms).toContain('steamdeck');
+    });
+
+    it('should exclude all console platforms when all are disabled', () => {
+      const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showNintendo: false, showPlaystation: false, showXbox: false, showSteamDeck: true });
+      window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
+
+      const platforms = getEnabledPlatforms();
+      expect(platforms).not.toContain('nintendo');
+      expect(platforms).not.toContain('playstation');
+      expect(platforms).not.toContain('xbox');
+      expect(platforms).toContain('steamdeck');
+      expect(platforms.length).toBe(1);
+    });
   });
 
   describe('markMissingSteamDeckData function', () => {
     beforeEach(() => {
       const { getMissingSteamDeckAppIds, setUserSettings, setSteamDeckRefreshAttempts, setSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
       getMissingSteamDeckAppIds().clear();
-      setUserSettings({ showSteamDeck: true });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true });
       setSteamDeckRefreshAttempts(0);
       setSteamDeckRefreshTimer(null);
 
@@ -2597,7 +2646,7 @@ describe('content.js', () => {
 
     it('should not mark when showSteamDeck is false', () => {
       const { markMissingSteamDeckData, getMissingSteamDeckAppIds, setUserSettings } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: false });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false });
       markMissingSteamDeckData('12345');
       expect(getMissingSteamDeckAppIds().size).toBe(0);
     });
@@ -2626,7 +2675,7 @@ describe('content.js', () => {
     beforeEach(() => {
       jest.useFakeTimers();
       const { setUserSettings, setSteamDeckRefreshAttempts, setSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: true });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true });
       setSteamDeckRefreshAttempts(0);
       setSteamDeckRefreshTimer(null);
 
@@ -2644,7 +2693,7 @@ describe('content.js', () => {
 
     it('should not schedule when showSteamDeck is false', () => {
       const { scheduleSteamDeckRefresh, setUserSettings, getSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: false });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false });
       scheduleSteamDeckRefresh('test');
       expect(getSteamDeckRefreshTimer()).toBeNull();
     });
@@ -2685,7 +2734,7 @@ describe('content.js', () => {
       const { getCachedEntriesByAppId, setSteamDeckData, setUserSettings } = globalThis.XCPW_ContentTestExports;
       getCachedEntriesByAppId().clear();
       setSteamDeckData(null);
-      setUserSettings({ showSteamDeck: true });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true });
 
       globalThis.XCPW_SteamDeck = {
         waitForDeckData: jest.fn().mockResolvedValue(new Map()),
@@ -2761,7 +2810,7 @@ describe('content.js', () => {
     beforeEach(() => {
       const { setSteamDeckData, setUserSettings, setSteamDeckRefreshAttempts, setSteamDeckRefreshTimer, getMissingSteamDeckAppIds } = globalThis.XCPW_ContentTestExports;
       setSteamDeckData(null);
-      setUserSettings({ showSteamDeck: true });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true });
       setSteamDeckRefreshAttempts(0);
       setSteamDeckRefreshTimer(null);
       getMissingSteamDeckAppIds().clear();
@@ -2779,7 +2828,7 @@ describe('content.js', () => {
 
     it('should not refresh when showSteamDeck is false', async () => {
       const { refreshSteamDeckData, setUserSettings, getSteamDeckData } = globalThis.XCPW_ContentTestExports;
-      setUserSettings({ showSteamDeck: false });
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false });
       await refreshSteamDeckData('test');
       expect(getSteamDeckData()).toBeNull();
     });

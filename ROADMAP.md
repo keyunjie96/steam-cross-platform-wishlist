@@ -53,17 +53,6 @@
 4. Consider caching with appropriate TTL
 **Risk:** Medium - ProtonDB API is unofficial but stable. Tier colors may conflict with existing dimmed/available styling.
 
-### FEAT-2: User preferences (platform visibility)
-**Priority:** P2 (Medium Value)
-**Files:** `src/options.html`, `src/options.js`, `src/content.js:315-343`, `src/background.js`
-**Issue:** Users may only care about specific platforms. No way to hide unwanted icons.
-**Fix:**
-1. Add checkbox toggles in options.html for each platform
-2. Store preferences in `chrome.storage.sync` for cross-device sync
-3. Add `GET_USER_PREFERENCES` message handler in background.js
-4. Filter visible icons in `updateIconsWithData()` based on preferences
-**Risk:** Low - preferences must load before icons render. Use CSS `display:none` instead of DOM removal to avoid BUG-1.
-
 ### FEAT-5: HLTB integration (How Long To Beat)
 **Priority:** P2 (Medium Value)
 **Files:** `src/types.js:12-27`, `src/cache.js`, New `src/hltbClient.js`, `src/content.js:257-275`, `src/background.js`
@@ -159,6 +148,7 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] BUG-3: Icons disappear when wishlist filter is applied (fixed: dual-strategy item detection)
 - [x] UX-1: Refine icon loading state (fixed: single loader, dynamic icon injection)
 - [x] LIFECYCLE-1: Icon lifecycle management (fixed: cleanupAllIcons on URL change, stale container validation, strengthened duplicate prevention)
+- [x] FEAT-2: User preferences for platform visibility (added toggles for Nintendo, PlayStation, Xbox, Steam Deck in options)
 
 ---
 
@@ -166,7 +156,6 @@ Features below were evaluated and declined because established extensions (Augme
 
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
-| FEAT-2 | User preferences | 6 | 9 | 54 | Low |
 | FEAT-8 | Firefox/Edge | 5 | 6 | 30 | Medium |
 | FEAT-9 | ChromeOS/ProtonDB | 4 | 5 | 20 | Medium |
 | FEAT-5 | HLTB integration | 5 | 4 | 20 | High |

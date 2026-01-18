@@ -85,6 +85,9 @@ const ALL_PLATFORMS: Platform[] = ['nintendo', 'playstation', 'xbox', 'steamdeck
 
 /** User settings (loaded from storage) */
 let userSettings = {
+  showNintendo: true,
+  showPlaystation: true,
+  showXbox: true,
   showSteamDeck: true
 };
 
@@ -110,11 +113,19 @@ function getEnabledPlatforms(): Platform[] {
   const isDeckFilterActive = checkDeckFilterActive();
 
   return ALL_PLATFORMS.filter(platform => {
-    if (platform === 'steamdeck') {
-      // Hide our Deck icons when Steam's Deck filter is active (shows native badges)
-      return userSettings.showSteamDeck && !isDeckFilterActive;
+    switch (platform) {
+      case 'nintendo':
+        return userSettings.showNintendo;
+      case 'playstation':
+        return userSettings.showPlaystation;
+      case 'xbox':
+        return userSettings.showXbox;
+      case 'steamdeck':
+        // Hide our Deck icons when Steam's Deck filter is active (shows native badges)
+        return userSettings.showSteamDeck && !isDeckFilterActive;
+      default:
+        return true;
     }
-    return true; // Other platforms always shown
   });
 }
 
@@ -1134,7 +1145,7 @@ if (typeof globalThis !== 'undefined') {
     setSteamDeckRefreshAttempts: (val: number) => { steamDeckRefreshAttempts = val; },
     getCachedEntriesByAppId: () => cachedEntriesByAppId,
     getUserSettings: () => userSettings,
-    setUserSettings: (val: { showSteamDeck: boolean }) => { userSettings = val; },
+    setUserSettings: (val: { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean }) => { userSettings = val; },
     getSteamDeckRefreshTimer: () => steamDeckRefreshTimer,
     setSteamDeckRefreshTimer: (val: ReturnType<typeof setTimeout> | null) => { steamDeckRefreshTimer = val; },
     STEAM_DECK_REFRESH_DELAYS_MS

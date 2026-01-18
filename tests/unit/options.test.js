@@ -11,6 +11,9 @@ describe('options.js', () => {
   let cacheAgeEl;
   let refreshStatsBtn;
   let clearCacheBtn;
+  let showNintendoCheckbox;
+  let showPlaystationCheckbox;
+  let showXboxCheckbox;
   let showSteamDeckCheckbox;
 
   beforeEach(() => {
@@ -49,6 +52,24 @@ describe('options.js', () => {
     clearCacheBtn.id = 'clear-cache-btn';
     clearCacheBtn.textContent = 'Clear Cache';
     document.body.appendChild(clearCacheBtn);
+
+    showNintendoCheckbox = document.createElement('input');
+    showNintendoCheckbox.type = 'checkbox';
+    showNintendoCheckbox.id = 'show-nintendo';
+    showNintendoCheckbox.checked = true;
+    document.body.appendChild(showNintendoCheckbox);
+
+    showPlaystationCheckbox = document.createElement('input');
+    showPlaystationCheckbox.type = 'checkbox';
+    showPlaystationCheckbox.id = 'show-playstation';
+    showPlaystationCheckbox.checked = true;
+    document.body.appendChild(showPlaystationCheckbox);
+
+    showXboxCheckbox = document.createElement('input');
+    showXboxCheckbox.type = 'checkbox';
+    showXboxCheckbox.id = 'show-xbox';
+    showXboxCheckbox.checked = true;
+    document.body.appendChild(showXboxCheckbox);
 
     showSteamDeckCheckbox = document.createElement('input');
     showSteamDeckCheckbox.type = 'checkbox';
@@ -477,7 +498,7 @@ describe('options.js', () => {
     it('should set checkbox to saved value when loading settings', async () => {
       // Set up mock before re-requiring the module
       chrome.storage.sync.get.mockResolvedValue({
-        xcpwSettings: { showSteamDeck: false }
+        xcpwSettings: { showNintendo: false, showPlaystation: true, showXbox: false, showSteamDeck: false }
       });
 
       // Re-require to test fresh load with saved settings
@@ -487,6 +508,9 @@ describe('options.js', () => {
       document.dispatchEvent(new Event('DOMContentLoaded'));
       await jest.advanceTimersByTimeAsync(0);
 
+      expect(showNintendoCheckbox.checked).toBe(false);
+      expect(showPlaystationCheckbox.checked).toBe(true);
+      expect(showXboxCheckbox.checked).toBe(false);
       expect(showSteamDeckCheckbox.checked).toBe(false);
     });
 
@@ -496,6 +520,9 @@ describe('options.js', () => {
       document.dispatchEvent(new Event('DOMContentLoaded'));
       await jest.advanceTimersByTimeAsync(0);
 
+      expect(showNintendoCheckbox.checked).toBe(true);
+      expect(showPlaystationCheckbox.checked).toBe(true);
+      expect(showXboxCheckbox.checked).toBe(true);
       expect(showSteamDeckCheckbox.checked).toBe(true);
     });
 
@@ -511,14 +538,47 @@ describe('options.js', () => {
   });
 
   describe('saveSettings', () => {
-    it('should save settings when checkbox changes', async () => {
+    it('should save settings when Steam Deck checkbox changes', async () => {
       showSteamDeckCheckbox.checked = false;
       showSteamDeckCheckbox.dispatchEvent(new Event('change'));
 
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: { showSteamDeck: false }
+        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false }
+      });
+    });
+
+    it('should save settings when Nintendo checkbox changes', async () => {
+      showNintendoCheckbox.checked = false;
+      showNintendoCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({
+        xcpwSettings: { showNintendo: false, showPlaystation: true, showXbox: true, showSteamDeck: true }
+      });
+    });
+
+    it('should save settings when PlayStation checkbox changes', async () => {
+      showPlaystationCheckbox.checked = false;
+      showPlaystationCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({
+        xcpwSettings: { showNintendo: true, showPlaystation: false, showXbox: true, showSteamDeck: true }
+      });
+    });
+
+    it('should save settings when Xbox checkbox changes', async () => {
+      showXboxCheckbox.checked = false;
+      showXboxCheckbox.dispatchEvent(new Event('change'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({
+        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: false, showSteamDeck: true }
       });
     });
 
@@ -529,7 +589,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: { showSteamDeck: true }
+        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true }
       });
     });
 

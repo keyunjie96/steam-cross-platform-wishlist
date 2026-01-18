@@ -172,8 +172,8 @@ declare global {
       getSteamDeckRefreshAttempts: () => number;
       setSteamDeckRefreshAttempts: (val: number) => void;
       getCachedEntriesByAppId: () => Map<string, CacheEntry>;
-      getUserSettings: () => { showSteamDeck: boolean };
-      setUserSettings: (val: { showSteamDeck: boolean }) => void;
+      getUserSettings: () => { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean };
+      setUserSettings: (val: { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean }) => void;
       getSteamDeckRefreshTimer: () => ReturnType<typeof setTimeout> | null;
       setSteamDeckRefreshTimer: (val: ReturnType<typeof setTimeout> | null) => void;
       STEAM_DECK_REFRESH_DELAYS_MS: number[];
