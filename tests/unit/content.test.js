@@ -463,38 +463,7 @@ describe('content.js', () => {
     });
   });
 
-  describe('icon update with data', () => {
-    it('should dynamically add only available icons (UX-1 refactor)', () => {
-      // Use the actual createIconsContainer which now creates a loader, not 4 icons
-      const { createIconsContainer, updateIconsWithData } = globalThis.XCPW_ContentTestExports;
-      const container = createIconsContainer('12345', 'Test Game');
-
-      // Verify initial state - loader present, no icons
-      expect(container.querySelector('.xcpw-loader')).toBeTruthy();
-      expect(container.querySelectorAll('[data-platform]').length).toBe(0);
-
-      const data = {
-        gameName: 'Test Game',
-        platforms: {
-          nintendo: { status: 'available', storeUrl: 'https://example.com/ns' },
-          playstation: { status: 'unavailable' },
-          xbox: { status: 'unknown' },
-          steamdeck: { status: 'unavailable' }
-        }
-      };
-
-      // Call actual updateIconsWithData
-      updateIconsWithData(container, data);
-
-      // Verify: only available icon added, loader removed
-      expect(container.querySelector('.xcpw-loader')).toBeNull();
-      expect(container.querySelectorAll('[data-platform]').length).toBe(1);
-      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
-      expect(container.querySelector('[data-platform="playstation"]')).toBeNull();
-      expect(container.querySelector('[data-platform="xbox"]')).toBeNull();
-      expect(container.querySelector('.xcpw-available')).toBeTruthy();
-    });
-  });
+  // Note: icon update tests are consolidated in 'updateIconsWithData (exported function)' describe block below
 
   describe('lazy loading support', () => {
     it('should wait for SVG icons to appear in lazy-loaded items', async () => {
@@ -553,54 +522,7 @@ describe('content.js', () => {
     });
   });
 
-  describe('updateIconsWithData edge cases', () => {
-    it('should dynamically add only available icons (UX-1 refactor)', () => {
-      const { createIconsContainer, updateIconsWithData } = globalThis.XCPW_ContentTestExports;
-      const container = createIconsContainer('12345', 'Test Game');
-      document.body.appendChild(container);
-
-      // Initially has loader, no icons
-      expect(container.querySelector('.xcpw-loader')).toBeTruthy();
-      expect(container.querySelectorAll('[data-platform]').length).toBe(0);
-
-      const data = {
-        gameName: 'Test Game',
-        platforms: {
-          nintendo: { status: 'available', storeUrl: 'https://example.com/ns' },
-          playstation: { status: 'unavailable' },
-          xbox: { status: 'unknown' },
-          steamdeck: { status: 'unavailable' }
-        }
-      };
-
-      updateIconsWithData(container, data);
-
-      // Only 1 available icon added
-      expect(container.querySelectorAll('[data-platform]').length).toBe(1);
-      expect(container.querySelector('[data-platform="nintendo"]')).toBeTruthy();
-    });
-
-    it('should not add separator when no platforms are available', () => {
-      const { createIconsContainer, updateIconsWithData } = globalThis.XCPW_ContentTestExports;
-      const container = createIconsContainer('12345', 'Test Game');
-
-      const data = {
-        gameName: 'Test Game',
-        platforms: {
-          nintendo: { status: 'unavailable' },
-          playstation: { status: 'unavailable' },
-          xbox: { status: 'unknown' },
-          steamdeck: { status: 'unknown' }
-        }
-      };
-
-      updateIconsWithData(container, data);
-
-      // No separator since no icons were added
-      expect(container.querySelector('.xcpw-separator')).toBeNull();
-      expect(container.querySelectorAll('[data-platform]').length).toBe(0);
-    });
-  });
+  // Note: updateIconsWithData edge cases are covered in main 'updateIconsWithData (exported function)' describe block
 
   describe('findInjectionPoint fallback', () => {
     it('should fall back to item itself when no valid container found', () => {
@@ -1871,29 +1793,7 @@ describe('content.js', () => {
     });
   });
 
-  describe('removeLoadingState with loader (UX-1)', () => {
-    it('should remove loader element', () => {
-      const { createIconsContainer, removeLoadingState } = globalThis.XCPW_ContentTestExports;
-      const container = createIconsContainer('12345', 'Test Game');
-
-      expect(container.querySelector('.xcpw-loader')).toBeTruthy();
-
-      removeLoadingState(container);
-
-      expect(container.querySelector('.xcpw-loader')).toBeNull();
-    });
-
-    it('should handle container without loader gracefully', () => {
-      const { removeLoadingState } = globalThis.XCPW_ContentTestExports;
-      const container = document.createElement('span');
-      container.className = 'xcpw-platforms';
-
-      // No loader present - should not throw
-      removeLoadingState(container);
-
-      expect(container.querySelector('.xcpw-loader')).toBeNull();
-    });
-  });
+  // Note: removeLoadingState tests are consolidated in 'removeLoadingState (exported function)' describe block
 
   describe('cleanupAllIcons (icon lifecycle management)', () => {
     beforeEach(() => {
@@ -1998,31 +1898,16 @@ describe('content.js', () => {
   });
 
   describe('stale container handling', () => {
-    it('should detect when container is detached from DOM', () => {
+    it('should correctly detect container DOM attachment state', () => {
       const container = document.createElement('span');
       container.className = 'xcpw-platforms';
-      // NOT attached to document.body
 
       expect(document.body.contains(container)).toBe(false);
-    });
 
-    it('should detect when container is attached to DOM', () => {
-      const container = document.createElement('span');
-      container.className = 'xcpw-platforms';
       document.body.appendChild(container);
-
-      expect(document.body.contains(container)).toBe(true);
-    });
-
-    it('should detect when container becomes detached after removal', () => {
-      const container = document.createElement('span');
-      container.className = 'xcpw-platforms';
-      document.body.appendChild(container);
-
       expect(document.body.contains(container)).toBe(true);
 
       container.remove();
-
       expect(document.body.contains(container)).toBe(false);
     });
   });
@@ -2877,66 +2762,9 @@ describe('content.js', () => {
     });
   });
 
-  describe('findInjectionPoint SVG grouping', () => {
-    it('should find largest SVG group when no title-based icon found', () => {
-      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+  // Note: findInjectionPoint SVG grouping tests are covered in 'findInjectionPoint (exported function)' describe block
 
-      const item = document.createElement('div');
-
-      // Create two groups of SVGs - second one larger
-      const group1 = document.createElement('div');
-      group1.className = 'small-group';
-      const wrapper1 = document.createElement('span');
-      wrapper1.appendChild(document.createElement('svg'));
-      group1.appendChild(wrapper1);
-
-      const group2 = document.createElement('div');
-      group2.className = 'large-group';
-      for (let i = 0; i < 3; i++) {
-        const wrapper = document.createElement('span');
-        wrapper.appendChild(document.createElement('svg'));
-        group2.appendChild(wrapper);
-      }
-
-      item.appendChild(group1);
-      item.appendChild(group2);
-      document.body.appendChild(item);
-
-      const result = findInjectionPoint(item);
-
-      // Should pick the larger group
-      expect(result.container.className).toBe('large-group');
-
-      item.remove();
-    });
-
-    it('should use item as fallback when no SVG groups found', () => {
-      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
-
-      const item = document.createElement('div');
-      item.className = 'test-item';
-      document.body.appendChild(item);
-
-      const result = findInjectionPoint(item);
-
-      expect(result.container).toBe(item);
-      expect(result.insertAfter).toBeNull();
-
-      item.remove();
-    });
-  });
-
-  describe('parseSvg error handling', () => {
-    it('should return null for invalid SVG', () => {
-      const { parseSvg } = globalThis.XCPW_ContentTestExports;
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-      const result = parseSvg('<svg><not-closed>');
-
-      expect(result).toBeNull();
-      consoleSpy.mockRestore();
-    });
-  });
+  // Note: parseSvg error handling is covered in 'parseSvg (exported function)' describe block
 
   describe('createPlatformIcon default tooltip', () => {
     it('should use STATUS_INFO tooltip for non-steamdeck platforms', () => {
@@ -3143,28 +2971,7 @@ describe('content.js', () => {
     });
   });
 
-  describe('removeLoadingState function', () => {
-    it('should remove loader from container', () => {
-      const {
-        createIconsContainer,
-        removeLoadingState
-      } = globalThis.XCPW_ContentTestExports;
-
-      const container = createIconsContainer('99999', 'Test Game');
-      document.body.appendChild(container);
-
-      // Verify loader exists
-      expect(container.querySelector('.xcpw-loader')).not.toBeNull();
-
-      // Remove loading state
-      removeLoadingState(container);
-
-      // Loader should be gone
-      expect(container.querySelector('.xcpw-loader')).toBeNull();
-
-      container.remove();
-    });
-  });
+  // Note: removeLoadingState function tests are in 'removeLoadingState (exported function)' describe block above
 
   describe('getEnabledPlatforms with various settings', () => {
     it('should return empty array when all platforms disabled', () => {
@@ -3307,46 +3114,7 @@ describe('content.js', () => {
     });
   });
 
-  describe('findWishlistRow edge cases', () => {
-    it('should stop at depth limit', () => {
-      const { findWishlistRow } = globalThis.XCPW_ContentTestExports;
-
-      // Create deeply nested structure
-      let current = document.body;
-      for (let i = 0; i < 15; i++) {
-        const div = document.createElement('div');
-        current.appendChild(div);
-        current = div;
-      }
-
-      const link = document.createElement('a');
-      link.href = '/app/12345/Deep_Game';
-      current.appendChild(link);
-
-      const result = findWishlistRow(link);
-
-      // Should return null due to depth limit
-      expect(result).toBeNull();
-    });
-
-    it('should find row with role=button', () => {
-      const { findWishlistRow } = globalThis.XCPW_ContentTestExports;
-
-      const row = document.createElement('div');
-      row.setAttribute('role', 'button');
-
-      const link = document.createElement('a');
-      link.href = '/app/12345/Test_Game';
-      row.appendChild(link);
-
-      document.body.appendChild(row);
-
-      const result = findWishlistRow(link);
-      expect(result).toBe(row);
-
-      row.remove();
-    });
-  });
+  // Note: findWishlistRow edge cases are covered in 'findWishlistRow (exported function)' describe block
 
   describe('Steam Deck tier handling in createPlatformIcon', () => {
     it('should set unsupported tier class', () => {

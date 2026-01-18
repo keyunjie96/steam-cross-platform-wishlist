@@ -143,71 +143,31 @@ describe('steamDeckClient.js', () => {
             expect(result.category).toBe(0);
         });
 
-        it('should map category 3 to verified', () => {
+        it.each([
+            [3, 'verified'],
+            [2, 'playable'],
+            [1, 'unsupported'],
+            [0, 'unknown'],
+            [99, 'unknown']
+        ])('should map category %i to %s', (category, expectedStatus) => {
             const SteamDeck = globalThis.XCPW_SteamDeck;
-            const deckData = new Map([['123', 3]]);
-            expect(SteamDeck.getDeckStatus(deckData, '123').status).toBe('verified');
-        });
-
-        it('should map category 2 to playable', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            const deckData = new Map([['123', 2]]);
-            expect(SteamDeck.getDeckStatus(deckData, '123').status).toBe('playable');
-        });
-
-        it('should map category 1 to unsupported', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            const deckData = new Map([['123', 1]]);
-            expect(SteamDeck.getDeckStatus(deckData, '123').status).toBe('unsupported');
-        });
-
-        it('should map category 0 to unknown', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            const deckData = new Map([['123', 0]]);
-            expect(SteamDeck.getDeckStatus(deckData, '123').status).toBe('unknown');
-        });
-
-        it('should handle unknown category values', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            const deckData = new Map([['123', 99]]);
-            expect(SteamDeck.getDeckStatus(deckData, '123').status).toBe('unknown');
+            const deckData = new Map([['123', category]]);
+            expect(SteamDeck.getDeckStatus(deckData, '123').status).toBe(expectedStatus);
         });
     });
 
     describe('statusToDisplayStatus', () => {
-        it('should convert verified to available', () => {
+        it.each([
+            ['verified', 'available'],
+            ['playable', 'unavailable'],
+            ['unsupported', 'unknown'],
+            ['unknown', 'unknown'],
+            ['invalid', 'unknown'],
+            [null, 'unknown'],
+            [undefined, 'unknown']
+        ])('should convert %s to %s', (input, expected) => {
             const SteamDeck = globalThis.XCPW_SteamDeck;
-            expect(SteamDeck.statusToDisplayStatus('verified')).toBe('available');
-        });
-
-        it('should convert playable to unavailable', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            expect(SteamDeck.statusToDisplayStatus('playable')).toBe('unavailable');
-        });
-
-        it('should convert unsupported to unknown', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            expect(SteamDeck.statusToDisplayStatus('unsupported')).toBe('unknown');
-        });
-
-        it('should convert unknown to unknown', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            expect(SteamDeck.statusToDisplayStatus('unknown')).toBe('unknown');
-        });
-
-        it('should handle unexpected values', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            expect(SteamDeck.statusToDisplayStatus('invalid')).toBe('unknown');
-        });
-
-        it('should handle null input', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            expect(SteamDeck.statusToDisplayStatus(null)).toBe('unknown');
-        });
-
-        it('should handle undefined input', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
-            expect(SteamDeck.statusToDisplayStatus(undefined)).toBe('unknown');
+            expect(SteamDeck.statusToDisplayStatus(input)).toBe(expected);
         });
     });
 

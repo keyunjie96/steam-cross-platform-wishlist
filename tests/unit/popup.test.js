@@ -624,34 +624,17 @@ describe('popup.js', () => {
       });
     });
 
-    it('should save settings when PlayStation toggle is changed', async () => {
+    it.each([
+      ['PlayStation', () => showPlaystationCheckbox],
+      ['Xbox', () => showXboxCheckbox],
+      ['Steam Deck', () => showSteamDeckCheckbox]
+    ])('should save settings when %s toggle is changed', async (name, getCheckbox) => {
       document.dispatchEvent(new Event('DOMContentLoaded'));
       await jest.advanceTimersByTimeAsync(0);
 
-      showPlaystationCheckbox.checked = true;
-      showPlaystationCheckbox.dispatchEvent(new Event('change'));
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(chrome.storage.sync.set).toHaveBeenCalled();
-    });
-
-    it('should save settings when Xbox toggle is changed', async () => {
-      document.dispatchEvent(new Event('DOMContentLoaded'));
-      await jest.advanceTimersByTimeAsync(0);
-
-      showXboxCheckbox.checked = true;
-      showXboxCheckbox.dispatchEvent(new Event('change'));
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(chrome.storage.sync.set).toHaveBeenCalled();
-    });
-
-    it('should save settings when Steam Deck toggle is changed', async () => {
-      document.dispatchEvent(new Event('DOMContentLoaded'));
-      await jest.advanceTimersByTimeAsync(0);
-
-      showSteamDeckCheckbox.checked = false;
-      showSteamDeckCheckbox.dispatchEvent(new Event('change'));
+      const checkbox = getCheckbox();
+      checkbox.checked = !checkbox.checked;
+      checkbox.dispatchEvent(new Event('change'));
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalled();
