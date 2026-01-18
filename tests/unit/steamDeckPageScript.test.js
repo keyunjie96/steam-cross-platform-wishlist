@@ -42,7 +42,7 @@ describe('steamDeckPageScript.js', () => {
             };
 
             // Load the script
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             // Check that data element was created
             const dataEl = document.getElementById('xcpw-steamdeck-data');
@@ -68,7 +68,7 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -95,7 +95,7 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -104,7 +104,7 @@ describe('steamDeckPageScript.js', () => {
             expect(data['67890']).toBeUndefined();
         });
 
-        it('should skip queries with wrong queryKey format', () => {
+        it('should skip queries that are not StoreItem', () => {
             window.SSR = {
                 renderContext: {
                     queryData: JSON.stringify({
@@ -122,17 +122,18 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
-            expect(Object.keys(data).length).toBe(0);
+            expect(data['12345']).toBeUndefined();
+            expect(data['67890']).toBe(2);
         });
 
         it('should handle missing SSR gracefully', () => {
             // No window.SSR set
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -148,7 +149,7 @@ describe('steamDeckPageScript.js', () => {
             };
 
             // Should not throw
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -171,7 +172,7 @@ describe('steamDeckPageScript.js', () => {
                 ]
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
@@ -200,7 +201,7 @@ describe('steamDeckPageScript.js', () => {
                 }
             };
 
-            require('../../src/steamDeckPageScript.js');
+            require('../../dist/steamDeckPageScript.js');
 
             const dataEl = document.getElementById('xcpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);

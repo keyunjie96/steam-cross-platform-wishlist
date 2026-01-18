@@ -5,26 +5,32 @@
  * This module runs in the background service worker context.
  */
 
+import type { Platform, PlatformStatus, CacheEntry, PlatformData } from './types';
+
+// Use globalThis for StoreUrls (set by types.ts at runtime)
+const StoreUrls = globalThis.XCPW_StoreUrls;
+
 const CACHE_DEBUG = false; // Set to true to enable manual test overrides
 const CACHE_KEY_PREFIX = 'xcpw_cache_';
 const DEFAULT_TTL_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const PLATFORMS = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
+const PLATFORMS: Platform[] = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
+
+interface PlatformStatusOptions {
+  allAvailable?: boolean;
+  unavailable?: Platform[];
+}
 
 /**
  * Creates a platform availability object
- * @param {Object} options
- * @param {boolean} [options.allAvailable] - Set all platforms to available
- * @param {string[]} [options.unavailable] - Platforms to mark as unavailable
- * @returns {Record<string, import('./types.js').PlatformStatus>}
  */
-function platformStatus({ allAvailable = false, unavailable = [] } = {}) {
-  function getStatus(platform) {
+function platformStatus({ allAvailable = false, unavailable = [] }: PlatformStatusOptions = {}): Record<Platform, PlatformStatus> {
+  function getStatus(platform: Platform): PlatformStatus {
     if (unavailable.includes(platform)) return 'unavailable';
     if (allAvailable) return 'available';
     return 'unknown';
   }
-  return Object.fromEntries(PLATFORMS.map(p => [p, getStatus(p)]));
+  return Object.fromEntries(PLATFORMS.map(p => [p, getStatus(p)])) as Record<Platform, PlatformStatus>;
 }
 
 /**
@@ -32,7 +38,7 @@ function platformStatus({ allAvailable = false, unavailable = [] } = {}) {
  * These appids will show specific platform availability regardless of actual data.
  * Only enabled when CACHE_DEBUG is true - in production, data comes from Wikidata.
  */
-const MANUAL_OVERRIDES = CACHE_DEBUG ? {
+const MANUAL_OVERRIDES: Record<string, Record<Platform, PlatformStatus>> = CACHE_DEBUG ? {
   '367520': platformStatus({ allAvailable: true }),   // Hollow Knight
   '1145360': platformStatus({ allAvailable: true }),  // Hades
   '504230': platformStatus({ allAvailable: true }),   // Celeste
@@ -45,19 +51,15 @@ const MANUAL_OVERRIDES = CACHE_DEBUG ? {
 
 /**
  * Gets the cache key for a given appid
- * @param {string} appid
- * @returns {string}
  */
-function getCacheKey(appid) {
+function getCacheKey(appid: string): string {
   return `${CACHE_KEY_PREFIX}${appid}`;
 }
 
 /**
  * Checks if a cache entry is still valid based on TTL
- * @param {import('./types.js').CacheEntry} entry
- * @returns {boolean}
  */
-function isCacheValid(entry) {
+function isCacheValid(entry: CacheEntry | null | undefined): boolean {
   if (!entry?.resolvedAt || !entry?.ttlDays) {
     return false;
   }
@@ -69,28 +71,23 @@ function isCacheValid(entry) {
  * Creates a cache entry for a given appid and game name.
  * For Stage 1/fallback, uses manual overrides or marks all platforms as "unknown".
  * Stage 2 uses the resolver which creates entries with IGDB data.
- *
- * @param {string} appid
- * @param {string} gameName
- * @returns {import('./types.js').CacheEntry}
  */
-function createCacheEntry(appid, gameName) {
+function createCacheEntry(appid: string, gameName: string): CacheEntry {
   const override = MANUAL_OVERRIDES[appid];
-  const StoreUrls = globalThis.XCPW_StoreUrls;
 
   const platforms = Object.fromEntries(
     PLATFORMS.map(platform => [platform, {
       status: override?.[platform] || 'unknown',
       storeUrl: StoreUrls[platform](gameName)
-    }])
-  );
+    } as PlatformData])
+  ) as Record<Platform, PlatformData>;
 
   return {
     appid,
     gameName,
     platforms,
     source: override ? 'manual' : 'none',
-    igdbId: null,
+    wikidataId: null,
     resolvedAt: Date.now(),
     ttlDays: DEFAULT_TTL_DAYS
   };
@@ -98,13 +95,11 @@ function createCacheEntry(appid, gameName) {
 
 /**
  * Retrieves cached data for a given appid
- * @param {string} appid
- * @returns {Promise<import('./types.js').CacheEntry | null>}
  */
-async function getFromCache(appid) {
+async function getFromCache(appid: string): Promise<CacheEntry | null> {
   const key = getCacheKey(appid);
   const result = await chrome.storage.local.get(key);
-  const entry = result[key];
+  const entry = result[key] as CacheEntry | undefined;
 
   if (entry && isCacheValid(entry)) {
     return entry;
@@ -115,21 +110,16 @@ async function getFromCache(appid) {
 
 /**
  * Saves data to cache
- * @param {import('./types.js').CacheEntry} entry
- * @returns {Promise<void>}
  */
-async function saveToCache(entry) {
+async function saveToCache(entry: CacheEntry): Promise<void> {
   const key = getCacheKey(entry.appid);
   await chrome.storage.local.set({ [key]: entry });
 }
 
 /**
  * Regenerates store URLs for all platforms with a new game name
- * @param {import('./types.js').CacheEntry} entry
- * @param {string} gameName
  */
-function updateStoreUrls(entry, gameName) {
-  const StoreUrls = globalThis.XCPW_StoreUrls;
+function updateStoreUrls(entry: CacheEntry, gameName: string): void {
   for (const platform of PLATFORMS) {
     entry.platforms[platform].storeUrl = StoreUrls[platform](gameName);
   }
@@ -138,12 +128,8 @@ function updateStoreUrls(entry, gameName) {
 /**
  * Gets or creates platform data for an appid.
  * Returns cached data if available, otherwise creates new entry.
- *
- * @param {string} appid
- * @param {string} gameName
- * @returns {Promise<{entry: import('./types.js').CacheEntry, fromCache: boolean}>}
  */
-async function getOrCreatePlatformData(appid, gameName) {
+async function getOrCreatePlatformData(appid: string, gameName: string): Promise<{ entry: CacheEntry; fromCache: boolean }> {
   const cached = await getFromCache(appid);
   if (cached) {
     if (cached.gameName !== gameName) {
@@ -161,9 +147,8 @@ async function getOrCreatePlatformData(appid, gameName) {
 
 /**
  * Clears all cached data (useful for debugging)
- * @returns {Promise<void>}
  */
-async function clearCache() {
+async function clearCache(): Promise<void> {
   const allData = await chrome.storage.local.get(null);
   const keysToRemove = Object.keys(allData).filter(key => key.startsWith(CACHE_KEY_PREFIX));
   if (keysToRemove.length > 0) {
@@ -173,13 +158,12 @@ async function clearCache() {
 
 /**
  * Gets cache statistics
- * @returns {Promise<{count: number, oldestEntry: number | null}>}
  */
-async function getCacheStats() {
+async function getCacheStats(): Promise<{ count: number; oldestEntry: number | null }> {
   const allData = await chrome.storage.local.get(null);
   const cacheEntries = Object.entries(allData)
     .filter(([key]) => key.startsWith(CACHE_KEY_PREFIX))
-    .map(([, entry]) => entry);
+    .map(([, entry]) => entry as CacheEntry);
 
   const timestamps = cacheEntries
     .map(entry => entry.resolvedAt)
@@ -201,4 +185,18 @@ globalThis.XCPW_Cache = {
   isCacheValid,
   MANUAL_OVERRIDES,
   PLATFORMS
+};
+
+// Also export for module imports in tests
+export {
+  getFromCache,
+  saveToCache,
+  getOrCreatePlatformData,
+  clearCache,
+  getCacheStats,
+  isCacheValid,
+  MANUAL_OVERRIDES,
+  PLATFORMS,
+  CACHE_KEY_PREFIX,
+  DEFAULT_TTL_DAYS
 };

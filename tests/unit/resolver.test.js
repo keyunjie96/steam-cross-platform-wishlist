@@ -69,7 +69,7 @@ describe('resolver.js', () => {
     };
 
     // Load the resolver module
-    require('../../src/resolver.js');
+    require('../../dist/resolver.js');
   });
 
   afterEach(() => {
@@ -293,7 +293,7 @@ describe('resolver.js', () => {
 
       globalThis.XCPW_WikidataClient = mockWikidataClient;
       globalThis.XCPW_StoreUrls = mockStoreUrls;
-      require('../../src/resolver.js');
+      require('../../dist/resolver.js');
 
       const Resolver = globalThis.XCPW_Resolver;
 
@@ -306,7 +306,7 @@ describe('resolver.js', () => {
 
       globalThis.XCPW_Cache = mockCache;
       globalThis.XCPW_StoreUrls = mockStoreUrls;
-      require('../../src/resolver.js');
+      require('../../dist/resolver.js');
 
       const Resolver = globalThis.XCPW_Resolver;
 

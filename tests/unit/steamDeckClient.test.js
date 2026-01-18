@@ -29,7 +29,7 @@ describe('steamDeckClient.js', () => {
         });
 
         // Load the module
-        require('../../src/steamDeckClient.js');
+        require('../../dist/steamDeckClient.js');
     });
 
     afterEach(() => {
@@ -255,7 +255,7 @@ describe('steamDeckClient.js', () => {
             });
 
             // Reload the module with new mock
-            require('../../src/steamDeckClient.js');
+            require('../../dist/steamDeckClient.js');
             const SteamDeck = globalThis.XCPW_SteamDeck;
 
             const result = await SteamDeck.waitForDeckData(100);

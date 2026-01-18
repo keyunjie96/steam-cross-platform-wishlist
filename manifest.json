@@ -9,12 +9,12 @@
     "https://query.wikidata.org/*"
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "dist/background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://store.steampowered.com/wishlist/*"],
-      "js": ["src/types.js", "src/icons.js", "src/steamDeckClient.js", "src/content.js"],
+      "js": ["dist/types.js", "dist/icons.js", "dist/steamDeckClient.js", "dist/content.js"],
       "css": ["src/styles.css"],
       "run_at": "document_idle"
     }
@@ -25,7 +25,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/steamDeckPageScript.js"],
+      "resources": ["dist/steamDeckPageScript.js"],
       "matches": ["https://store.steampowered.com/*"]
     }
   ]

@@ -7,17 +7,41 @@
  * Uses Wikidata as data source (no auth required).
  */
 
+// Import dependencies via importScripts (Chrome extension service workers)
+// TypeScript will handle the types through the global declarations
+declare function importScripts(...urls: string[]): void;
 importScripts('types.js', 'cache.js', 'wikidataClient.js', 'resolver.js');
+
+import type {
+  ExtensionMessage,
+  GetPlatformDataRequest,
+  GetPlatformDataResponse,
+  GetPlatformDataBatchRequest,
+  GetPlatformDataBatchResponse,
+  UpdateCacheRequest,
+  CacheEntry
+} from './types';
 
 const LOG_PREFIX = '[XCPW Background]';
 
+interface AsyncResponse {
+  success: boolean;
+  data?: CacheEntry | null;
+  fromCache?: boolean;
+  error?: string;
+  count?: number;
+  oldestEntry?: number | null;
+  results?: Record<string, { data: CacheEntry; fromCache: boolean }>;
+}
+
 /**
  * Wraps an async handler with error handling and sends the response
- * @param {() => Promise<Object>} handler
- * @param {(response: Object) => void} sendResponse
- * @param {Object} errorResponse - Default response on error
  */
-async function handleAsync(handler, sendResponse, errorResponse) {
+async function handleAsync(
+  handler: () => Promise<AsyncResponse>,
+  sendResponse: (response: AsyncResponse) => void,
+  errorResponse: AsyncResponse
+): Promise<void> {
   try {
     const result = await handler();
     sendResponse(result);
@@ -29,18 +53,18 @@ async function handleAsync(handler, sendResponse, errorResponse) {
 
 /**
  * Handles incoming messages from content scripts and options page
- * @param {import('./types.js').ExtensionMessage} message
- * @param {chrome.runtime.MessageSender} _sender
- * @param {(response: Object) => void} sendResponse
- * @returns {boolean} - Return true to indicate async response
  */
-function handleMessage(message, _sender, sendResponse) {
+function handleMessage(
+  message: ExtensionMessage,
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response: AsyncResponse) => void
+): boolean {
   if (!message?.type) {
     sendResponse({ success: false, error: 'Invalid message format' });
     return false;
   }
 
-  const errorResponse = { success: false, data: null, fromCache: false };
+  const errorResponse: AsyncResponse = { success: false, data: null, fromCache: false };
 
   switch (message.type) {
     case 'GET_PLATFORM_DATA':
@@ -64,17 +88,15 @@ function handleMessage(message, _sender, sendResponse) {
       return true;
 
     default:
-      sendResponse({ success: false, error: `Unknown message type: ${message.type}` });
+      sendResponse({ success: false, error: `Unknown message type: ${(message as { type: string }).type}` });
       return false;
   }
 }
 
 /**
  * Gets platform data for a game from cache or Wikidata
- * @param {import('./types.js').GetPlatformDataRequest} message
- * @returns {Promise<import('./types.js').GetPlatformDataResponse>}
  */
-async function getPlatformData(message) {
+async function getPlatformData(message: GetPlatformDataRequest): Promise<GetPlatformDataResponse> {
   const { appid, gameName } = message;
 
   if (!appid || !gameName) {
@@ -93,11 +115,8 @@ async function getPlatformData(message) {
 
 /**
  * Gets platform data for multiple games in batch from cache or Wikidata
- * @param {Object} message
- * @param {Array<{appid: string, gameName: string}>} message.games
- * @returns {Promise<{success: boolean, results: Object}>}
  */
-async function getBatchPlatformData(message) {
+async function getBatchPlatformData(message: GetPlatformDataBatchRequest): Promise<GetPlatformDataBatchResponse> {
   const { games } = message;
 
   if (!games || !Array.isArray(games) || games.length === 0) {
@@ -113,7 +132,7 @@ async function getBatchPlatformData(message) {
   const resultsMap = await globalThis.XCPW_Resolver.batchResolvePlatformData(games);
 
   // Convert Map to plain object for message passing
-  const results = {};
+  const results: Record<string, { data: CacheEntry; fromCache: boolean }> = {};
   let cachedCount = 0;
   let resolvedCount = 0;
 
@@ -133,10 +152,8 @@ async function getBatchPlatformData(message) {
 
 /**
  * Forces a cache refresh for a game
- * @param {import('./types.js').UpdateCacheRequest} message
- * @returns {Promise<{success: boolean}>}
  */
-async function updateCache(message) {
+async function updateCache(message: UpdateCacheRequest): Promise<{ success: boolean }> {
   const { appid, gameName } = message;
 
   if (!appid || !gameName) {
@@ -151,18 +168,16 @@ async function updateCache(message) {
 
 /**
  * Gets cache statistics (handler wrapper to avoid name collision with cache.js)
- * @returns {Promise<{success: boolean, count: number, oldestEntry: number | null}>}
  */
-async function handleGetCacheStats() {
+async function handleGetCacheStats(): Promise<{ success: boolean; count: number; oldestEntry: number | null }> {
   const stats = await globalThis.XCPW_Cache.getCacheStats();
   return { success: true, count: stats.count, oldestEntry: stats.oldestEntry };
 }
 
 /**
  * Clears all cached data (handler wrapper to avoid name collision with cache.js)
- * @returns {Promise<{success: boolean}>}
  */
-async function handleClearCache() {
+async function handleClearCache(): Promise<{ success: boolean }> {
   await globalThis.XCPW_Cache.clearCache();
   console.log(`${LOG_PREFIX} Cache cleared`);
   return { success: true };

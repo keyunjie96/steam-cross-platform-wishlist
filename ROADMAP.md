@@ -123,15 +123,9 @@ Features below were evaluated and declined because established extensions (Augme
 
 ## Technical Debt
 
-### DEBT-1: TypeScript migration
-**Files:** All `src/*.js` files
-**Issue:** Currently using JSDoc for types. TypeScript would provide better IDE support and catch more errors at compile time.
-**Fix:** Convert to TypeScript, add build step with `tsc`.
-**Risk:** Medium - Adds build complexity. All tests need updating.
-
 ### DEBT-2: Bundle/minify for production
 **Files:** Build scripts, `manifest.json`
-**Issue:** Currently loads raw JS files. Production build could reduce extension size.
+**Issue:** Currently loads compiled JS files from `dist/`. Production build could reduce extension size.
 **Fix:** Add webpack/esbuild bundler, minify output.
 **Risk:** Low - standard build tooling. Source maps needed for debugging.
 
@@ -139,13 +133,14 @@ Features below were evaluated and declined because established extensions (Augme
 
 ## Completed
 
+- [x] DEBT-1: TypeScript migration (converted all src/*.js to TypeScript, added tsc build step)
 - [x] Stage 0: Appid extraction from Steam wishlist
 - [x] Stage 1: Platform icon injection with states
 - [x] Stage 2: Wikidata integration for platform data
 - [x] Region-agnostic store URLs
 - [x] Store ID extraction from Wikidata
 - [x] Options page with cache management
-- [x] Comprehensive test suite (240 tests)
+- [x] Comprehensive test suite (385+ tests)
 - [x] CI/CD with GitHub Actions
 - [x] CLAUDE.md project context file
 - [x] ROADMAP.md with detailed specs

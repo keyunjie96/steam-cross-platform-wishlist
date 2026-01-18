@@ -76,7 +76,7 @@ describe('content.js', () => {
     });
 
     // Load content.js - this will run init() if DOM is ready
-    require('../../src/content.js');
+    require('../../dist/content.js');
   });
 
   afterEach(() => {
@@ -437,7 +437,7 @@ describe('content.js', () => {
       jest.resetModules();
       globalThis.XCPW_PlatformInfo = mockPlatformInfo;
       globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../src/content.js');
+      require('../../dist/content.js');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Missing icon definitions')
@@ -453,7 +453,7 @@ describe('content.js', () => {
       jest.resetModules();
       globalThis.XCPW_Icons = mockIcons;
       globalThis.XCPW_StatusInfo = mockStatusInfo;
-      require('../../src/content.js');
+      require('../../dist/content.js');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Missing icon definitions')
@@ -1311,15 +1311,125 @@ describe('content.js', () => {
     });
 
     it('should return null and not throw when service worker errors', async () => {
-      const { requestPlatformData } = globalThis.XCPW_ContentTestExports;
+      const { requestPlatformData, MESSAGE_MAX_RETRIES } = globalThis.XCPW_ContentTestExports;
 
-      chrome.runtime.sendMessage.mockRejectedValueOnce(
-        new Error('Extension context invalidated')
-      );
+      // Mock all retry attempts (initial + MAX_RETRIES) to fail
+      const error = new Error('Extension context invalidated');
+      for (let i = 0; i <= MESSAGE_MAX_RETRIES; i++) {
+        chrome.runtime.sendMessage.mockRejectedValueOnce(error);
+      }
 
       const result = await requestPlatformData('12345', 'Test');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('sendMessageWithRetry (exported function)', () => {
+    it('should return response on first successful attempt', async () => {
+      const { sendMessageWithRetry } = globalThis.XCPW_ContentTestExports;
+
+      const mockResponse = { success: true, data: 'test' };
+      chrome.runtime.sendMessage.mockResolvedValueOnce(mockResponse);
+
+      const result = await sendMessageWithRetry({ type: 'TEST' });
+
+      expect(result).toEqual(mockResponse);
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it('should retry on "Could not establish connection" error and succeed', async () => {
+      const { sendMessageWithRetry } = globalThis.XCPW_ContentTestExports;
+
+      const mockResponse = { success: true, data: 'test' };
+      chrome.runtime.sendMessage
+        .mockRejectedValueOnce(new Error('Could not establish connection'))
+        .mockResolvedValueOnce(mockResponse);
+
+      const result = await sendMessageWithRetry({ type: 'TEST' });
+
+      expect(result).toEqual(mockResponse);
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry on "Receiving end does not exist" error and succeed', async () => {
+      const { sendMessageWithRetry } = globalThis.XCPW_ContentTestExports;
+
+      const mockResponse = { success: true, data: 'test' };
+      chrome.runtime.sendMessage
+        .mockRejectedValueOnce(new Error('Receiving end does not exist'))
+        .mockResolvedValueOnce(mockResponse);
+
+      const result = await sendMessageWithRetry({ type: 'TEST' });
+
+      expect(result).toEqual(mockResponse);
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw immediately on non-connection errors', async () => {
+      const { sendMessageWithRetry } = globalThis.XCPW_ContentTestExports;
+
+      chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Some other error'));
+
+      await expect(sendMessageWithRetry({ type: 'TEST' })).rejects.toThrow('Some other error');
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it('should respect maxRetries parameter', async () => {
+      const { sendMessageWithRetry, MESSAGE_MAX_RETRIES } = globalThis.XCPW_ContentTestExports;
+
+      const error = new Error('Could not establish connection');
+      for (let i = 0; i <= MESSAGE_MAX_RETRIES; i++) {
+        chrome.runtime.sendMessage.mockRejectedValueOnce(error);
+      }
+
+      await expect(sendMessageWithRetry({ type: 'TEST' })).rejects.toThrow('Could not establish connection');
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(MESSAGE_MAX_RETRIES + 1);
+    });
+
+    it('should use exponential backoff delay between retries', async () => {
+      const { sendMessageWithRetry, MESSAGE_RETRY_DELAY_MS } = globalThis.XCPW_ContentTestExports;
+
+      jest.useFakeTimers();
+
+      const mockResponse = { success: true };
+      chrome.runtime.sendMessage
+        .mockRejectedValueOnce(new Error('Could not establish connection'))
+        .mockResolvedValueOnce(mockResponse);
+
+      const promise = sendMessageWithRetry({ type: 'TEST' });
+
+      // Fast-forward through the first retry delay (100ms * 2^0 = 100ms)
+      await jest.advanceTimersByTimeAsync(MESSAGE_RETRY_DELAY_MS);
+
+      const result = await promise;
+      expect(result).toEqual(mockResponse);
+
+      jest.useRealTimers();
+    });
+
+    it('should handle string errors by converting to Error', async () => {
+      const { sendMessageWithRetry } = globalThis.XCPW_ContentTestExports;
+
+      // Mock rejection with a string instead of Error object
+      chrome.runtime.sendMessage.mockRejectedValueOnce('String error message');
+
+      await expect(sendMessageWithRetry({ type: 'TEST' })).rejects.toThrow('String error message');
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it('should retry on "Extension context invalidated" error', async () => {
+      const { sendMessageWithRetry } = globalThis.XCPW_ContentTestExports;
+
+      const mockResponse = { success: true, data: 'test' };
+      chrome.runtime.sendMessage
+        .mockRejectedValueOnce(new Error('Extension context invalidated'))
+        .mockResolvedValueOnce(mockResponse);
+
+      const result = await sendMessageWithRetry({ type: 'TEST' });
+
+      expect(result).toEqual(mockResponse);
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -1645,7 +1755,10 @@ describe('content.js', () => {
 
       const item = document.createElement('div');
       item.setAttribute('data-rfd-draggable-id', 'WishlistItem-11111-0');
-      item.setAttribute('data-xcpw-processed', 'true'); // Already processed
+      item.setAttribute('data-xcpw-processed', '11111'); // Already processed
+      const icons = document.createElement('span');
+      icons.className = 'xcpw-platforms';
+      item.appendChild(icons);
       const link = document.createElement('a');
       link.href = '/app/11111/Processed';
       item.appendChild(link);
@@ -2075,7 +2188,7 @@ describe('content.js', () => {
       chrome.storage.sync.get.mockRejectedValueOnce(new Error('Storage error'));
 
       // Re-require to test loadUserSettings
-      require('../../src/content.js');
+      require('../../dist/content.js');
       const { loadUserSettings } = globalThis.XCPW_ContentTestExports;
 
       await loadUserSettings();
@@ -2191,12 +2304,15 @@ describe('content.js', () => {
 
       const item = document.createElement('div');
       item.setAttribute('data-rfd-draggable-id', 'WishlistItem-12345-0');
-      item.setAttribute('data-xcpw-processed', 'true'); // Already processed
+      item.setAttribute('data-xcpw-processed', '12345'); // Already processed
+      const icons = document.createElement('span');
+      icons.className = 'xcpw-platforms';
+      item.appendChild(icons);
 
       await processItem(item);
 
       // Should return early without doing anything
-      expect(item.querySelector('.xcpw-platforms')).toBeNull();
+      expect(item.querySelectorAll('.xcpw-platforms').length).toBe(1);
     });
 
     it('should skip items without appId', async () => {
@@ -2354,6 +2470,440 @@ describe('content.js', () => {
       // Just verify the getter works (timer is managed internally)
       const timer = getUrlChangeDebounceTimer();
       expect(timer === null || typeof timer === 'number').toBe(true);
+    });
+  });
+
+  describe('isSameDeckData function', () => {
+    it('should return false when left is null', () => {
+      const { isSameDeckData } = globalThis.XCPW_ContentTestExports;
+      const right = new Map([['12345', 3]]);
+      expect(isSameDeckData(null, right)).toBe(false);
+    });
+
+    it('should return false when right is null', () => {
+      const { isSameDeckData } = globalThis.XCPW_ContentTestExports;
+      const left = new Map([['12345', 3]]);
+      expect(isSameDeckData(left, null)).toBe(false);
+    });
+
+    it('should return false when both are null', () => {
+      const { isSameDeckData } = globalThis.XCPW_ContentTestExports;
+      expect(isSameDeckData(null, null)).toBe(false);
+    });
+
+    it('should return false when sizes differ', () => {
+      const { isSameDeckData } = globalThis.XCPW_ContentTestExports;
+      const left = new Map([['12345', 3]]);
+      const right = new Map([['12345', 3], ['67890', 2]]);
+      expect(isSameDeckData(left, right)).toBe(false);
+    });
+
+    it('should return false when categories differ', () => {
+      const { isSameDeckData } = globalThis.XCPW_ContentTestExports;
+      const left = new Map([['12345', 3]]);
+      const right = new Map([['12345', 2]]);
+      expect(isSameDeckData(left, right)).toBe(false);
+    });
+
+    it('should return true when maps are equal', () => {
+      const { isSameDeckData } = globalThis.XCPW_ContentTestExports;
+      const left = new Map([['12345', 3], ['67890', 2]]);
+      const right = new Map([['12345', 3], ['67890', 2]]);
+      expect(isSameDeckData(left, right)).toBe(true);
+    });
+
+    it('should return true for empty maps', () => {
+      const { isSameDeckData } = globalThis.XCPW_ContentTestExports;
+      const left = new Map();
+      const right = new Map();
+      expect(isSameDeckData(left, right)).toBe(true);
+    });
+  });
+
+  describe('getEnabledPlatforms function', () => {
+    const originalLocation = window.location;
+
+    beforeEach(() => {
+      const { setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: true });
+      delete window.location;
+    });
+
+    afterEach(() => {
+      window.location = originalLocation;
+    });
+
+    it('should return all platforms when showSteamDeck is true and no deck_filters', () => {
+      const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: true });
+      window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
+
+      const platforms = getEnabledPlatforms();
+      expect(platforms).toContain('nintendo');
+      expect(platforms).toContain('playstation');
+      expect(platforms).toContain('xbox');
+      expect(platforms).toContain('steamdeck');
+    });
+
+    it('should exclude steamdeck when showSteamDeck is false', () => {
+      const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: false });
+      window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345');
+
+      const platforms = getEnabledPlatforms();
+      expect(platforms).toContain('nintendo');
+      expect(platforms).toContain('playstation');
+      expect(platforms).toContain('xbox');
+      expect(platforms).not.toContain('steamdeck');
+    });
+
+    it('should exclude steamdeck when deck_filters URL param is present', () => {
+      const { getEnabledPlatforms, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: true });
+      window.location = new URL('https://store.steampowered.com/wishlist/profiles/12345?deck_filters=verified');
+
+      const platforms = getEnabledPlatforms();
+      expect(platforms).toContain('nintendo');
+      expect(platforms).toContain('playstation');
+      expect(platforms).toContain('xbox');
+      expect(platforms).not.toContain('steamdeck');
+    });
+  });
+
+  describe('markMissingSteamDeckData function', () => {
+    beforeEach(() => {
+      const { getMissingSteamDeckAppIds, setUserSettings, setSteamDeckRefreshAttempts, setSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
+      getMissingSteamDeckAppIds().clear();
+      setUserSettings({ showSteamDeck: true });
+      setSteamDeckRefreshAttempts(0);
+      setSteamDeckRefreshTimer(null);
+
+      globalThis.XCPW_SteamDeck = {
+        waitForDeckData: jest.fn().mockResolvedValue(new Map()),
+        getDeckStatus: jest.fn(),
+        statusToDisplayStatus: jest.fn()
+      };
+    });
+
+    afterEach(() => {
+      delete globalThis.XCPW_SteamDeck;
+    });
+
+    it('should not mark when appid is empty', () => {
+      const { markMissingSteamDeckData, getMissingSteamDeckAppIds } = globalThis.XCPW_ContentTestExports;
+      markMissingSteamDeckData('');
+      expect(getMissingSteamDeckAppIds().size).toBe(0);
+    });
+
+    it('should not mark when showSteamDeck is false', () => {
+      const { markMissingSteamDeckData, getMissingSteamDeckAppIds, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: false });
+      markMissingSteamDeckData('12345');
+      expect(getMissingSteamDeckAppIds().size).toBe(0);
+    });
+
+    it('should not mark when XCPW_SteamDeck is not available', () => {
+      const { markMissingSteamDeckData, getMissingSteamDeckAppIds } = globalThis.XCPW_ContentTestExports;
+      delete globalThis.XCPW_SteamDeck;
+      markMissingSteamDeckData('12345');
+      expect(getMissingSteamDeckAppIds().size).toBe(0);
+    });
+
+    it('should mark appid and reset attempts when first missing', () => {
+      const { markMissingSteamDeckData, getMissingSteamDeckAppIds, setSteamDeckRefreshAttempts, getSteamDeckRefreshAttempts, STEAM_DECK_REFRESH_DELAYS_MS } = globalThis.XCPW_ContentTestExports;
+
+      // Set attempts to max (to test reset logic)
+      setSteamDeckRefreshAttempts(STEAM_DECK_REFRESH_DELAYS_MS.length);
+
+      markMissingSteamDeckData('12345');
+
+      expect(getMissingSteamDeckAppIds().has('12345')).toBe(true);
+      expect(getSteamDeckRefreshAttempts()).toBe(0);
+    });
+  });
+
+  describe('scheduleSteamDeckRefresh function', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      const { setUserSettings, setSteamDeckRefreshAttempts, setSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: true });
+      setSteamDeckRefreshAttempts(0);
+      setSteamDeckRefreshTimer(null);
+
+      globalThis.XCPW_SteamDeck = {
+        waitForDeckData: jest.fn().mockResolvedValue(new Map()),
+        getDeckStatus: jest.fn(),
+        statusToDisplayStatus: jest.fn()
+      };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+      delete globalThis.XCPW_SteamDeck;
+    });
+
+    it('should not schedule when showSteamDeck is false', () => {
+      const { scheduleSteamDeckRefresh, setUserSettings, getSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: false });
+      scheduleSteamDeckRefresh('test');
+      expect(getSteamDeckRefreshTimer()).toBeNull();
+    });
+
+    it('should not schedule when XCPW_SteamDeck is not available', () => {
+      const { scheduleSteamDeckRefresh, getSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
+      delete globalThis.XCPW_SteamDeck;
+      scheduleSteamDeckRefresh('test');
+      expect(getSteamDeckRefreshTimer()).toBeNull();
+    });
+
+    it('should not schedule when max attempts reached', () => {
+      const { scheduleSteamDeckRefresh, setSteamDeckRefreshAttempts, getSteamDeckRefreshTimer, STEAM_DECK_REFRESH_DELAYS_MS } = globalThis.XCPW_ContentTestExports;
+      setSteamDeckRefreshAttempts(STEAM_DECK_REFRESH_DELAYS_MS.length);
+      scheduleSteamDeckRefresh('test');
+      expect(getSteamDeckRefreshTimer()).toBeNull();
+    });
+
+    it('should not schedule when timer already exists', () => {
+      const { scheduleSteamDeckRefresh, setSteamDeckRefreshTimer, getSteamDeckRefreshTimer } = globalThis.XCPW_ContentTestExports;
+      const existingTimer = setTimeout(() => {}, 1000);
+      setSteamDeckRefreshTimer(existingTimer);
+      scheduleSteamDeckRefresh('test');
+      expect(getSteamDeckRefreshTimer()).toBe(existingTimer);
+      clearTimeout(existingTimer);
+    });
+
+    it('should schedule refresh with correct delay', () => {
+      const { scheduleSteamDeckRefresh, getSteamDeckRefreshTimer, STEAM_DECK_REFRESH_DELAYS_MS } = globalThis.XCPW_ContentTestExports;
+      scheduleSteamDeckRefresh('test');
+      expect(getSteamDeckRefreshTimer()).not.toBeNull();
+      expect(STEAM_DECK_REFRESH_DELAYS_MS[0]).toBe(800);
+    });
+  });
+
+  describe('refreshIconsFromCache function', () => {
+    beforeEach(() => {
+      const { getCachedEntriesByAppId, setSteamDeckData, setUserSettings } = globalThis.XCPW_ContentTestExports;
+      getCachedEntriesByAppId().clear();
+      setSteamDeckData(null);
+      setUserSettings({ showSteamDeck: true });
+
+      globalThis.XCPW_SteamDeck = {
+        waitForDeckData: jest.fn().mockResolvedValue(new Map()),
+        getDeckStatus: jest.fn().mockReturnValue({ found: true, status: 'verified', category: 3 }),
+        statusToDisplayStatus: jest.fn().mockReturnValue('available')
+      };
+    });
+
+    afterEach(() => {
+      delete globalThis.XCPW_SteamDeck;
+    });
+
+    it('should refresh icons for containers in cache', () => {
+      const { refreshIconsFromCache, getCachedEntriesByAppId, createIconsContainer, setSteamDeckData } = globalThis.XCPW_ContentTestExports;
+
+      // Create a container and add to DOM
+      const container = createIconsContainer('12345', 'Test Game');
+      document.body.appendChild(container);
+
+      // Add entry to cache
+      const cacheEntry = {
+        appid: '12345',
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' },
+          playstation: { status: 'unknown', storeUrl: null },
+          xbox: { status: 'unknown', storeUrl: null },
+          steamdeck: { status: 'unknown', storeUrl: null }
+        }
+      };
+      getCachedEntriesByAppId().set('12345', cacheEntry);
+
+      // Set Steam Deck data for the test
+      setSteamDeckData(new Map([['12345', 3]]));
+
+      refreshIconsFromCache('test');
+
+      // Container should have icons
+      const nintendoIcon = container.querySelector('[data-platform="nintendo"]');
+      expect(nintendoIcon).toBeTruthy();
+
+      container.remove();
+    });
+
+    it('should skip containers not in DOM', () => {
+      const { refreshIconsFromCache, getCachedEntriesByAppId, createIconsContainer } = globalThis.XCPW_ContentTestExports;
+
+      // Create a container but don't add to DOM
+      const container = createIconsContainer('12345', 'Test Game');
+
+      // Add entry to cache
+      const cacheEntry = {
+        appid: '12345',
+        gameName: 'Test Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' },
+          playstation: { status: 'unknown', storeUrl: null },
+          xbox: { status: 'unknown', storeUrl: null },
+          steamdeck: { status: 'unknown', storeUrl: null }
+        }
+      };
+      getCachedEntriesByAppId().set('12345', cacheEntry);
+
+      // Should not throw
+      refreshIconsFromCache('test');
+
+      // Container should still just have loader
+      expect(container.querySelector('.xcpw-loader')).toBeTruthy();
+    });
+  });
+
+  describe('refreshSteamDeckData function', () => {
+    beforeEach(() => {
+      const { setSteamDeckData, setUserSettings, setSteamDeckRefreshAttempts, setSteamDeckRefreshTimer, getMissingSteamDeckAppIds } = globalThis.XCPW_ContentTestExports;
+      setSteamDeckData(null);
+      setUserSettings({ showSteamDeck: true });
+      setSteamDeckRefreshAttempts(0);
+      setSteamDeckRefreshTimer(null);
+      getMissingSteamDeckAppIds().clear();
+
+      globalThis.XCPW_SteamDeck = {
+        waitForDeckData: jest.fn().mockResolvedValue(new Map([['12345', 3]])),
+        getDeckStatus: jest.fn().mockReturnValue({ found: true, status: 'verified', category: 3 }),
+        statusToDisplayStatus: jest.fn().mockReturnValue('available')
+      };
+    });
+
+    afterEach(() => {
+      delete globalThis.XCPW_SteamDeck;
+    });
+
+    it('should not refresh when showSteamDeck is false', async () => {
+      const { refreshSteamDeckData, setUserSettings, getSteamDeckData } = globalThis.XCPW_ContentTestExports;
+      setUserSettings({ showSteamDeck: false });
+      await refreshSteamDeckData('test');
+      expect(getSteamDeckData()).toBeNull();
+    });
+
+    it('should not refresh when XCPW_SteamDeck is not available', async () => {
+      const { refreshSteamDeckData, getSteamDeckData } = globalThis.XCPW_ContentTestExports;
+      delete globalThis.XCPW_SteamDeck;
+      await refreshSteamDeckData('test');
+      expect(getSteamDeckData()).toBeNull();
+    });
+
+    it('should update steamDeckData on successful refresh', async () => {
+      const { refreshSteamDeckData, getSteamDeckData } = globalThis.XCPW_ContentTestExports;
+      await refreshSteamDeckData('test');
+      const data = getSteamDeckData();
+      expect(data).not.toBeNull();
+      expect(data.get('12345')).toBe(3);
+    });
+
+    it('should remove appids from missing set when found', async () => {
+      const { refreshSteamDeckData, getMissingSteamDeckAppIds } = globalThis.XCPW_ContentTestExports;
+
+      // Add to missing set
+      getMissingSteamDeckAppIds().add('12345');
+
+      await refreshSteamDeckData('test');
+
+      // Should be removed since data was found
+      expect(getMissingSteamDeckAppIds().has('12345')).toBe(false);
+    });
+
+    it('should not update when data is empty', async () => {
+      const { refreshSteamDeckData, getSteamDeckData, setSteamDeckData } = globalThis.XCPW_ContentTestExports;
+
+      // Set initial data
+      setSteamDeckData(new Map([['67890', 2]]));
+
+      // Mock empty response
+      globalThis.XCPW_SteamDeck.waitForDeckData.mockResolvedValue(new Map());
+
+      await refreshSteamDeckData('test');
+
+      // Should keep old data
+      const data = getSteamDeckData();
+      expect(data.get('67890')).toBe(2);
+    });
+  });
+
+  describe('findInjectionPoint SVG grouping', () => {
+    it('should find largest SVG group when no title-based icon found', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+
+      const item = document.createElement('div');
+
+      // Create two groups of SVGs - second one larger
+      const group1 = document.createElement('div');
+      group1.className = 'small-group';
+      const wrapper1 = document.createElement('span');
+      wrapper1.appendChild(document.createElement('svg'));
+      group1.appendChild(wrapper1);
+
+      const group2 = document.createElement('div');
+      group2.className = 'large-group';
+      for (let i = 0; i < 3; i++) {
+        const wrapper = document.createElement('span');
+        wrapper.appendChild(document.createElement('svg'));
+        group2.appendChild(wrapper);
+      }
+
+      item.appendChild(group1);
+      item.appendChild(group2);
+      document.body.appendChild(item);
+
+      const result = findInjectionPoint(item);
+
+      // Should pick the larger group
+      expect(result.container.className).toBe('large-group');
+
+      item.remove();
+    });
+
+    it('should use item as fallback when no SVG groups found', () => {
+      const { findInjectionPoint } = globalThis.XCPW_ContentTestExports;
+
+      const item = document.createElement('div');
+      item.className = 'test-item';
+      document.body.appendChild(item);
+
+      const result = findInjectionPoint(item);
+
+      expect(result.container).toBe(item);
+      expect(result.insertAfter).toBeNull();
+
+      item.remove();
+    });
+  });
+
+  describe('parseSvg error handling', () => {
+    it('should return null for invalid SVG', () => {
+      const { parseSvg } = globalThis.XCPW_ContentTestExports;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      const result = parseSvg('<svg><not-closed>');
+
+      expect(result).toBeNull();
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('createPlatformIcon default tooltip', () => {
+    it('should use STATUS_INFO tooltip for non-steamdeck platforms', () => {
+      const { createPlatformIcon } = globalThis.XCPW_ContentTestExports;
+
+      const icon = createPlatformIcon('nintendo', 'available', 'Test Game');
+
+      expect(icon.getAttribute('title')).toBe('Nintendo Switch: Available');
+    });
+
+    it('should use STATUS_INFO tooltip when no tier provided for steamdeck', () => {
+      const { createPlatformIcon } = globalThis.XCPW_ContentTestExports;
+
+      const icon = createPlatformIcon('steamdeck', 'available', 'Test Game');
+
+      expect(icon.getAttribute('title')).toBe('Steam Deck: Available');
     });
   });
 });

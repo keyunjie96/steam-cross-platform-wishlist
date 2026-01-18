@@ -10,9 +10,9 @@ describe('cache.js', () => {
     clearMockStorage();
 
     // Load types.js first (dependency)
-    require('../../src/types.js');
+    require('../../dist/types.js');
     // Then load cache.js
-    require('../../src/cache.js');
+    require('../../dist/cache.js');
   });
 
   describe('exports', () => {

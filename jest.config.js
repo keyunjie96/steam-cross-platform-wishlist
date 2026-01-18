@@ -11,9 +11,11 @@ module.exports = {
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
 
-  // Coverage configuration
+  // Coverage configuration - now covers compiled dist/ files
   collectCoverageFrom: [
-    'src/**/*.js',
+    'dist/**/*.js',
+    '!dist/**/*.d.ts',
+    '!dist/**/*.map',
     '!tests/**',
     '!coverage/**'
   ],
@@ -43,7 +45,7 @@ module.exports = {
   // Module paths for imports
   moduleDirectories: ['node_modules', '<rootDir>'],
 
-  // Transform settings (no transformation needed for vanilla JS)
+  // No transformation needed for CommonJS output
   transform: {},
 
   // Ignore patterns

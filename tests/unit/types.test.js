@@ -6,7 +6,7 @@ describe('types.js', () => {
   beforeEach(() => {
     // Load the module fresh for each test
     jest.resetModules();
-    require('../../src/types.js');
+    require('../../dist/types.js');
   });
 
   describe('StoreUrls', () => {
@@ -127,7 +127,7 @@ describe('types.js', () => {
         // Temporarily make globalThis appear undefined by shadowing
         // We need to test the else-if branch: typeof window !== 'undefined'
         // Since we can't delete globalThis in modern JS, test that window has it
-        require('../../src/types.js');
+        require('../../dist/types.js');
 
         // Verify the module loaded successfully (either path works)
         expect(globalThis.XCPW_StoreUrls || window.XCPW_StoreUrls).toBeDefined();

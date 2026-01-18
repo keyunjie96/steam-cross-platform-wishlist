@@ -6,6 +6,8 @@
  * Only calls query.wikidata.org.
  */
 
+import type { WikidataResult, WikidataStoreIds } from './types';
+
 const WIKIDATA_SPARQL_URL = 'https://query.wikidata.org/sparql';
 const WIKIDATA_LOG_PREFIX = '[XCPW Wikidata]';
 const WIKIDATA_DEBUG = false;
@@ -16,7 +18,7 @@ const INITIAL_BACKOFF_MS = 1000;
 
 let requestQueue = Promise.resolve();
 
-const PLATFORM_QIDS = {
+const PLATFORM_QIDS: Record<string, string> = {
   SWITCH: 'Q19610114',
   PS4: 'Q5014725',
   PS5: 'Q63184502',
@@ -24,14 +26,9 @@ const PLATFORM_QIDS = {
   XBOX_SERIES_X: 'Q64513817',
   XBOX_SERIES_S: 'Q98973368',
   STEAM_DECK: 'Q92920695',
-  WINDOWS: 'Q1406',
-  MACOS: 'Q14116',
-  LINUX: 'Q388',
-  IOS: 'Q48493',
-  ANDROID: 'Q94'
 };
 
-const PROPERTIES = {
+const PROPERTIES: Record<string, string> = {
   STEAM_APP_ID: 'P1733',
   PLATFORM: 'P400',
   GOG_ID: 'P2725',
@@ -41,19 +38,14 @@ const PROPERTIES = {
   ESHOP_ID: 'P8956',
   APP_STORE_ID: 'P3861',
   PLAY_STORE_ID: 'P3418',
-  ITCH_ID: 'P7294',
   SWITCH_TITLE_ID: 'P11072',
   ESHOP_EUROPE_ID: 'P12418',
   ESHOP_US_ID: 'P8084',
-  NINTENDO_LIFE_GAME_ID: 'P12735',
   PS_STORE_EU: 'P5971',
-  PS_STORE_JP: 'P5999',
   PS_STORE_NA: 'P5944',
   PS_STORE_CONCEPT: 'P12332',
-  PUSH_SQUARE_ID: 'P12736',
   MS_STORE_ID: 'P5885',
   PURE_XBOX_ID: 'P12737',
-  XBOX_360_STORE: 'P11789'
 };
 
 const SPARQL_SELECT_FIELDS = `
@@ -84,13 +76,13 @@ const SPARQL_OPTIONAL_CLAUSES = `
   OPTIONAL { ?game wdt:${PROPERTIES.PURE_XBOX_ID} ?pureXboxId . }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }`;
 
-const PLATFORM_STORE_ID_MAP = {
+const PLATFORM_STORE_ID_MAP: Record<string, keyof WikidataStoreIds> = {
   nintendo: 'eshop',
   playstation: 'psStore',
   xbox: 'xbox'
 };
 
-const STORE_URL_TEMPLATES = {
+const STORE_URL_TEMPLATES: Record<string, string> = {
   nintendo: 'https://www.nintendo.com/store/products/{id}/',
   playstation: 'https://store.playstation.com/concept/{id}',
   xbox: 'https://www.xbox.com/games/store/-/{id}',
@@ -101,12 +93,12 @@ const STORE_URL_TEMPLATES = {
   itch: 'https://{id}.itch.io/'
 };
 
-function buildStoreUrl(store, id) {
+function buildStoreUrl(store: string, id: string | null | undefined): string | null {
   if (!id || !STORE_URL_TEMPLATES[store]) return null;
   return STORE_URL_TEMPLATES[store].replace('{id}', id);
 }
 
-const STORE_URL_BUILDERS = {
+const STORE_URL_BUILDERS: Record<string, (id: string) => string | null> = {
   nintendo: (id) => buildStoreUrl('nintendo', id),
   playstation: (id) => buildStoreUrl('playstation', id),
   xbox: (id) => buildStoreUrl('xbox', id),
@@ -117,25 +109,7 @@ const STORE_URL_BUILDERS = {
   itch: (id) => buildStoreUrl('itch', id)
 };
 
-/**
- * @typedef {Object} WikidataResult
- * @property {string | null} wikidataId - Wikidata QID
- * @property {string} gameName - Game name from Wikidata
- * @property {boolean} found - Whether the game was found
- * @property {Object} platforms - Platform availability
- * @property {boolean} platforms.nintendo - Nintendo Switch availability
- * @property {boolean} platforms.playstation - PS4/PS5 availability
- * @property {boolean} platforms.xbox - Xbox One/Series availability
- * @property {boolean} platforms.steamdeck - Steam Deck availability
- * @property {Object} storeIds - Store IDs for URL construction
- * @property {string | null} storeIds.eshop - Nintendo eShop ID
- * @property {string | null} storeIds.psStore - PlayStation Store ID
- * @property {string | null} storeIds.xbox - Xbox Store ID
- * @property {string | null} storeIds.gog - GOG ID
- * @property {string | null} storeIds.epic - Epic Games Store ID
- */
-
-const EMPTY_RESULT = {
+const EMPTY_RESULT: WikidataResult = {
   wikidataId: null,
   gameName: '',
   found: false,
@@ -143,16 +117,41 @@ const EMPTY_RESULT = {
   storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null }
 };
 
-function createEmptyResult() {
+function createEmptyResult(): WikidataResult {
   return { ...EMPTY_RESULT, platforms: { ...EMPTY_RESULT.platforms }, storeIds: { ...EMPTY_RESULT.storeIds } };
+}
+
+interface SparqlBinding {
+  platforms?: { value: string };
+  game?: { value: string };
+  gameLabel?: { value: string };
+  steamId?: { value: string };
+  switchTitle?: { value: string };
+  eshopEu?: { value: string };
+  eshopUs?: { value: string };
+  psStoreEu?: { value: string };
+  psStoreNa?: { value: string };
+  psStoreConcept?: { value: string };
+  psStore?: { value: string };
+  pureXbox?: { value: string };
+  msStore?: { value: string };
+  xbox?: { value: string };
+  gog?: { value: string };
+  epic?: { value: string };
+  appStore?: { value: string };
+  playStore?: { value: string };
+}
+
+interface SparqlResponse {
+  results?: {
+    bindings?: SparqlBinding[];
+  };
 }
 
 /**
  * Extracts platform availability and store IDs from a SPARQL binding
- * @param {Object} binding - SPARQL result binding
- * @returns {WikidataResult}
  */
-function parseBindingToResult(binding) {
+function parseBindingToResult(binding: SparqlBinding): WikidataResult {
   const platformQIDs = binding.platforms?.value?.split(',') || [];
 
   const hasSwitchP400 = platformQIDs.includes(PLATFORM_QIDS.SWITCH);
@@ -170,7 +169,7 @@ function parseBindingToResult(binding) {
   const isPureXboxConsole = pureXboxId && !pureXboxId.includes('xbox-for-pc') && !pureXboxId.includes('-for-pc');
   const hasXboxStoreId = !!(binding.msStore?.value || isPureXboxConsole || binding.xbox?.value);
 
-  const wikidataId = binding.game?.value ? binding.game.value.split('/').pop() : null;
+  const wikidataId = binding.game?.value ? binding.game.value.split('/').pop() || null : null;
 
   return {
     wikidataId,
@@ -196,22 +195,18 @@ function parseBindingToResult(binding) {
 
 /**
  * Serializes requests through a queue to prevent concurrent bursts.
- * @returns {Promise<void>}
  */
-async function rateLimit() {
-  const myTurn = requestQueue.then(() => new Promise(resolve => setTimeout(resolve, REQUEST_DELAY_MS)));
-  requestQueue = myTurn.catch(() => {});
+async function rateLimit(): Promise<void> {
+  const myTurn = requestQueue.then(() => new Promise<void>(resolve => setTimeout(resolve, REQUEST_DELAY_MS)));
+  requestQueue = myTurn.catch(() => { /* ignore */ });
   await myTurn;
 }
 
 /**
  * Executes a SPARQL query against Wikidata with retry logic.
  * Fails silently - errors are caught and return null.
- * @param {string} query - SPARQL query
- * @param {number} retryCount - Current retry attempt (internal)
- * @returns {Promise<Object | null>}
  */
-async function executeSparqlQuery(query, retryCount = 0) {
+async function executeSparqlQuery(query: string, retryCount = 0): Promise<SparqlResponse | null> {
   await rateLimit();
 
   try {
@@ -242,8 +237,8 @@ async function executeSparqlQuery(query, retryCount = 0) {
       return null;
     }
 
-    return await response.json();
-  } catch (error) {
+    return await response.json() as SparqlResponse;
+  } catch {
     // Network errors - fail silently
     return null;
   }
@@ -251,11 +246,9 @@ async function executeSparqlQuery(query, retryCount = 0) {
 
 /**
  * Queries Wikidata for a game by Steam App ID
- * @param {string} steamAppId - Steam application ID
- * @returns {Promise<WikidataResult>}
  * @throws {Error} When query fails due to network/rate limit (caller should NOT cache)
  */
-async function queryBySteamAppId(steamAppId) {
+async function queryBySteamAppId(steamAppId: string): Promise<WikidataResult> {
   if (WIKIDATA_DEBUG) console.log(`${WIKIDATA_LOG_PREFIX} queryBySteamAppId called for: ${steamAppId}`);
 
   const query = `
@@ -295,12 +288,10 @@ async function queryBySteamAppId(steamAppId) {
 
 /**
  * Batch query multiple Steam App IDs
- * @param {string[]} steamAppIds - Array of Steam App IDs
- * @returns {Promise<Map<string, WikidataResult>>}
  * @throws {Error} When query fails due to network/rate limit (caller should NOT cache)
  */
-async function batchQueryBySteamAppIds(steamAppIds) {
-  const results = new Map();
+async function batchQueryBySteamAppIds(steamAppIds: string[]): Promise<Map<string, WikidataResult>> {
+  const results = new Map<string, WikidataResult>();
   const BATCH_SIZE = 20;
 
   for (let i = 0; i < steamAppIds.length; i += BATCH_SIZE) {
@@ -350,11 +341,8 @@ async function batchQueryBySteamAppIds(steamAppIds) {
 
 /**
  * Gets the store URL for a platform
- * @param {string} platform - 'nintendo', 'playstation', or 'xbox'
- * @param {Object} storeIds - Store IDs from Wikidata
- * @returns {string | null}
  */
-function getStoreUrl(platform, storeIds) {
+function getStoreUrl(platform: string, storeIds: WikidataStoreIds): string | null {
   const storeIdKey = PLATFORM_STORE_ID_MAP[platform];
   if (!storeIdKey) return null;
   return buildStoreUrl(platform, storeIds[storeIdKey]);
@@ -362,15 +350,15 @@ function getStoreUrl(platform, storeIds) {
 
 /**
  * Tests the Wikidata connection with a simple query
- * @returns {Promise<{success: boolean, message: string}>}
  */
-async function testConnection() {
+async function testConnection(): Promise<{ success: boolean; message: string }> {
   try {
     const result = await queryBySteamAppId('620');
     const message = result.found ? 'Wikidata connection successful' : 'Wikidata reachable (test game not found)';
     return { success: true, message };
   } catch (error) {
-    return { success: false, message: `Connection failed: ${error.message}` };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, message: `Connection failed: ${errorMessage}` };
   }
 }
 
@@ -382,4 +370,17 @@ globalThis.XCPW_WikidataClient = {
   testConnection,
   STORE_URL_BUILDERS,
   PLATFORM_QIDS
+};
+
+// Also export for module imports in tests
+export {
+  queryBySteamAppId,
+  batchQueryBySteamAppIds,
+  getStoreUrl,
+  testConnection,
+  STORE_URL_BUILDERS,
+  PLATFORM_QIDS,
+  createEmptyResult,
+  parseBindingToResult,
+  executeSparqlQuery
 };

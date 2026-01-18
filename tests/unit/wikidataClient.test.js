@@ -13,7 +13,7 @@ describe('wikidataClient.js', () => {
     global.fetch = mockFetch;
 
     // Load the module
-    require('../../src/wikidataClient.js');
+    require('../../dist/wikidataClient.js');
   });
 
   afterEach(() => {
@@ -173,12 +173,6 @@ describe('wikidataClient.js', () => {
       expect(qids.XBOX_SERIES_S).toBe('Q98973368');
     });
 
-    it('should have QIDs for PC platforms', () => {
-      const qids = globalThis.XCPW_WikidataClient.PLATFORM_QIDS;
-      expect(qids.WINDOWS).toBe('Q1406');
-      expect(qids.MACOS).toBe('Q14116');
-      expect(qids.LINUX).toBe('Q388');
-    });
   });
 
   describe('getStoreUrl', () => {
