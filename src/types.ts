@@ -143,6 +143,9 @@ declare global {
       removeLoadingState: (container: HTMLElement) => void;
       findInjectionPoint: (item: Element) => { container: Element; insertAfter: Element | null };
       requestPlatformData: (appid: string, gameName: string) => Promise<GetPlatformDataResponse | null>;
+      sendMessageWithRetry: <T>(message: object, maxRetries?: number) => Promise<T | null>;
+      MESSAGE_MAX_RETRIES: number;
+      MESSAGE_RETRY_DELAY_MS: number;
       findWishlistRow: (link: Element) => Element | null;
       findWishlistItems: (root?: Element | Document) => Element[];
       checkDeckFilterActive: () => boolean;
@@ -158,6 +161,22 @@ declare global {
       loadUserSettings: () => Promise<void>;
       setSteamDeckData: (val: Map<string, DeckCategory> | null) => void;
       getSteamDeckData: () => Map<string, DeckCategory> | null;
+      // Steam Deck refresh exports for coverage testing
+      isSameDeckData: (left: Map<string, DeckCategory> | null, right: Map<string, DeckCategory> | null) => boolean;
+      refreshIconsFromCache: (reason: string) => void;
+      refreshSteamDeckData: (reason: string) => Promise<void>;
+      scheduleSteamDeckRefresh: (reason: string) => void;
+      markMissingSteamDeckData: (appid: string) => void;
+      getEnabledPlatforms: () => Platform[];
+      getMissingSteamDeckAppIds: () => Set<string>;
+      getSteamDeckRefreshAttempts: () => number;
+      setSteamDeckRefreshAttempts: (val: number) => void;
+      getCachedEntriesByAppId: () => Map<string, CacheEntry>;
+      getUserSettings: () => { showSteamDeck: boolean };
+      setUserSettings: (val: { showSteamDeck: boolean }) => void;
+      getSteamDeckRefreshTimer: () => ReturnType<typeof setTimeout> | null;
+      setSteamDeckRefreshTimer: (val: ReturnType<typeof setTimeout> | null) => void;
+      STEAM_DECK_REFRESH_DELAYS_MS: number[];
     };
     SSR?: {
       renderContext?: {

@@ -679,7 +679,8 @@ async function sendMessageWithRetry<T>(message: object, maxRetries = MESSAGE_MAX
     }
   }
 
-  return null;
+  // This should never be reached - the loop always returns or throws
+  throw lastError ?? new Error('Unexpected state in sendMessageWithRetry');
 }
 
 /**
@@ -1120,6 +1121,22 @@ if (typeof globalThis !== 'undefined') {
     waitForInjectionPoint,
     loadUserSettings,
     setSteamDeckData: (val: Map<string, DeckCategory> | null) => { steamDeckData = val; },
-    getSteamDeckData: () => steamDeckData
+    getSteamDeckData: () => steamDeckData,
+    // Steam Deck refresh exports for coverage testing
+    isSameDeckData,
+    refreshIconsFromCache,
+    refreshSteamDeckData,
+    scheduleSteamDeckRefresh,
+    markMissingSteamDeckData,
+    getEnabledPlatforms,
+    getMissingSteamDeckAppIds: () => missingSteamDeckAppIds,
+    getSteamDeckRefreshAttempts: () => steamDeckRefreshAttempts,
+    setSteamDeckRefreshAttempts: (val: number) => { steamDeckRefreshAttempts = val; },
+    getCachedEntriesByAppId: () => cachedEntriesByAppId,
+    getUserSettings: () => userSettings,
+    setUserSettings: (val: { showSteamDeck: boolean }) => { userSettings = val; },
+    getSteamDeckRefreshTimer: () => steamDeckRefreshTimer,
+    setSteamDeckRefreshTimer: (val: ReturnType<typeof setTimeout> | null) => { steamDeckRefreshTimer = val; },
+    STEAM_DECK_REFRESH_DELAYS_MS
   };
 }
