@@ -9,17 +9,17 @@ const MS_PER_HOUR = 1000 * 60 * 60;
 const MS_PER_DAY = MS_PER_HOUR * 24;
 const LOG_PREFIX = '[XCPW Options]';
 
-// DOM Elements
-const statusEl = document.getElementById('status') as HTMLElement;
-const settingsStatusEl = document.getElementById('settings-status') as HTMLElement | null;
-const cacheCountEl = document.getElementById('cache-count') as HTMLElement;
-const cacheAgeEl = document.getElementById('cache-age') as HTMLElement;
-const refreshStatsBtn = document.getElementById('refresh-stats-btn') as HTMLButtonElement;
-const clearCacheBtn = document.getElementById('clear-cache-btn') as HTMLButtonElement;
-const showNintendoCheckbox = document.getElementById('show-nintendo') as HTMLInputElement | null;
-const showPlaystationCheckbox = document.getElementById('show-playstation') as HTMLInputElement | null;
-const showXboxCheckbox = document.getElementById('show-xbox') as HTMLInputElement | null;
-const showSteamDeckCheckbox = document.getElementById('show-steamdeck') as HTMLInputElement | null;
+// DOM Elements (initialized in DOMContentLoaded)
+let statusEl: HTMLElement;
+let settingsStatusEl: HTMLElement | null;
+let cacheCountEl: HTMLElement;
+let cacheAgeEl: HTMLElement;
+let refreshStatsBtn: HTMLButtonElement;
+let clearCacheBtn: HTMLButtonElement;
+let showNintendoCheckbox: HTMLInputElement | null;
+let showPlaystationCheckbox: HTMLInputElement | null;
+let showXboxCheckbox: HTMLInputElement | null;
+let showSteamDeckCheckbox: HTMLInputElement | null;
 
 // Default settings
 interface Settings {
@@ -203,24 +203,46 @@ async function clearCache(): Promise<void> {
   }
 }
 
-// Event Listeners
-refreshStatsBtn.addEventListener('click', loadCacheStats);
-clearCacheBtn.addEventListener('click', clearCache);
-if (showNintendoCheckbox) {
-  showNintendoCheckbox.addEventListener('change', handlePlatformToggle);
-}
-if (showPlaystationCheckbox) {
-  showPlaystationCheckbox.addEventListener('change', handlePlatformToggle);
-}
-if (showXboxCheckbox) {
-  showXboxCheckbox.addEventListener('change', handlePlatformToggle);
-}
-if (showSteamDeckCheckbox) {
-  showSteamDeckCheckbox.addEventListener('change', handlePlatformToggle);
-}
+/**
+ * Initializes DOM elements and event listeners
+ */
+function initializePage(): void {
+  // Get DOM elements
+  statusEl = document.getElementById('status') as HTMLElement;
+  settingsStatusEl = document.getElementById('settings-status') as HTMLElement | null;
+  cacheCountEl = document.getElementById('cache-count') as HTMLElement;
+  cacheAgeEl = document.getElementById('cache-age') as HTMLElement;
+  refreshStatsBtn = document.getElementById('refresh-stats-btn') as HTMLButtonElement;
+  clearCacheBtn = document.getElementById('clear-cache-btn') as HTMLButtonElement;
+  showNintendoCheckbox = document.getElementById('show-nintendo') as HTMLInputElement | null;
+  showPlaystationCheckbox = document.getElementById('show-playstation') as HTMLInputElement | null;
+  showXboxCheckbox = document.getElementById('show-xbox') as HTMLInputElement | null;
+  showSteamDeckCheckbox = document.getElementById('show-steamdeck') as HTMLInputElement | null;
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
+  // Event Listeners
+  refreshStatsBtn.addEventListener('click', loadCacheStats);
+  clearCacheBtn.addEventListener('click', clearCache);
+  if (showNintendoCheckbox) {
+    showNintendoCheckbox.addEventListener('change', handlePlatformToggle);
+  }
+  if (showPlaystationCheckbox) {
+    showPlaystationCheckbox.addEventListener('change', handlePlatformToggle);
+  }
+  if (showXboxCheckbox) {
+    showXboxCheckbox.addEventListener('change', handlePlatformToggle);
+  }
+  if (showSteamDeckCheckbox) {
+    showSteamDeckCheckbox.addEventListener('change', handlePlatformToggle);
+  }
+
+  // Load initial data
   loadCacheStats();
   loadSettings();
-});
+}
+
+// Initialize when DOM is ready (or immediately if already loaded)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializePage);
+} else {
+  initializePage();
+}
