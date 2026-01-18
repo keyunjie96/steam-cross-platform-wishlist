@@ -27,6 +27,7 @@ const files = [
   'background.ts',
   'content.ts',
   'options.ts',
+  'popup.ts',
 ];
 
 async function build() {

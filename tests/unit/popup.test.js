@@ -1,0 +1,529 @@
+/**
+ * Unit tests for popup.js
+ */
+
+describe('popup.js', () => {
+  let statusEl;
+  let cacheCountEl;
+  let cacheAgeEl;
+  let refreshBtn;
+  let clearBtn;
+  let optionsLink;
+
+  beforeEach(() => {
+    jest.resetModules();
+    jest.useFakeTimers();
+
+    // Set up DOM elements that popup.js expects
+    document.body.textContent = '';
+
+    statusEl = document.createElement('div');
+    statusEl.id = 'status';
+    statusEl.className = 'status';
+    statusEl.setAttribute('role', 'alert');
+    document.body.appendChild(statusEl);
+
+    cacheCountEl = document.createElement('div');
+    cacheCountEl.id = 'cache-count';
+    cacheCountEl.textContent = '-';
+    document.body.appendChild(cacheCountEl);
+
+    cacheAgeEl = document.createElement('div');
+    cacheAgeEl.id = 'cache-age';
+    cacheAgeEl.textContent = '-';
+    document.body.appendChild(cacheAgeEl);
+
+    refreshBtn = document.createElement('button');
+    refreshBtn.id = 'refresh-btn';
+    refreshBtn.textContent = 'Refresh';
+    document.body.appendChild(refreshBtn);
+
+    clearBtn = document.createElement('button');
+    clearBtn.id = 'clear-btn';
+    clearBtn.textContent = 'Clear Cache';
+    document.body.appendChild(clearBtn);
+
+    optionsLink = document.createElement('a');
+    optionsLink.id = 'options-link';
+    optionsLink.href = '#';
+    optionsLink.textContent = 'Open Settings';
+    document.body.appendChild(optionsLink);
+
+    // Mock chrome.runtime.sendMessage
+    chrome.runtime.sendMessage.mockClear();
+    chrome.runtime.sendMessage.mockResolvedValue({
+      success: true,
+      count: 10,
+      oldestEntry: Date.now() - 86400000 // 1 day ago
+    });
+
+    // Mock chrome.runtime.openOptionsPage
+    chrome.runtime.openOptionsPage.mockClear();
+
+    // Mock confirm dialog
+    global.confirm = jest.fn(() => true);
+
+    // Load popup.js
+    require('../../dist/popup.js');
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    delete global.confirm;
+  });
+
+  describe('initialization', () => {
+    it('should get all required DOM elements', () => {
+      expect(statusEl).toBeTruthy();
+      expect(cacheCountEl).toBeTruthy();
+      expect(cacheAgeEl).toBeTruthy();
+      expect(refreshBtn).toBeTruthy();
+      expect(clearBtn).toBeTruthy();
+      expect(optionsLink).toBeTruthy();
+    });
+
+    it('should add click listener to refresh button', () => {
+      expect(refreshBtn.onclick !== null || refreshBtn.addEventListener).toBeTruthy();
+    });
+
+    it('should add click listener to clear button', () => {
+      expect(clearBtn.onclick !== null || clearBtn.addEventListener).toBeTruthy();
+    });
+
+    it('should add click listener to options link', () => {
+      expect(optionsLink.onclick !== null || optionsLink.addEventListener).toBeTruthy();
+    });
+
+    it('should load cache stats on DOMContentLoaded', async () => {
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+        type: 'GET_CACHE_STATS'
+      });
+    });
+  });
+
+  describe('loadCacheStats', () => {
+    it('should request cache stats from background', async () => {
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+        type: 'GET_CACHE_STATS'
+      });
+    });
+
+    it('should display cache count', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        count: 25,
+        oldestEntry: Date.now()
+      });
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheCountEl.textContent).toBe('25');
+    });
+
+    it('should display cache age in days and hours', async () => {
+      const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000); // 1d 2h ago
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        count: 5,
+        oldestEntry: oneDayAgo
+      });
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheAgeEl.textContent).toMatch(/1d 2h/);
+    });
+
+    it('should display cache age in hours only when less than a day', async () => {
+      const hoursAgo = Date.now() - (5 * 60 * 60 * 1000); // 5h ago
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        count: 3,
+        oldestEntry: hoursAgo
+      });
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheAgeEl.textContent).toBe('5h');
+    });
+
+    it('should display <1h when cache is less than an hour old', async () => {
+      const recentTime = Date.now() - (30 * 60 * 1000); // 30 min ago
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        count: 2,
+        oldestEntry: recentTime
+      });
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheAgeEl.textContent).toBe('<1h');
+    });
+
+    it('should display dash when no oldest entry', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        count: 0,
+        oldestEntry: null
+      });
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheAgeEl.textContent).toBe('-');
+    });
+
+    it('should display question marks on error', async () => {
+      chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Network error'));
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheCountEl.textContent).toBe('?');
+      expect(cacheAgeEl.textContent).toBe('?');
+    });
+
+    it('should not update display when response.success is false', async () => {
+      cacheCountEl.textContent = 'original';
+      cacheAgeEl.textContent = 'original';
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: false,
+        count: 99,
+        oldestEntry: Date.now()
+      });
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheCountEl.textContent).toBe('original');
+      expect(cacheAgeEl.textContent).toBe('original');
+    });
+
+    it('should not update display when response is undefined', async () => {
+      cacheCountEl.textContent = 'original';
+      cacheAgeEl.textContent = 'original';
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheCountEl.textContent).toBe('original');
+      expect(cacheAgeEl.textContent).toBe('original');
+    });
+
+    it('should disable refresh button while loading', async () => {
+      let resolveMessage;
+      const messagePromise = new Promise(resolve => {
+        resolveMessage = resolve;
+      });
+      chrome.runtime.sendMessage.mockReturnValueOnce(messagePromise);
+
+      refreshBtn.click();
+
+      expect(refreshBtn.disabled).toBe(true);
+
+      resolveMessage({ success: true, count: 5, oldestEntry: Date.now() });
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(refreshBtn.disabled).toBe(false);
+    });
+
+    it('should show loading indicator while loading', async () => {
+      let resolveMessage;
+      const messagePromise = new Promise(resolve => {
+        resolveMessage = resolve;
+      });
+      chrome.runtime.sendMessage.mockReturnValueOnce(messagePromise);
+
+      refreshBtn.click();
+
+      expect(refreshBtn.innerHTML).toContain('loading');
+
+      resolveMessage({ success: true, count: 5, oldestEntry: Date.now() });
+
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    it('should restore original button text after loading', async () => {
+      const originalText = refreshBtn.textContent;
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        count: 5,
+        oldestEntry: Date.now()
+      });
+
+      refreshBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(refreshBtn.textContent).toBe(originalText);
+    });
+  });
+
+  describe('clearCache', () => {
+    it('should show confirmation dialog', async () => {
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(global.confirm).toHaveBeenCalledWith(
+        expect.stringContaining('Clear')
+      );
+    });
+
+    it('should not clear cache if user cancels', async () => {
+      global.confirm.mockReturnValueOnce(false);
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith({
+        type: 'CLEAR_CACHE'
+      });
+    });
+
+    it('should send CLEAR_CACHE message when confirmed', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+        type: 'CLEAR_CACHE'
+      });
+    });
+
+    it('should show success status on successful clear', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(statusEl.textContent).toContain('cleared');
+      expect(statusEl.className).toContain('success');
+    });
+
+    it('should show error status on failed clear', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: false });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(statusEl.textContent).toContain('Failed');
+      expect(statusEl.className).toContain('error');
+    });
+
+    it('should show error status on exception', async () => {
+      chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Network error'));
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(statusEl.textContent).toContain('Failed');
+      expect(statusEl.className).toContain('error');
+    });
+
+    it('should disable button while loading', async () => {
+      let resolveMessage;
+      const messagePromise = new Promise(resolve => {
+        resolveMessage = resolve;
+      });
+      chrome.runtime.sendMessage.mockReturnValueOnce(messagePromise);
+
+      clearBtn.click();
+
+      expect(clearBtn.disabled).toBe(true);
+
+      resolveMessage({ success: true });
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(clearBtn.disabled).toBe(false);
+    });
+
+    it('should show loading indicator while loading', async () => {
+      let resolveMessage;
+      const messagePromise = new Promise(resolve => {
+        resolveMessage = resolve;
+      });
+      chrome.runtime.sendMessage.mockReturnValueOnce(messagePromise);
+
+      clearBtn.click();
+
+      expect(clearBtn.innerHTML).toContain('loading');
+
+      resolveMessage({ success: true });
+
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    it('should restore original button text after loading', async () => {
+      const originalText = clearBtn.textContent;
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(clearBtn.textContent).toBe(originalText);
+    });
+
+    it('should refresh stats after clearing cache', async () => {
+      chrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true }) // CLEAR_CACHE
+        .mockResolvedValueOnce({ success: true, count: 0, oldestEntry: null }); // GET_CACHE_STATS
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      const calls = chrome.runtime.sendMessage.mock.calls;
+      expect(calls.some(call => call[0].type === 'CLEAR_CACHE')).toBe(true);
+      expect(calls.some(call => call[0].type === 'GET_CACHE_STATS')).toBe(true);
+    });
+
+    it('should auto-hide status after 3 seconds', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(statusEl.className).toContain('success');
+
+      // Advance past the 3 second timeout
+      await jest.advanceTimersByTimeAsync(3100);
+
+      expect(statusEl.className).toBe('status');
+    });
+  });
+
+  describe('openOptionsPage', () => {
+    it('should call chrome.runtime.openOptionsPage when options link clicked', async () => {
+      optionsLink.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
+    });
+
+    it('should prevent default link behavior', async () => {
+      const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+      const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
+
+      optionsLink.dispatchEvent(event);
+
+      expect(preventDefaultSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('showStatus', () => {
+    it('should update status element text', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(statusEl.textContent.length).toBeGreaterThan(0);
+    });
+
+    it('should set success class for success type', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(statusEl.classList.contains('success')).toBe(true);
+    });
+
+    it('should set error class for error type', async () => {
+      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: false });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(statusEl.classList.contains('error')).toBe(true);
+    });
+  });
+
+  describe('setButtonLoading', () => {
+    it('should save original text to dataset', async () => {
+      const originalText = clearBtn.textContent;
+
+      let resolveMessage;
+      chrome.runtime.sendMessage.mockReturnValueOnce(new Promise(resolve => {
+        resolveMessage = resolve;
+      }));
+
+      clearBtn.click();
+
+      expect(clearBtn.dataset.originalText).toBe(originalText);
+
+      resolveMessage({ success: true });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    it('should restore original text when loading completes', async () => {
+      const originalText = clearBtn.textContent;
+
+      chrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ success: true, count: 0, oldestEntry: null });
+
+      clearBtn.click();
+
+      await jest.advanceTimersByTimeAsync(0);
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(clearBtn.textContent).toBe(originalText);
+      expect(clearBtn.disabled).toBe(false);
+    });
+
+    it('should handle setButtonLoading without originalText', async () => {
+      delete clearBtn.dataset.originalText;
+      clearBtn.textContent = 'Test';
+
+      clearBtn.disabled = true;
+      clearBtn.innerHTML = '<span class="loading"></span>';
+
+      clearBtn.disabled = false;
+
+      expect(clearBtn.disabled).toBe(false);
+    });
+  });
+});

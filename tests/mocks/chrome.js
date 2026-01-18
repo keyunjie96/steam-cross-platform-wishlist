@@ -83,6 +83,8 @@ const runtimeMock = {
 
   getURL: jest.fn((path) => `chrome-extension://test-id/${path}`),
 
+  openOptionsPage: jest.fn(() => Promise.resolve()),
+
   onMessage: {
     addListener: jest.fn(),
     removeListener: jest.fn(),

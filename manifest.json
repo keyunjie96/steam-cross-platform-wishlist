@@ -8,6 +8,10 @@
     "https://store.steampowered.com/*",
     "https://query.wikidata.org/*"
   ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Steam Cross-Platform Wishlist"
+  },
   "background": {
     "service_worker": "dist/background.js"
   },
