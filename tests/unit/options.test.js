@@ -101,6 +101,25 @@ describe('options.js', () => {
     // Mock confirm dialog
     global.confirm = jest.fn(() => true);
 
+    // Mock UserSettings (centralized settings from types.js)
+    globalThis.XCPW_UserSettings = {
+      DEFAULT_USER_SETTINGS: {
+        showNintendo: true,
+        showPlaystation: true,
+        showXbox: true,
+        showSteamDeck: true,
+        showHltb: true
+      },
+      SETTING_CHECKBOX_IDS: {
+        showNintendo: 'show-nintendo',
+        showPlaystation: 'show-playstation',
+        showXbox: 'show-xbox',
+        showSteamDeck: 'show-steamdeck',
+        showHltb: 'show-hltb'
+      },
+      USER_SETTING_KEYS: ['showNintendo', 'showPlaystation', 'showXbox', 'showSteamDeck', 'showHltb']
+    };
+
     // Load options.js
     require('../../dist/options.js');
   });

@@ -4,10 +4,15 @@
  * Handles the options UI for managing the cache.
  */
 
+import type { UserSettings } from './types';
+
 // Constants
 const MS_PER_HOUR = 1000 * 60 * 60;
 const MS_PER_DAY = MS_PER_HOUR * 24;
 const LOG_PREFIX = '[XCPW Options]';
+
+// Get centralized settings definitions from types.ts
+const { DEFAULT_USER_SETTINGS, SETTING_CHECKBOX_IDS, USER_SETTING_KEYS } = globalThis.XCPW_UserSettings;
 
 // DOM Elements (initialized in DOMContentLoaded)
 let statusEl: HTMLElement;
@@ -16,28 +21,9 @@ let cacheCountEl: HTMLElement;
 let cacheAgeEl: HTMLElement;
 let refreshStatsBtn: HTMLButtonElement;
 let clearCacheBtn: HTMLButtonElement;
-let showNintendoCheckbox: HTMLInputElement | null;
-let showPlaystationCheckbox: HTMLInputElement | null;
-let showXboxCheckbox: HTMLInputElement | null;
-let showSteamDeckCheckbox: HTMLInputElement | null;
-let showHltbCheckbox: HTMLInputElement | null;
 
-// Default settings
-interface Settings {
-  showNintendo: boolean;
-  showPlaystation: boolean;
-  showXbox: boolean;
-  showSteamDeck: boolean;
-  showHltb: boolean;
-}
-
-const DEFAULT_SETTINGS: Settings = {
-  showNintendo: true,
-  showPlaystation: true,
-  showXbox: true,
-  showSteamDeck: true,
-  showHltb: true
-};
+// Dynamic checkbox map - populated from SETTING_CHECKBOX_IDS
+const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
 
 /**
  * Formats a duration in milliseconds to a human-readable string
@@ -83,22 +69,14 @@ function showSettingsStatus(message: string, type: 'success' | 'error'): void {
 async function loadSettings(): Promise<void> {
   try {
     const result = await chrome.storage.sync.get('xcpwSettings');
-    const settings: Settings = { ...DEFAULT_SETTINGS, ...result.xcpwSettings };
+    const settings: UserSettings = { ...DEFAULT_USER_SETTINGS, ...result.xcpwSettings };
 
-    if (showNintendoCheckbox) {
-      showNintendoCheckbox.checked = settings.showNintendo;
-    }
-    if (showPlaystationCheckbox) {
-      showPlaystationCheckbox.checked = settings.showPlaystation;
-    }
-    if (showXboxCheckbox) {
-      showXboxCheckbox.checked = settings.showXbox;
-    }
-    if (showSteamDeckCheckbox) {
-      showSteamDeckCheckbox.checked = settings.showSteamDeck;
-    }
-    if (showHltbCheckbox) {
-      showHltbCheckbox.checked = settings.showHltb;
+    // Dynamically update all checkboxes from the centralized settings definition
+    for (const key of USER_SETTING_KEYS) {
+      const checkbox = checkboxes.get(key);
+      if (checkbox) {
+        checkbox.checked = settings[key];
+      }
     }
   } catch (error) {
     console.error(`${LOG_PREFIX} Error loading settings:`, error);
@@ -108,7 +86,7 @@ async function loadSettings(): Promise<void> {
 /**
  * Saves settings to chrome.storage.sync
  */
-async function saveSettings(settings: Settings): Promise<void> {
+async function saveSettings(settings: UserSettings): Promise<void> {
   try {
     await chrome.storage.sync.set({ xcpwSettings: settings });
     showSettingsStatus('Settings saved', 'success');
@@ -119,16 +97,16 @@ async function saveSettings(settings: Settings): Promise<void> {
 }
 
 /**
- * Gets current settings from all checkboxes
+ * Gets current settings from all checkboxes.
+ * Dynamically reads from the centralized settings definition.
  */
-function getCurrentSettings(): Settings {
-  return {
-    showNintendo: showNintendoCheckbox?.checked ?? DEFAULT_SETTINGS.showNintendo,
-    showPlaystation: showPlaystationCheckbox?.checked ?? DEFAULT_SETTINGS.showPlaystation,
-    showXbox: showXboxCheckbox?.checked ?? DEFAULT_SETTINGS.showXbox,
-    showSteamDeck: showSteamDeckCheckbox?.checked ?? DEFAULT_SETTINGS.showSteamDeck,
-    showHltb: showHltbCheckbox?.checked ?? DEFAULT_SETTINGS.showHltb
-  };
+function getCurrentSettings(): UserSettings {
+  const settings = { ...DEFAULT_USER_SETTINGS };
+  for (const key of USER_SETTING_KEYS) {
+    const checkbox = checkboxes.get(key);
+    settings[key] = checkbox?.checked ?? DEFAULT_USER_SETTINGS[key];
+  }
+  return settings;
 }
 
 /**
@@ -221,30 +199,21 @@ function initializePage(): void {
   cacheAgeEl = document.getElementById('cache-age') as HTMLElement;
   refreshStatsBtn = document.getElementById('refresh-stats-btn') as HTMLButtonElement;
   clearCacheBtn = document.getElementById('clear-cache-btn') as HTMLButtonElement;
-  showNintendoCheckbox = document.getElementById('show-nintendo') as HTMLInputElement | null;
-  showPlaystationCheckbox = document.getElementById('show-playstation') as HTMLInputElement | null;
-  showXboxCheckbox = document.getElementById('show-xbox') as HTMLInputElement | null;
-  showSteamDeckCheckbox = document.getElementById('show-steamdeck') as HTMLInputElement | null;
-  showHltbCheckbox = document.getElementById('show-hltb') as HTMLInputElement | null;
 
-  // Event Listeners
+  // Dynamically populate checkbox map and add event listeners
+  // This automatically includes any new settings added to SETTING_CHECKBOX_IDS
+  for (const key of USER_SETTING_KEYS) {
+    const checkboxId = SETTING_CHECKBOX_IDS[key];
+    const checkbox = document.getElementById(checkboxId) as HTMLInputElement | null;
+    checkboxes.set(key, checkbox);
+    if (checkbox) {
+      checkbox.addEventListener('change', handlePlatformToggle);
+    }
+  }
+
+  // Event Listeners for buttons
   refreshStatsBtn.addEventListener('click', loadCacheStats);
   clearCacheBtn.addEventListener('click', clearCache);
-  if (showNintendoCheckbox) {
-    showNintendoCheckbox.addEventListener('change', handlePlatformToggle);
-  }
-  if (showPlaystationCheckbox) {
-    showPlaystationCheckbox.addEventListener('change', handlePlatformToggle);
-  }
-  if (showXboxCheckbox) {
-    showXboxCheckbox.addEventListener('change', handlePlatformToggle);
-  }
-  if (showSteamDeckCheckbox) {
-    showSteamDeckCheckbox.addEventListener('change', handlePlatformToggle);
-  }
-  if (showHltbCheckbox) {
-    showHltbCheckbox.addEventListener('change', handlePlatformToggle);
-  }
 
   // Load initial data, then reveal UI
   Promise.all([loadCacheStats(), loadSettings()]).then(() => {

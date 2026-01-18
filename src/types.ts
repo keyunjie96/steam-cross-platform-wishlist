@@ -9,6 +9,57 @@ export type Platform = 'nintendo' | 'playstation' | 'xbox' | 'steamdeck';
 
 export type PlatformStatus = 'available' | 'unavailable' | 'unknown';
 
+// ============================================================================
+// User Settings - SINGLE SOURCE OF TRUTH
+// ============================================================================
+// When adding a new setting:
+// 1. Add to UserSettings interface
+// 2. Add to DEFAULT_USER_SETTINGS with default value
+// 3. Add to SETTING_CHECKBOX_IDS mapping
+// That's it! options.ts, popup.ts, and content.ts will automatically pick it up.
+
+/**
+ * User settings interface - defines all configurable options.
+ * This is the single source of truth for settings structure.
+ */
+export interface UserSettings {
+  showNintendo: boolean;
+  showPlaystation: boolean;
+  showXbox: boolean;
+  showSteamDeck: boolean;
+  showHltb: boolean;
+}
+
+/**
+ * Default values for all user settings.
+ * This is the single source of truth for default values.
+ */
+export const DEFAULT_USER_SETTINGS: UserSettings = {
+  showNintendo: true,
+  showPlaystation: true,
+  showXbox: true,
+  showSteamDeck: true,
+  showHltb: true
+};
+
+/**
+ * Mapping from setting keys to their checkbox element IDs in the UI.
+ * This ensures UI elements stay in sync with the settings structure.
+ */
+export const SETTING_CHECKBOX_IDS: Record<keyof UserSettings, string> = {
+  showNintendo: 'show-nintendo',
+  showPlaystation: 'show-playstation',
+  showXbox: 'show-xbox',
+  showSteamDeck: 'show-steamdeck',
+  showHltb: 'show-hltb'
+};
+
+/**
+ * Array of all setting keys for iteration.
+ * Derived from UserSettings to ensure type safety.
+ */
+export const USER_SETTING_KEYS = Object.keys(DEFAULT_USER_SETTINGS) as Array<keyof UserSettings>;
+
 export type DataSource = 'wikidata' | 'manual' | 'fallback' | 'none';
 
 // Platform data structure
@@ -207,8 +258,8 @@ declare global {
       getSteamDeckRefreshAttempts: () => number;
       setSteamDeckRefreshAttempts: (val: number) => void;
       getCachedEntriesByAppId: () => Map<string, CacheEntry>;
-      getUserSettings: () => { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean; showHltb: boolean };
-      setUserSettings: (val: Partial<{ showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean; showHltb: boolean }>) => void;
+      getUserSettings: () => UserSettings;
+      setUserSettings: (val: Partial<UserSettings>) => void;
       getSteamDeckRefreshTimer: () => ReturnType<typeof setTimeout> | null;
       setSteamDeckRefreshTimer: (val: ReturnType<typeof setTimeout> | null) => void;
       STEAM_DECK_REFRESH_DELAYS_MS: number[];
@@ -252,6 +303,12 @@ declare global {
   var XCPW_HltbClient: Window['XCPW_HltbClient'];
   // eslint-disable-next-line no-var
   var XCPW_ContentTestExports: Window['XCPW_ContentTestExports'];
+  // eslint-disable-next-line no-var
+  var XCPW_UserSettings: {
+    DEFAULT_USER_SETTINGS: UserSettings;
+    SETTING_CHECKBOX_IDS: Record<keyof UserSettings, string>;
+    USER_SETTING_KEYS: Array<keyof UserSettings>;
+  };
 }
 
 // Wikidata result types
@@ -302,4 +359,11 @@ export interface HltbSearchResult {
 // Only set if not already defined (allows mocking in tests)
 if (!globalThis.XCPW_StoreUrls) {
   globalThis.XCPW_StoreUrls = StoreUrls;
+}
+if (!globalThis.XCPW_UserSettings) {
+  globalThis.XCPW_UserSettings = {
+    DEFAULT_USER_SETTINGS,
+    SETTING_CHECKBOX_IDS,
+    USER_SETTING_KEYS
+  };
 }

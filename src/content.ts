@@ -90,14 +90,11 @@ function checkDeckFilterActive(): boolean {
 /** All available platforms in display order */
 const ALL_PLATFORMS: Platform[] = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
-/** User settings (loaded from storage) */
-let userSettings = {
-  showNintendo: true,
-  showPlaystation: true,
-  showXbox: true,
-  showSteamDeck: true,
-  showHltb: true
-};
+// Get centralized settings definitions from types.ts
+const { DEFAULT_USER_SETTINGS } = globalThis.XCPW_UserSettings;
+
+/** User settings (loaded from storage) - initialized from centralized defaults */
+let userSettings: typeof DEFAULT_USER_SETTINGS = { ...DEFAULT_USER_SETTINGS };
 
 /** Pre-extracted Steam Deck data from page SSR (Map of appId -> category) */
 let steamDeckData: Map<string, DeckCategory> | null = null;
