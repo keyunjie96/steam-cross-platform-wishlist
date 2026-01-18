@@ -13,7 +13,7 @@
 ```
 ┌─────────────────────┐     chrome.runtime.sendMessage     ┌──────────────────────┐
 │   Content Script    │ ──────────────────────────────────►│   Service Worker     │
-│   (content.js)      │                                    │   (background.js)    │
+│   (content.ts)      │                                    │   (background.ts)    │
 │                     │ ◄──────────────────────────────────│                      │
 │ - Extract appids    │     response with platform data    │ - Message routing    │
 │ - Inject icons      │                                    │ - Cache coordination │
@@ -22,16 +22,16 @@
            │                                                          │
    ┌───────▼───────────┐                                   ┌──────────▼───────────┐
    │ SteamDeckClient   │                                   │   Resolver           │
-   │ (steamDeck        │                                   │   (resolver.js)      │
-   │  Client.js)       │                                   │                      │
+   │ (steamDeck        │                                   │   (resolver.ts)      │
+   │  Client.ts)       │                                   │                      │
    │                   │                                   └──────────┬───────────┘
    │ - Inject Page     │                                              │
    │   Script          │                    ┌─────────────────────────┴─────────────────────────┐
    │ - Read DOM        │                    │                                                   │
    └───────┬───────────┘             ┌──────▼──────┐                                     ┌──────▼──────────┐
            │                         │ Cache       │                                     │ WikidataClient  │
-   ┌───────▼────────────┐            │ (cache.js)  │                                     │ (wikidata       │
-   │ SteamDeckPageScript│            │             │                                     │  Client.js)     │
+   ┌───────▼────────────┐            │ (cache.ts)  │                                     │ (wikidata       │
+   │ SteamDeckPageScript│            │             │                                     │  Client.ts)     │
    │ (Injected Script)  │            └─────────────┘                                     └─────────────────┘
    └────────────────────┘
 ```
@@ -122,7 +122,7 @@ npm run test:coverage       # Full coverage report
 
 ### Resolution Priority
 1. **Cache**: Check `chrome.storage.local` first (7-day TTL)
-2. **Manual Overrides**: Hardcoded test data in `cache.js`
+2. **Manual Overrides**: Hardcoded test data in `cache.ts`
 3. **Wikidata**: SPARQL query for platform data
 4. **Fallback**: Return "unknown" for all platforms
 
@@ -134,8 +134,8 @@ All store URLs auto-redirect to the user's local store:
 
 ## Testing Data
 
-Eight games have manual overrides in `cache.js` for development testing.
-**Note:** Overrides only work when `CACHE_DEBUG = true` in `src/cache.js`.
+Eight games have manual overrides in `cache.ts` for development testing.
+**Note:** Overrides only work when `CACHE_DEBUG = true` in `src/cache.ts`.
 
 | Appid | Game | NS | PS | XB |
 |-------|------|----|----|-----|
@@ -180,12 +180,12 @@ Set to `true` for verbose logging during development.
 
 | File | Lines | Functions |
 |------|-------|-----------|
-| src/cache.js | 90% | 80% |
-| src/resolver.js | 90% | 100% |
-| src/wikidataClient.js | 90% | 90% |
-| src/background.js | 90% | 80% |
-| src/options.js | 100% | 100% |
-| src/steamDeckClient.js | 90% | 90% |
+| src/cache.ts | 90% | 80% |
+| src/resolver.ts | 90% | 100% |
+| src/wikidataClient.ts | 90% | 90% |
+| src/background.ts | 90% | 80% |
+| src/options.ts | 100% | 100% |
+| src/steamDeckClient.ts | 90% | 90% |
 
 ## Known Limitations
 
