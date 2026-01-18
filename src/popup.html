@@ -161,9 +161,71 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Prevent flicker: hide content until JS loads settings */
+    body.is-loading .stats,
+    body.is-loading .platforms,
+    body.is-loading .actions {
+      opacity: 0;
+    }
+
+    body:not(.is-loading) .stats,
+    body:not(.is-loading) .platforms,
+    body:not(.is-loading) .actions {
+      opacity: 1;
+      transition: opacity 0.15s ease-in;
+    }
+
+    .platforms {
+      margin-bottom: 16px;
+    }
+
+    .platforms-title {
+      font-size: 11px;
+      color: #8f98a0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .platform-toggles {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .platform-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #2a475e;
+      border: 1px solid #3d4f5f;
+      border-radius: 4px;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s;
+      font-size: 11px;
+      color: #c7d5e0;
+    }
+
+    .platform-toggle:hover {
+      background: #3d4f5f;
+    }
+
+    .platform-toggle input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: #66c0f4;
+      cursor: pointer;
+    }
+
+    .platform-toggle.disabled {
+      opacity: 0.5;
+    }
   </style>
 </head>
-<body>
+<body class="is-loading">
   <div class="header">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -179,6 +241,28 @@
     <div class="stat">
       <div class="stat-value" id="cache-age">-</div>
       <div class="stat-label">Oldest Entry</div>
+    </div>
+  </div>
+
+  <div class="platforms">
+    <div class="platforms-title">Show Platforms</div>
+    <div class="platform-toggles">
+      <label class="platform-toggle">
+        <input type="checkbox" id="show-nintendo">
+        <span>Switch</span>
+      </label>
+      <label class="platform-toggle">
+        <input type="checkbox" id="show-playstation">
+        <span>PlayStation</span>
+      </label>
+      <label class="platform-toggle">
+        <input type="checkbox" id="show-xbox">
+        <span>Xbox</span>
+      </label>
+      <label class="platform-toggle">
+        <input type="checkbox" id="show-steamdeck">
+        <span>Deck</span>
+      </label>
     </div>
   </div>
 
