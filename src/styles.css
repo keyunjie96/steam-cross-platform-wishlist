@@ -215,3 +215,70 @@
     opacity: 0.4;
   }
 }
+
+/* Review Score Badge */
+.xcpw-review-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 17px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  vertical-align: middle;
+}
+
+.xcpw-review-badge:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+/* Score color variants */
+.xcpw-review-badge.xcpw-score-good {
+  background: #4ade80;
+  color: #0a0a0a;
+}
+
+.xcpw-review-badge.xcpw-score-mixed {
+  background: #facc15;
+  color: #0a0a0a;
+}
+
+.xcpw-review-badge.xcpw-score-poor {
+  background: #f87171;
+  color: #0a0a0a;
+}
+
+/* Focus state for accessibility */
+.xcpw-review-badge:focus {
+  outline: 1px solid #66c0f4;
+  outline-offset: 2px;
+}
+
+.xcpw-review-badge:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode support for review badges */
+@media (prefers-contrast: high) {
+  .xcpw-review-badge {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion for review badges */
+@media (prefers-reduced-motion: reduce) {
+  .xcpw-review-badge {
+    transition: none;
+  }
+
+  .xcpw-review-badge:hover {
+    transform: none;
+  }
+}

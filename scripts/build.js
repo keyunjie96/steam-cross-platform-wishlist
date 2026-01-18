@@ -23,6 +23,7 @@ const files = [
   'wikidataClient.ts',
   'steamDeckClient.ts',
   'steamDeckPageScript.ts',
+  'reviewScoresClient.ts',
   'resolver.ts',
   'background.ts',
   'content.ts',

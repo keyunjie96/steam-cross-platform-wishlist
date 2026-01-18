@@ -8,7 +8,7 @@
  * - Handles infinite scroll with MutationObserver
  */
 
-import type { Platform, PlatformStatus, CacheEntry, DeckCategory, GetPlatformDataResponse } from './types';
+import type { Platform, PlatformStatus, CacheEntry, DeckCategory, GetPlatformDataResponse, ReviewScoreCacheEntry, ReviewScore } from './types';
 
 const PROCESSED_ATTR = 'data-xcpw-processed';
 const ICONS_INJECTED_ATTR = 'data-xcpw-icons';
@@ -56,6 +56,7 @@ function cleanupAllIcons(): void {
   injectedAppIds.clear();
   processedAppIds.clear();
   missingSteamDeckAppIds.clear();
+  cachedReviewScoresByAppId.clear();
 
   // Clear pending batch (stale container references)
   pendingItems.clear();
@@ -88,7 +89,8 @@ let userSettings = {
   showNintendo: true,
   showPlaystation: true,
   showXbox: true,
-  showSteamDeck: true
+  showSteamDeck: true,
+  showReviewScores: true
 };
 
 /** Pre-extracted Steam Deck data from page SSR (Map of appId -> category) */
@@ -96,6 +98,9 @@ let steamDeckData: Map<string, DeckCategory> | null = null;
 
 /** Cached platform data entries for refreshes */
 const cachedEntriesByAppId = new Map<string, CacheEntry>();
+
+/** Cached review score entries */
+const cachedReviewScoresByAppId = new Map<string, ReviewScoreCacheEntry>();
 
 /** Steam Deck refresh scheduling */
 const STEAM_DECK_REFRESH_DELAYS_MS = [800, 2000, 5000, 10000];
@@ -182,6 +187,10 @@ function setupSettingsChangeListener(): void {
     if (newSettings.showXbox && !oldSettings.showXbox) platformsJustEnabled.push('xbox');
     if (newSettings.showSteamDeck && !oldSettings.showSteamDeck) platformsJustEnabled.push('steamdeck');
 
+    // Check if review scores setting changed
+    const reviewScoresJustEnabled = newSettings.showReviewScores && !oldSettings.showReviewScores;
+    const reviewScoresJustDisabled = !newSettings.showReviewScores && oldSettings.showReviewScores;
+
     // Check if any platform was just disabled
     const platformsJustDisabled: Platform[] = [];
 
@@ -190,8 +199,8 @@ function setupSettingsChangeListener(): void {
     if (!newSettings.showXbox && oldSettings.showXbox) platformsJustDisabled.push('xbox');
     if (!newSettings.showSteamDeck && oldSettings.showSteamDeck) platformsJustDisabled.push('steamdeck');
 
-    if (platformsJustEnabled.length > 0 || platformsJustDisabled.length > 0) {
-      console.log(`${LOG_PREFIX} Platform settings changed - enabled: [${platformsJustEnabled.join(', ')}], disabled: [${platformsJustDisabled.join(', ')}]`);
+    if (platformsJustEnabled.length > 0 || platformsJustDisabled.length > 0 || reviewScoresJustEnabled || reviewScoresJustDisabled) {
+      console.log(`${LOG_PREFIX} Settings changed - platforms enabled: [${platformsJustEnabled.join(', ')}], disabled: [${platformsJustDisabled.join(', ')}], reviewScores: ${reviewScoresJustEnabled ? 'enabled' : reviewScoresJustDisabled ? 'disabled' : 'unchanged'}`);
 
       // Refresh icons from cache for all visible containers
       // This will show/hide icons based on new settings without re-fetching data
@@ -592,6 +601,43 @@ function createPlatformIcon(
 }
 
 /**
+ * Gets the color class for a review score.
+ * Scores 75+ are "good" (green), 50-74 are "mixed" (yellow), below 50 are "poor" (red).
+ */
+function getScoreColorClass(score: number): string {
+  if (score >= 75) return 'xcpw-score-good';
+  if (score >= 50) return 'xcpw-score-mixed';
+  return 'xcpw-score-poor';
+}
+
+/**
+ * Creates a review score badge element.
+ */
+function createReviewScoreBadge(reviewScore: ReviewScore): HTMLElement {
+  const badge = document.createElement('a');
+  badge.className = `xcpw-review-badge ${getScoreColorClass(reviewScore.score)}`;
+  badge.textContent = reviewScore.score.toString();
+
+  // Build tooltip
+  let tooltip = `OpenCritic: ${reviewScore.score}/100`;
+  if (reviewScore.tier) {
+    tooltip += ` (${reviewScore.tier})`;
+  }
+  if (reviewScore.criticCount) {
+    tooltip += ` - ${reviewScore.criticCount} critic reviews`;
+  }
+  badge.setAttribute('title', tooltip);
+
+  if (reviewScore.url) {
+    badge.setAttribute('href', reviewScore.url);
+    badge.setAttribute('target', '_blank');
+    badge.setAttribute('rel', 'noopener noreferrer');
+  }
+
+  return badge;
+}
+
+/**
  * Updates the icons container with platform data from cache.
  * Dynamically adds icons for available platforms (none exist initially).
  * Steam Deck icons are fetched separately from Steam's store pages.
@@ -655,6 +701,9 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
   const loader = container.querySelector('.xcpw-loader');
   if (loader) loader.remove();
 
+  // Remove existing review badge to keep updates idempotent
+  container.querySelectorAll('.xcpw-review-badge').forEach(el => el.remove());
+
   // Only add separator and icons if we have visible icons
   if (iconsToAdd.length > 0) {
     const separator = document.createElement('span');
@@ -665,29 +714,52 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
       container.appendChild(icon);
     }
   }
+
+  // Add review score badge if enabled and data is available
+  if (userSettings.showReviewScores && appid) {
+    const reviewData = cachedReviewScoresByAppId.get(appid);
+    if (reviewData?.score) {
+      // Add separator before badge if we already have icons, otherwise add one
+      if (iconsToAdd.length === 0) {
+        const separator = document.createElement('span');
+        separator.className = 'xcpw-separator';
+        container.appendChild(separator);
+      }
+      const badge = createReviewScoreBadge(reviewData.score);
+      container.appendChild(badge);
+    }
+  }
 }
 
 /**
  * Creates a concise log string describing rendered icons for a container.
  */
 function getRenderedIconSummary(container: HTMLElement): string {
-  const icons = Array.from(container.querySelectorAll('.xcpw-platform-icon'));
-  if (icons.length === 0) return 'none';
+  const summaries: string[] = [];
 
-  const summaries = icons.map(icon => {
+  const icons = Array.from(container.querySelectorAll('.xcpw-platform-icon'));
+  for (const icon of icons) {
     const platform = icon.getAttribute('data-platform') || 'unknown';
     const tier = icon.getAttribute('data-tier');
-    if (tier) return `${platform}:${tier}`;
+    if (tier) {
+      summaries.push(`${platform}:${tier}`);
+    } else {
+      const status = icon.classList.contains('xcpw-available')
+        ? 'available'
+        : icon.classList.contains('xcpw-unavailable')
+          ? 'unavailable'
+          : 'unknown';
+      summaries.push(`${platform}:${status}`);
+    }
+  }
 
-    const status = icon.classList.contains('xcpw-available')
-      ? 'available'
-      : icon.classList.contains('xcpw-unavailable')
-        ? 'unavailable'
-        : 'unknown';
-    return `${platform}:${status}`;
-  });
+  // Check for review score badge
+  const reviewBadge = container.querySelector('.xcpw-review-badge');
+  if (reviewBadge) {
+    summaries.push(`score:${reviewBadge.textContent}`);
+  }
 
-  return summaries.join(', ');
+  return summaries.length > 0 ? summaries.join(', ') : 'none';
 }
 
 /**
@@ -883,9 +955,29 @@ async function processPendingBatch(): Promise<void> {
   batchDebounceTimer = null;
 
   // Skip Wikidata fetch if all console platforms are disabled
-  // Just update icons with Steam Deck data (if enabled) or remove loading state
+  // But still fetch review scores if enabled
   if (!isAnyConsolePlatformEnabled()) {
-    if (DEBUG) console.log(`${LOG_PREFIX} Skipping batch request - all console platforms disabled`);
+    if (DEBUG) console.log(`${LOG_PREFIX} Skipping platform batch - all console platforms disabled`);
+
+    // Fetch review scores if enabled
+    if (userSettings.showReviewScores) {
+      try {
+        const reviewResponse = await sendMessageWithRetry<{ success: boolean; results: Record<string, { data: ReviewScoreCacheEntry; fromCache: boolean }> }>({
+          type: 'GET_REVIEW_SCORE_BATCH',
+          games
+        });
+        if (reviewResponse?.success && reviewResponse.results) {
+          for (const [appid, result] of Object.entries(reviewResponse.results) as Array<[string, { data: ReviewScoreCacheEntry; fromCache: boolean }]>) {
+            if (result.data) {
+              cachedReviewScoresByAppId.set(appid, result.data);
+            }
+          }
+        }
+      } catch {
+        // Silently fail review score fetch
+      }
+    }
+
     for (const [appid, { container }] of containerMap) {
       // Create a minimal cache entry with no console platform data
       const minimalEntry: CacheEntry = {
@@ -894,9 +986,10 @@ async function processPendingBatch(): Promise<void> {
         platforms: {
           nintendo: { status: 'unknown', storeUrl: '' },
           playstation: { status: 'unknown', storeUrl: '' },
-          xbox: { status: 'unknown', storeUrl: '' }
+          xbox: { status: 'unknown', storeUrl: '' },
+          steamdeck: { status: 'unknown', storeUrl: '' }
         },
-        source: 'local',
+        source: 'fallback',
         wikidataId: null,
         resolvedAt: Date.now(),
         ttlDays: 7
@@ -912,10 +1005,30 @@ async function processPendingBatch(): Promise<void> {
   if (DEBUG) console.log(`${LOG_PREFIX} Sending batch request for ${games.length} games`);
 
   try {
-    const response = await sendMessageWithRetry<{ success: boolean; results: Record<string, { data: CacheEntry; fromCache: boolean }> }>({
+    // Fetch platform data and review scores in parallel
+    const platformPromise = sendMessageWithRetry<{ success: boolean; results: Record<string, { data: CacheEntry; fromCache: boolean }> }>({
       type: 'GET_PLATFORM_DATA_BATCH',
       games
     });
+
+    // Only fetch review scores if enabled
+    const reviewPromise = userSettings.showReviewScores
+      ? sendMessageWithRetry<{ success: boolean; results: Record<string, { data: ReviewScoreCacheEntry; fromCache: boolean }> }>({
+          type: 'GET_REVIEW_SCORE_BATCH',
+          games
+        })
+      : Promise.resolve(null);
+
+    const [response, reviewResponse] = await Promise.all([platformPromise, reviewPromise]);
+
+    // Cache review scores
+    if (reviewResponse?.success && reviewResponse.results) {
+      for (const [appid, result] of Object.entries(reviewResponse.results) as Array<[string, { data: ReviewScoreCacheEntry; fromCache: boolean }]>) {
+        if (result.data) {
+          cachedReviewScoresByAppId.set(appid, result.data);
+        }
+      }
+    }
 
     if (response?.success && response.results) {
       // Update icons for each result
@@ -1343,9 +1456,13 @@ if (typeof globalThis !== 'undefined') {
     setSteamDeckRefreshAttempts: (val: number) => { steamDeckRefreshAttempts = val; },
     getCachedEntriesByAppId: () => cachedEntriesByAppId,
     getUserSettings: () => userSettings,
-    setUserSettings: (val: { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean }) => { userSettings = val; },
+    setUserSettings: (val: { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean; showReviewScores?: boolean }) => { userSettings = { ...userSettings, ...val }; },
     getSteamDeckRefreshTimer: () => steamDeckRefreshTimer,
     setSteamDeckRefreshTimer: (val: ReturnType<typeof setTimeout> | null) => { steamDeckRefreshTimer = val; },
-    STEAM_DECK_REFRESH_DELAYS_MS
+    STEAM_DECK_REFRESH_DELAYS_MS,
+    // Review scores exports
+    createReviewScoreBadge,
+    getScoreColorClass,
+    getCachedReviewScoresByAppId: () => cachedReviewScoresByAppId
   };
 }

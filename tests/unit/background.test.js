@@ -68,7 +68,7 @@ describe('background.js', () => {
 
     it('should call importScripts for dependencies', () => {
       expect(globalThis.importScripts).toHaveBeenCalledWith(
-        'types.js', 'cache.js', 'wikidataClient.js', 'resolver.js'
+        'types.js', 'cache.js', 'wikidataClient.js', 'resolver.js', 'reviewScoresClient.js'
       );
     });
   });
@@ -616,6 +616,241 @@ describe('background.js', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(sendResponse).toHaveBeenCalledWith({ success: false });
+    });
+  });
+
+  describe('GET_REVIEW_SCORE', () => {
+    let mockReviewScores;
+
+    beforeEach(() => {
+      mockReviewScores = {
+        resolveReviewScore: jest.fn().mockResolvedValue({
+          entry: {
+            appid: '12345',
+            gameName: 'Test Game',
+            score: { source: 'opencritic', score: 85, tier: 'Strong' },
+            resolvedAt: Date.now(),
+            ttlDays: 7
+          },
+          fromCache: false
+        })
+      };
+      globalThis.XCPW_ReviewScores = mockReviewScores;
+    });
+
+    afterEach(() => {
+      delete globalThis.XCPW_ReviewScores;
+    });
+
+    it('should return true for async response', () => {
+      const sendResponse = jest.fn();
+      const result = messageHandler({
+        type: 'GET_REVIEW_SCORE',
+        appid: '12345',
+        gameName: 'Test Game'
+      }, {}, sendResponse);
+
+      expect(result).toBe(true);
+    });
+
+    it('should call resolveReviewScore with appid and gameName', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE',
+        appid: '12345',
+        gameName: 'Test Game'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(mockReviewScores.resolveReviewScore).toHaveBeenCalledWith('12345', 'Test Game');
+    });
+
+    it('should send success response with data', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE',
+        appid: '12345',
+        gameName: 'Test Game'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        data: expect.objectContaining({
+          appid: '12345',
+          score: expect.objectContaining({ score: 85 })
+        }),
+        fromCache: false
+      });
+    });
+
+    it('should fail when appid is missing', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE',
+        gameName: 'Test'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        data: null,
+        fromCache: false
+      });
+    });
+
+    it('should fail when gameName is missing', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE',
+        appid: '12345'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        data: null,
+        fromCache: false
+      });
+    });
+
+    it('should fail when ReviewScores client is not loaded', async () => {
+      delete globalThis.XCPW_ReviewScores;
+
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE',
+        appid: '12345',
+        gameName: 'Test Game'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        error: expect.stringContaining('not loaded')
+      }));
+    });
+  });
+
+  describe('GET_REVIEW_SCORE_BATCH', () => {
+    let mockReviewScores;
+
+    beforeEach(() => {
+      mockReviewScores = {
+        batchResolveReviewScores: jest.fn().mockResolvedValue(new Map([
+          ['111', {
+            entry: { appid: '111', gameName: 'Game 1', score: { score: 90 } },
+            fromCache: false
+          }],
+          ['222', {
+            entry: { appid: '222', gameName: 'Game 2', score: { score: 75 } },
+            fromCache: true
+          }]
+        ]))
+      };
+      globalThis.XCPW_ReviewScores = mockReviewScores;
+    });
+
+    afterEach(() => {
+      delete globalThis.XCPW_ReviewScores;
+    });
+
+    it('should return true for async response', () => {
+      const sendResponse = jest.fn();
+      const result = messageHandler({
+        type: 'GET_REVIEW_SCORE_BATCH',
+        games: [{ appid: '111', gameName: 'Game 1' }]
+      }, {}, sendResponse);
+
+      expect(result).toBe(true);
+    });
+
+    it('should call batchResolveReviewScores with games array', async () => {
+      const games = [
+        { appid: '111', gameName: 'Game 1' },
+        { appid: '222', gameName: 'Game 2' }
+      ];
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE_BATCH',
+        games
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(mockReviewScores.batchResolveReviewScores).toHaveBeenCalledWith(games);
+    });
+
+    it('should send success response with results object', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE_BATCH',
+        games: [
+          { appid: '111', gameName: 'Game 1' },
+          { appid: '222', gameName: 'Game 2' }
+        ]
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        results: expect.objectContaining({
+          '111': expect.objectContaining({ fromCache: false }),
+          '222': expect.objectContaining({ fromCache: true })
+        })
+      });
+    });
+
+    it('should fail when games array is missing', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE_BATCH'
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        results: {}
+      });
+    });
+
+    it('should fail when games array is empty', async () => {
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE_BATCH',
+        games: []
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        results: {}
+      });
+    });
+
+    it('should fail when ReviewScores client is not loaded', async () => {
+      delete globalThis.XCPW_ReviewScores;
+
+      const sendResponse = jest.fn();
+      messageHandler({
+        type: 'GET_REVIEW_SCORE_BATCH',
+        games: [{ appid: '111', gameName: 'Game 1' }]
+      }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        error: expect.stringContaining('not loaded')
+      }));
     });
   });
 });

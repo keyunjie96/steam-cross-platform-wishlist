@@ -20,6 +20,7 @@ let showNintendoCheckbox: HTMLInputElement | null;
 let showPlaystationCheckbox: HTMLInputElement | null;
 let showXboxCheckbox: HTMLInputElement | null;
 let showSteamDeckCheckbox: HTMLInputElement | null;
+let showReviewScoresCheckbox: HTMLInputElement | null;
 
 // Default settings
 interface Settings {
@@ -27,13 +28,15 @@ interface Settings {
   showPlaystation: boolean;
   showXbox: boolean;
   showSteamDeck: boolean;
+  showReviewScores: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   showNintendo: true,
   showPlaystation: true,
   showXbox: true,
-  showSteamDeck: true
+  showSteamDeck: true,
+  showReviewScores: true
 };
 
 /**
@@ -65,11 +68,12 @@ function showStatus(message: string, type: 'success' | 'error'): void {
  */
 function showSettingsStatus(message: string, type: 'success' | 'error'): void {
   if (settingsStatusEl) {
-    settingsStatusEl.textContent = message;
-    settingsStatusEl.className = `status ${type}`;
+    const statusEl = settingsStatusEl;
+    statusEl.textContent = message;
+    statusEl.className = `status ${type}`;
     // Auto-hide after 2 seconds
     setTimeout(() => {
-      settingsStatusEl.className = 'status';
+      statusEl.className = 'status';
     }, 2000);
   }
 }
@@ -93,6 +97,9 @@ async function loadSettings(): Promise<void> {
     }
     if (showSteamDeckCheckbox) {
       showSteamDeckCheckbox.checked = settings.showSteamDeck;
+    }
+    if (showReviewScoresCheckbox) {
+      showReviewScoresCheckbox.checked = settings.showReviewScores;
     }
   } catch (error) {
     console.error(`${LOG_PREFIX} Error loading settings:`, error);
@@ -120,7 +127,8 @@ function getCurrentSettings(): Settings {
     showNintendo: showNintendoCheckbox?.checked ?? DEFAULT_SETTINGS.showNintendo,
     showPlaystation: showPlaystationCheckbox?.checked ?? DEFAULT_SETTINGS.showPlaystation,
     showXbox: showXboxCheckbox?.checked ?? DEFAULT_SETTINGS.showXbox,
-    showSteamDeck: showSteamDeckCheckbox?.checked ?? DEFAULT_SETTINGS.showSteamDeck
+    showSteamDeck: showSteamDeckCheckbox?.checked ?? DEFAULT_SETTINGS.showSteamDeck,
+    showReviewScores: showReviewScoresCheckbox?.checked ?? DEFAULT_SETTINGS.showReviewScores
   };
 }
 
@@ -218,6 +226,7 @@ function initializePage(): void {
   showPlaystationCheckbox = document.getElementById('show-playstation') as HTMLInputElement | null;
   showXboxCheckbox = document.getElementById('show-xbox') as HTMLInputElement | null;
   showSteamDeckCheckbox = document.getElementById('show-steamdeck') as HTMLInputElement | null;
+  showReviewScoresCheckbox = document.getElementById('show-review-scores') as HTMLInputElement | null;
 
   // Event Listeners
   refreshStatsBtn.addEventListener('click', loadCacheStats);
@@ -233,6 +242,9 @@ function initializePage(): void {
   }
   if (showSteamDeckCheckbox) {
     showSteamDeckCheckbox.addEventListener('change', handlePlatformToggle);
+  }
+  if (showReviewScoresCheckbox) {
+    showReviewScoresCheckbox.addEventListener('change', handlePlatformToggle);
   }
 
   // Load initial data, then reveal UI

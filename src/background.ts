@@ -10,7 +10,7 @@
 // Import dependencies via importScripts (Chrome extension service workers)
 // TypeScript will handle the types through the global declarations
 declare function importScripts(...urls: string[]): void;
-importScripts('types.js', 'cache.js', 'wikidataClient.js', 'resolver.js');
+importScripts('types.js', 'cache.js', 'wikidataClient.js', 'resolver.js', 'reviewScoresClient.js');
 
 import type {
   ExtensionMessage,
@@ -19,19 +19,24 @@ import type {
   GetPlatformDataBatchRequest,
   GetPlatformDataBatchResponse,
   UpdateCacheRequest,
-  CacheEntry
+  CacheEntry,
+  GetReviewScoreRequest,
+  GetReviewScoreResponse,
+  GetReviewScoreBatchRequest,
+  GetReviewScoreBatchResponse,
+  ReviewScoreCacheEntry
 } from './types';
 
 const LOG_PREFIX = '[XCPW Background]';
 
 interface AsyncResponse {
   success: boolean;
-  data?: CacheEntry | null;
+  data?: CacheEntry | ReviewScoreCacheEntry | null;
   fromCache?: boolean;
   error?: string;
   count?: number;
   oldestEntry?: number | null;
-  results?: Record<string, { data: CacheEntry; fromCache: boolean }>;
+  results?: Record<string, { data: CacheEntry | ReviewScoreCacheEntry; fromCache: boolean }>;
 }
 
 /**
@@ -85,6 +90,14 @@ function handleMessage(
 
     case 'CLEAR_CACHE':
       handleAsync(() => handleClearCache(), sendResponse, { success: false });
+      return true;
+
+    case 'GET_REVIEW_SCORE':
+      handleAsync(() => getReviewScore(message), sendResponse, { success: false, data: null, fromCache: false });
+      return true;
+
+    case 'GET_REVIEW_SCORE_BATCH':
+      handleAsync(() => getBatchReviewScores(message), sendResponse, { success: false, results: {} });
       return true;
 
     default:
@@ -181,6 +194,63 @@ async function handleClearCache(): Promise<{ success: boolean }> {
   await globalThis.XCPW_Cache.clearCache();
   console.log(`${LOG_PREFIX} Cache cleared`);
   return { success: true };
+}
+
+/**
+ * Gets review score for a game from cache or OpenCritic
+ */
+async function getReviewScore(message: GetReviewScoreRequest): Promise<GetReviewScoreResponse> {
+  const { appid, gameName } = message;
+
+  if (!appid || !gameName) {
+    return { success: false, data: null, fromCache: false };
+  }
+
+  if (!globalThis.XCPW_ReviewScores) {
+    return { success: false, data: null, fromCache: false, error: 'ReviewScores client not loaded' };
+  }
+
+  const { entry, fromCache } = await globalThis.XCPW_ReviewScores.resolveReviewScore(appid, gameName);
+  console.log(`${LOG_PREFIX} Review score ${fromCache ? 'cache hit' : 'resolved'} for appid ${appid}`);
+
+  return { success: true, data: entry, fromCache };
+}
+
+/**
+ * Gets review scores for multiple games in batch
+ */
+async function getBatchReviewScores(message: GetReviewScoreBatchRequest): Promise<GetReviewScoreBatchResponse> {
+  const { games } = message;
+
+  if (!games || !Array.isArray(games) || games.length === 0) {
+    return { success: false, results: {} };
+  }
+
+  if (!globalThis.XCPW_ReviewScores) {
+    return { success: false, results: {}, error: 'ReviewScores client not loaded' };
+  }
+
+  console.log(`${LOG_PREFIX} Review score batch request for ${games.length} games`);
+
+  const resultsMap = await globalThis.XCPW_ReviewScores.batchResolveReviewScores(games);
+
+  // Convert Map to plain object for message passing
+  const results: Record<string, { data: ReviewScoreCacheEntry; fromCache: boolean }> = {};
+  let cachedCount = 0;
+  let resolvedCount = 0;
+
+  for (const [appid, { entry, fromCache }] of resultsMap) {
+    results[appid] = { data: entry, fromCache };
+    if (fromCache) {
+      cachedCount++;
+    } else {
+      resolvedCount++;
+    }
+  }
+
+  console.log(`${LOG_PREFIX} Review score batch complete: ${cachedCount} cached, ${resolvedCount} resolved`);
+
+  return { success: true, results };
 }
 
 chrome.runtime.onMessage.addListener(handleMessage);

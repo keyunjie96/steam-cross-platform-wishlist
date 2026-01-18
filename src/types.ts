@@ -74,7 +74,9 @@ export type ExtensionMessage =
   | GetPlatformDataBatchRequest
   | UpdateCacheRequest
   | GetCacheStatsRequest
-  | ClearCacheRequest;
+  | ClearCacheRequest
+  | GetReviewScoreRequest
+  | GetReviewScoreBatchRequest;
 
 // Store URL builders
 export const StoreUrls = {
@@ -174,11 +176,15 @@ declare global {
       getSteamDeckRefreshAttempts: () => number;
       setSteamDeckRefreshAttempts: (val: number) => void;
       getCachedEntriesByAppId: () => Map<string, CacheEntry>;
-      getUserSettings: () => { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean };
-      setUserSettings: (val: { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean }) => void;
+      getUserSettings: () => { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean; showReviewScores: boolean };
+      setUserSettings: (val: { showNintendo: boolean; showPlaystation: boolean; showXbox: boolean; showSteamDeck: boolean; showReviewScores?: boolean }) => void;
       getSteamDeckRefreshTimer: () => ReturnType<typeof setTimeout> | null;
       setSteamDeckRefreshTimer: (val: ReturnType<typeof setTimeout> | null) => void;
       STEAM_DECK_REFRESH_DELAYS_MS: number[];
+      // Review scores exports
+      createReviewScoreBadge: (reviewScore: ReviewScore) => HTMLElement;
+      getScoreColorClass: (score: number) => string;
+      getCachedReviewScoresByAppId: () => Map<string, ReviewScoreCacheEntry>;
     };
     SSR?: {
       renderContext?: {
@@ -236,6 +242,57 @@ export interface WikidataResult {
 // Steam Deck types
 export type DeckCategory = 0 | 1 | 2 | 3;
 export type DeckStatus = 'unknown' | 'unsupported' | 'playable' | 'verified';
+
+// Review score types
+export interface ReviewScore {
+  source: 'opencritic' | 'metacritic';
+  score: number; // 0-100
+  tier?: string; // OpenCritic tier: 'Mighty', 'Strong', 'Fair', 'Weak'
+  url?: string; // Link to review page
+  criticCount?: number; // Number of critic reviews
+}
+
+export interface ReviewScoreResult {
+  appid: string;
+  gameName: string;
+  found: boolean;
+  score: ReviewScore | null;
+  resolvedAt: number;
+}
+
+// Review score cache entry
+export interface ReviewScoreCacheEntry {
+  appid: string;
+  gameName: string;
+  score: ReviewScore | null;
+  resolvedAt: number;
+  ttlDays: number;
+}
+
+// Message types for review scores
+export interface GetReviewScoreRequest {
+  type: 'GET_REVIEW_SCORE';
+  appid: string;
+  gameName: string;
+}
+
+export interface GetReviewScoreBatchRequest {
+  type: 'GET_REVIEW_SCORE_BATCH';
+  games: Array<{ appid: string; gameName: string }>;
+}
+
+export interface GetReviewScoreResponse {
+  success: boolean;
+  data: ReviewScoreCacheEntry | null;
+  fromCache: boolean;
+  error?: string;
+}
+
+export interface GetReviewScoreBatchResponse {
+  success: boolean;
+  results: Record<string, { data: ReviewScoreCacheEntry; fromCache: boolean }>;
+  error?: string;
+}
 
 // Export globally for content scripts (ES modules not fully supported in Chrome extensions)
 // Only set if not already defined (allows mocking in tests)

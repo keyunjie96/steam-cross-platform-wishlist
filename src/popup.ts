@@ -29,13 +29,15 @@ interface Settings {
   showPlaystation: boolean;
   showXbox: boolean;
   showSteamDeck: boolean;
+  showReviewScores: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   showNintendo: true,
   showPlaystation: true,
   showXbox: true,
-  showSteamDeck: true
+  showSteamDeck: true,
+  showReviewScores: true
 };
 
 /**
@@ -182,7 +184,8 @@ function getCurrentSettings(): Settings {
     showNintendo: showNintendoCheckbox?.checked ?? DEFAULT_SETTINGS.showNintendo,
     showPlaystation: showPlaystationCheckbox?.checked ?? DEFAULT_SETTINGS.showPlaystation,
     showXbox: showXboxCheckbox?.checked ?? DEFAULT_SETTINGS.showXbox,
-    showSteamDeck: showSteamDeckCheckbox?.checked ?? DEFAULT_SETTINGS.showSteamDeck
+    showSteamDeck: showSteamDeckCheckbox?.checked ?? DEFAULT_SETTINGS.showSteamDeck,
+    showReviewScores: DEFAULT_SETTINGS.showReviewScores // Not configurable in popup, use options page
   };
 }
 

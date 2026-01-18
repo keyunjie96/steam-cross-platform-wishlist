@@ -4249,7 +4249,7 @@ describe('content.js', () => {
         }
       }, 'sync');
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Platform settings changed'));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Settings changed'));
       consoleSpy.mockRestore();
     });
 
@@ -4266,7 +4266,7 @@ describe('content.js', () => {
         }
       }, 'sync');
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Platform settings changed'));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Settings changed'));
       consoleSpy.mockRestore();
     });
 
