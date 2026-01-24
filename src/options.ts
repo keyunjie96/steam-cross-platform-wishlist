@@ -4,7 +4,7 @@
  * Handles the options UI for managing the cache.
  */
 
-import type { UserSettings } from './types';
+import type { UserSettings, HltbDisplayStat } from './types';
 
 // Constants
 const MS_PER_HOUR = 1000 * 60 * 60;
@@ -24,6 +24,9 @@ let clearCacheBtn: HTMLButtonElement;
 
 // Dynamic checkbox map - populated from SETTING_CHECKBOX_IDS
 const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
+
+// Select elements (not checkboxes)
+let hltbDisplayStatSelect: HTMLSelectElement | null = null;
 
 /**
  * Formats a duration in milliseconds to a human-readable string
@@ -74,9 +77,14 @@ async function loadSettings(): Promise<void> {
     // Dynamically update all checkboxes from the centralized settings definition
     for (const key of USER_SETTING_KEYS) {
       const checkbox = checkboxes.get(key);
-      if (checkbox) {
-        checkbox.checked = settings[key];
+      if (checkbox && typeof settings[key] === 'boolean') {
+        checkbox.checked = settings[key] as boolean;
       }
+    }
+
+    // Update select elements
+    if (hltbDisplayStatSelect) {
+      hltbDisplayStatSelect.value = settings.hltbDisplayStat;
     }
   } catch (error) {
     console.error(`${LOG_PREFIX} Error loading settings:`, error);
@@ -104,7 +112,13 @@ function getCurrentSettings(): UserSettings {
   const settings = { ...DEFAULT_USER_SETTINGS };
   for (const key of USER_SETTING_KEYS) {
     const checkbox = checkboxes.get(key);
-    settings[key] = checkbox?.checked ?? DEFAULT_USER_SETTINGS[key];
+    if (checkbox && typeof DEFAULT_USER_SETTINGS[key] === 'boolean') {
+      (settings as Record<string, unknown>)[key] = checkbox.checked;
+    }
+  }
+  // Handle select elements
+  if (hltbDisplayStatSelect) {
+    settings.hltbDisplayStat = hltbDisplayStatSelect.value as HltbDisplayStat;
   }
   return settings;
 }
@@ -204,11 +218,19 @@ function initializePage(): void {
   // This automatically includes any new settings added to SETTING_CHECKBOX_IDS
   for (const key of USER_SETTING_KEYS) {
     const checkboxId = SETTING_CHECKBOX_IDS[key];
-    const checkbox = document.getElementById(checkboxId) as HTMLInputElement | null;
-    checkboxes.set(key, checkbox);
-    if (checkbox) {
-      checkbox.addEventListener('change', handlePlatformToggle);
+    if (checkboxId) {
+      const checkbox = document.getElementById(checkboxId) as HTMLInputElement | null;
+      checkboxes.set(key, checkbox);
+      if (checkbox) {
+        checkbox.addEventListener('change', handlePlatformToggle);
+      }
     }
+  }
+
+  // HLTB display stat select
+  hltbDisplayStatSelect = document.getElementById('hltb-display-stat') as HTMLSelectElement | null;
+  if (hltbDisplayStatSelect) {
+    hltbDisplayStatSelect.addEventListener('change', handlePlatformToggle);
   }
 
   // Event Listeners for buttons

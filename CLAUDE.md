@@ -163,11 +163,10 @@ Current global thresholds:
 3. **Wikidata**: SPARQL query for platform data
 4. **Fallback**: Return "unknown" for all platforms
 
-### Store URLs (Region-Agnostic)
-All store URLs auto-redirect to the user's local store:
-- Nintendo: `https://www.nintendo.com/search/...`
-- PlayStation: `https://store.playstation.com/search/...`
-- Xbox: `https://www.xbox.com/search/...`
+### Store URLs
+- Nintendo: `https://www.nintendo.com/search/...` (region-agnostic, auto-redirects)
+- PlayStation: `https://store.playstation.com/en-us/search/...` (US store, matches Wikidata format)
+- Xbox: `https://www.xbox.com/search/...` (region-agnostic, auto-redirects)
 
 ## Testing Data
 

@@ -9,6 +9,9 @@ export type Platform = 'nintendo' | 'playstation' | 'xbox' | 'steamdeck';
 
 export type PlatformStatus = 'available' | 'unavailable' | 'unknown';
 
+// HLTB display stat options
+export type HltbDisplayStat = 'mainStory' | 'mainExtra' | 'completionist';
+
 // ============================================================================
 // User Settings - SINGLE SOURCE OF TRUTH
 // ============================================================================
@@ -28,6 +31,7 @@ export interface UserSettings {
   showXbox: boolean;
   showSteamDeck: boolean;
   showHltb: boolean;
+  hltbDisplayStat: HltbDisplayStat;
 }
 
 /**
@@ -39,7 +43,8 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   showPlaystation: true,
   showXbox: true,
   showSteamDeck: true,
-  showHltb: true
+  showHltb: true,
+  hltbDisplayStat: 'mainStory'
 };
 
 /**
@@ -159,7 +164,7 @@ export const StoreUrls = {
     `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
 
   playstation: (gameName: string): string =>
-    `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
+    `https://store.playstation.com/en-us/search/${encodeURIComponent(gameName)}`,
 
   xbox: (gameName: string): string =>
     `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`,

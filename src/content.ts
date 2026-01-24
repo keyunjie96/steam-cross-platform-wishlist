@@ -648,17 +648,32 @@ function createHltbBadge(hltbData: HltbData): HTMLElement {
   const extraTime = formatHltbTime(hltbData.mainExtra);
   const completionistTime = formatHltbTime(hltbData.completionist);
 
-  // Display just the main story time
-  // This keeps the UI clean - full stats are in the tooltip
-  if (hltbData.mainStory > 0) {
-    badge.textContent = mainTime;
-  } else if (hltbData.mainExtra > 0) {
-    badge.textContent = extraTime;
-  } else if (hltbData.completionist > 0) {
-    badge.textContent = completionistTime;
-  } else {
-    badge.textContent = '?h';
+  // Display stat based on user preference, with fallbacks
+  const displayStat = userSettings.hltbDisplayStat || 'mainStory';
+  let displayTime = '';
+
+  if (displayStat === 'mainStory' && hltbData.mainStory > 0) {
+    displayTime = mainTime;
+  } else if (displayStat === 'mainExtra' && hltbData.mainExtra > 0) {
+    displayTime = extraTime;
+  } else if (displayStat === 'completionist' && hltbData.completionist > 0) {
+    displayTime = completionistTime;
   }
+
+  // Fallback: show any available stat if preferred one is 0
+  if (!displayTime) {
+    if (hltbData.mainStory > 0) {
+      displayTime = mainTime;
+    } else if (hltbData.mainExtra > 0) {
+      displayTime = extraTime;
+    } else if (hltbData.completionist > 0) {
+      displayTime = completionistTime;
+    } else {
+      displayTime = '?h';
+    }
+  }
+
+  badge.textContent = displayTime;
 
   // Tooltip with full breakdown (visible on hover)
   const hasAnyTime = hltbData.mainStory > 0 || hltbData.mainExtra > 0 || hltbData.completionist > 0;
@@ -757,7 +772,8 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
 
   // Get HLTB data if available
   const hltbData = appid ? hltbDataByAppId.get(appid) : null;
-  const showHltbBadge = userSettings.showHltb && hltbData && hltbData.mainStory > 0;
+  const hasHltbTime = hltbData && (hltbData.mainStory > 0 || hltbData.mainExtra > 0 || hltbData.completionist > 0);
+  const showHltbBadge = userSettings.showHltb && hasHltbTime;
 
   // Only add separator and icons if we have visible icons or HLTB badge
   if (iconsToAdd.length > 0 || showHltbBadge) {

@@ -242,6 +242,46 @@
       font-size: 12px;
       color: #8f98a0;
     }
+
+    .select-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      padding-left: 42px;
+      border-radius: 4px;
+      background: #1a3340;
+      border: 1px solid #3d4f5f;
+      margin-top: -1px;
+    }
+
+    .select-label {
+      color: #8f98a0;
+      font-size: 13px;
+      min-width: 90px;
+    }
+
+    .select-row select {
+      background: #1e3a46;
+      color: #ffffff;
+      border: 1px solid #3d4f5f;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .select-row select:hover {
+      border-color: #66c0f4;
+    }
+
+    .select-row select:focus {
+      outline: none;
+      border-color: #66c0f4;
+      box-shadow: 0 0 0 2px rgba(102, 192, 244, 0.2);
+    }
   </style>
 </head>
 <body class="is-loading">
@@ -310,6 +350,15 @@
           <span class="toggle-desc">Show estimated completion times from HowLongToBeat.com</span>
         </span>
       </label>
+
+      <div class="select-row" id="hltb-stat-row">
+        <label for="hltb-display-stat" class="select-label">Display Stat:</label>
+        <select id="hltb-display-stat">
+          <option value="mainStory">Main Story</option>
+          <option value="mainExtra">Main + Extras</option>
+          <option value="completionist">Completionist</option>
+        </select>
+      </div>
     </div>
 
     <div id="settings-status" class="status"></div>

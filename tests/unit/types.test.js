@@ -53,7 +53,7 @@ describe('types.js', () => {
       it('should generate correct PlayStation Store search URL', () => {
         const StoreUrls = globalThis.XCPW_StoreUrls;
         const url = StoreUrls.playstation('God of War');
-        expect(url).toBe('https://store.playstation.com/search/God%20of%20War');
+        expect(url).toBe('https://store.playstation.com/en-us/search/God%20of%20War');
       });
 
       it('should properly encode special characters', () => {
@@ -66,7 +66,7 @@ describe('types.js', () => {
       it('should handle empty string', () => {
         const StoreUrls = globalThis.XCPW_StoreUrls;
         const url = StoreUrls.playstation('');
-        expect(url).toBe('https://store.playstation.com/search/');
+        expect(url).toBe('https://store.playstation.com/en-us/search/');
       });
     });
 
@@ -101,16 +101,22 @@ describe('types.js', () => {
         expect(StoreUrls.xbox(testGame)).toMatch(/^https:\/\//);
       });
 
-      it('should not include region codes (region-agnostic)', () => {
+      it('should not include region codes for Nintendo and Xbox (region-agnostic)', () => {
         const StoreUrls = globalThis.XCPW_StoreUrls;
         const testGame = 'Test';
 
         // Nintendo should not have /us-en/ or similar
         expect(StoreUrls.nintendo(testGame)).not.toMatch(/\/[a-z]{2}-[a-z]{2}\//i);
-        // PlayStation should not have /en-us/ or similar
-        expect(StoreUrls.playstation(testGame)).not.toMatch(/\/[a-z]{2}-[a-z]{2}\//i);
         // Xbox should not have /en-US/ or similar
         expect(StoreUrls.xbox(testGame)).not.toMatch(/\/[a-z]{2}-[A-Z]{2}\//);
+      });
+
+      it('should use US store for PlayStation by default', () => {
+        const StoreUrls = globalThis.XCPW_StoreUrls;
+        const testGame = 'Test';
+
+        // PlayStation uses en-us store by default (matches Wikidata format)
+        expect(StoreUrls.playstation(testGame)).toContain('/en-us/');
       });
     });
 
@@ -205,10 +211,13 @@ describe('types.js', () => {
     it('should have matching keys between DEFAULT_USER_SETTINGS and SETTING_CHECKBOX_IDS', () => {
       const { DEFAULT_USER_SETTINGS, SETTING_CHECKBOX_IDS, USER_SETTING_KEYS } = globalThis.XCPW_UserSettings;
 
-      // All keys in DEFAULT_USER_SETTINGS should have corresponding checkbox IDs
+      // All boolean settings should have corresponding checkbox IDs
+      // Non-boolean settings (like hltbDisplayStat select) don't need checkbox IDs
       for (const key of Object.keys(DEFAULT_USER_SETTINGS)) {
-        expect(SETTING_CHECKBOX_IDS[key]).toBeDefined();
         expect(USER_SETTING_KEYS).toContain(key);
+        if (typeof DEFAULT_USER_SETTINGS[key] === 'boolean') {
+          expect(SETTING_CHECKBOX_IDS[key]).toBeDefined();
+        }
       }
     });
 
