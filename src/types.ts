@@ -164,7 +164,7 @@ export const StoreUrls = {
     `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
 
   playstation: (gameName: string): string =>
-    `https://store.playstation.com/en-us/search/${encodeURIComponent(gameName)}`,
+    `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
 
   xbox: (gameName: string): string =>
     `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`,

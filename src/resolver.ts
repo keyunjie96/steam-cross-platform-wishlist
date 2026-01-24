@@ -25,6 +25,13 @@ type StoreUrlsType = {
 const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
 const RESOLVER_DEBUG = false;
 
+// US-specific fallback URLs when direct store links fail validation
+const US_FALLBACK_URLS: Record<string, (gameName: string) => string> = {
+  nintendo: (name) => `https://www.nintendo.com/us/search/#q=${encodeURIComponent(name)}&sort=df&f=corePlatforms&corePlatforms=Nintendo+Switch`,
+  playstation: (name) => `https://store.playstation.com/en-us/search/${encodeURIComponent(name)}`,
+  xbox: (name) => `https://www.xbox.com/en-US/search?q=${encodeURIComponent(name)}`
+};
+
 // Helper to get PLATFORMS - uses cache module in service worker, fallback for tests
 function getPlatforms(): Platform[] {
   return globalThis.XCPW_Cache?.PLATFORMS || ['nintendo', 'playstation', 'xbox'];
@@ -50,6 +57,33 @@ function getPlatformStatus(available: boolean, foundInWikidata: boolean): Platfo
     return 'unknown';
   }
   return available ? 'available' : 'unavailable';
+}
+
+/**
+ * Validates a store URL by making a HEAD request.
+ * Returns true if the URL is accessible (2xx or redirect status).
+ */
+async function validateStoreUrl(url: string): Promise<boolean> {
+  try {
+    // Follow redirects to detect error pages (e.g., PlayStation redirects to /error when game unavailable in region)
+    const response = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow'
+    });
+
+    // Check if redirected to an error page (PlayStation pattern: /error?conceptId=...)
+    const finalUrl = response.url;
+    const isErrorPage = finalUrl.includes('/error?') || finalUrl.includes('/error/');
+
+    // Valid if 2xx response AND not an error page
+    const valid = response.ok && !isErrorPage;
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation: ${url} -> finalUrl=${finalUrl}, status=${response.status}, isError=${isErrorPage} (valid: ${valid})`);
+    return valid;
+  } catch (error) {
+    // Network error - URL doesn't exist or is unreachable
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation failed for ${url}:`, error);
+    return false;
+  }
 }
 
 /**
@@ -103,9 +137,10 @@ function createManualOverrideEntry(appid: string, gameName: string, override: Re
 }
 
 /**
- * Converts Wikidata result to cache entry format
+ * Converts Wikidata result to cache entry format.
+ * Validates direct store URLs and falls back to US search if they fail.
  */
-function wikidataResultToCacheEntry(appid: string, gameName: string, wikidataResult: WikidataResult): CacheEntry {
+async function wikidataResultToCacheEntry(appid: string, gameName: string, wikidataResult: WikidataResult): Promise<CacheEntry> {
   const WikidataClient = globalThis.XCPW_WikidataClient;
   const StoreUrls = getStoreUrls();
 
@@ -114,17 +149,40 @@ function wikidataResultToCacheEntry(appid: string, gameName: string, wikidataRes
   const displayName = (wikidataName && !isWikidataQID(wikidataName)) ? wikidataName : gameName;
 
   /**
-   * Gets the best URL for a platform - official store URL or search fallback
+   * Gets the best URL for a platform - validates direct URL, falls back to US search if invalid
    */
-  function getUrl(platform: Platform): string {
+  async function getValidatedUrl(platform: Platform): Promise<string> {
     const officialUrl = WikidataClient.getStoreUrl(platform, wikidataResult.storeIds);
-    return officialUrl || StoreUrls[platform](displayName);
+
+    if (officialUrl) {
+      // Validate the direct URL
+      const isValid = await validateStoreUrl(officialUrl);
+      if (isValid) {
+        if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Direct URL valid for ${platform}: ${officialUrl}`);
+        return officialUrl;
+      }
+      // Direct URL failed validation - use US fallback
+      const fallbackUrl = US_FALLBACK_URLS[platform]?.(displayName) || StoreUrls[platform](displayName);
+      console.log(`${RESOLVER_LOG_PREFIX} Direct URL invalid for ${platform}, using US fallback`);
+      return fallbackUrl;
+    }
+
+    // No official URL - use default search URL
+    return StoreUrls[platform](displayName);
   }
 
-  const platforms = createPlatformsObject((platform) => ({
-    status: getPlatformStatus(wikidataResult.platforms[platform as keyof typeof wikidataResult.platforms], wikidataResult.found),
-    storeUrl: getUrl(platform)
-  }));
+  // Validate URLs for all platforms in parallel
+  const platformPromises = getPlatforms().map(async (platform) => {
+    const status = getPlatformStatus(wikidataResult.platforms[platform as keyof typeof wikidataResult.platforms], wikidataResult.found);
+    const storeUrl = await getValidatedUrl(platform);
+    return { platform, data: { status, storeUrl } };
+  });
+
+  const platformResults = await Promise.all(platformPromises);
+  const platforms = {} as Record<Platform, PlatformData>;
+  for (const { platform, data } of platformResults) {
+    platforms[platform] = data;
+  }
 
   return {
     appid,
@@ -214,7 +272,7 @@ async function resolvePlatformData(appid: string, gameName: string): Promise<Res
       platforms: wikidataResult?.platforms
     });
 
-    const entry = wikidataResultToCacheEntry(appid, gameName, wikidataResult);
+    const entry = await wikidataResultToCacheEntry(appid, gameName, wikidataResult);
 
     if (wikidataResult.found) {
       await Cache.saveToCache(entry);
@@ -288,8 +346,8 @@ async function batchResolvePlatformData(games: Array<{ appid: string; gameName: 
       const wikidataResult = wikidataResults.get(appid);
 
       const entry = wikidataResult?.found
-        ? wikidataResultToCacheEntry(appid, gameName, wikidataResult)
-        : wikidataResultToCacheEntry(appid, gameName, {
+        ? await wikidataResultToCacheEntry(appid, gameName, wikidataResult)
+        : await wikidataResultToCacheEntry(appid, gameName, {
           found: false,
           platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
           storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null },

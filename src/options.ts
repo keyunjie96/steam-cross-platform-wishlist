@@ -27,6 +27,7 @@ const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
 
 // Select elements (not checkboxes)
 let hltbDisplayStatSelect: HTMLSelectElement | null = null;
+let hltbStatRow: HTMLElement | null = null;
 
 /**
  * Formats a duration in milliseconds to a human-readable string
@@ -124,9 +125,24 @@ function getCurrentSettings(): UserSettings {
 }
 
 /**
+ * Updates HLTB stat row visibility based on checkbox state
+ */
+function updateHltbRowVisibility(): void {
+  const hltbCheckbox = checkboxes.get('showHltb');
+  if (hltbStatRow && hltbCheckbox) {
+    if (hltbCheckbox.checked) {
+      hltbStatRow.classList.remove('hidden');
+    } else {
+      hltbStatRow.classList.add('hidden');
+    }
+  }
+}
+
+/**
  * Handles platform toggle change
  */
 async function handlePlatformToggle(): Promise<void> {
+  updateHltbRowVisibility();
   const settings = getCurrentSettings();
   await saveSettings(settings);
 }
@@ -227,8 +243,9 @@ function initializePage(): void {
     }
   }
 
-  // HLTB display stat select
+  // HLTB display stat select and row
   hltbDisplayStatSelect = document.getElementById('hltb-display-stat') as HTMLSelectElement | null;
+  hltbStatRow = document.getElementById('hltb-stat-row') as HTMLElement | null;
   if (hltbDisplayStatSelect) {
     hltbDisplayStatSelect.addEventListener('change', handlePlatformToggle);
   }
@@ -239,6 +256,8 @@ function initializePage(): void {
 
   // Load initial data, then reveal UI
   Promise.all([loadCacheStats(), loadSettings()]).then(() => {
+    // Update HLTB row visibility based on loaded settings
+    updateHltbRowVisibility();
     // Remove loading class to reveal content with smooth transition
     document.body.classList.remove('is-loading');
   });

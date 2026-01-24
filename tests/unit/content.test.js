@@ -53,7 +53,7 @@ describe('content.js', () => {
     // Mock StoreUrls (loaded from types.js)
     globalThis.XCPW_StoreUrls = {
       nintendo: (gameName) => `https://www.nintendo.com/search/#q=${encodeURIComponent(gameName)}`,
-      playstation: (gameName) => `https://store.playstation.com/en-us/search/${encodeURIComponent(gameName)}`,
+      playstation: (gameName) => `https://store.playstation.com/search/${encodeURIComponent(gameName)}`,
       xbox: (gameName) => `https://www.xbox.com/search?q=${encodeURIComponent(gameName)}`,
       steamdeck: (gameName) => `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}`
     };

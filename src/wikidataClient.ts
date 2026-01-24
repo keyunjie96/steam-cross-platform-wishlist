@@ -84,7 +84,8 @@ const PLATFORM_STORE_ID_MAP: Record<string, keyof WikidataStoreIds> = {
 
 const STORE_URL_TEMPLATES: Record<string, string> = {
   nintendo: 'https://www.nintendo.com/store/products/{id}/',
-  playstation: 'https://store.playstation.com/concept/{id}',
+  playstationConcept: 'https://store.playstation.com/concept/{id}',
+  playstationProduct: 'https://store.playstation.com/product/{id}',
   xbox: 'https://www.xbox.com/games/store/-/{id}',
   gog: 'https://www.gog.com/game/{id}',
   epic: 'https://store.epicgames.com/p/{id}',
@@ -93,14 +94,33 @@ const STORE_URL_TEMPLATES: Record<string, string> = {
   itch: 'https://{id}.itch.io/'
 };
 
+/**
+ * Checks if a PlayStation Store ID is a concept ID (numeric) vs product ID (regional format)
+ * Concept IDs: "10000657"
+ * Product IDs: "UP0006-PPSA02342_00-ITTAKESTWORETAIL" (start with region code like UP, EP, JP, HP)
+ */
+function isPsConceptId(id: string): boolean {
+  return /^\d+$/.test(id);
+}
+
 function buildStoreUrl(store: string, id: string | null | undefined): string | null {
   if (!id || !STORE_URL_TEMPLATES[store]) return null;
   return STORE_URL_TEMPLATES[store].replace('{id}', id);
 }
 
+/**
+ * Builds PlayStation Store URL based on ID type
+ */
+function buildPlayStationUrl(id: string | null | undefined): string | null {
+  if (!id) return null;
+  // Concept IDs are numeric, product IDs have regional format
+  const template = isPsConceptId(id) ? 'playstationConcept' : 'playstationProduct';
+  return STORE_URL_TEMPLATES[template].replace('{id}', id);
+}
+
 const STORE_URL_BUILDERS: Record<string, (id: string) => string | null> = {
   nintendo: (id) => buildStoreUrl('nintendo', id),
-  playstation: (id) => buildStoreUrl('playstation', id),
+  playstation: (id) => buildPlayStationUrl(id),
   xbox: (id) => buildStoreUrl('xbox', id),
   gog: (id) => buildStoreUrl('gog', id),
   epic: (id) => buildStoreUrl('epic', id),
@@ -345,7 +365,10 @@ async function batchQueryBySteamAppIds(steamAppIds: string[]): Promise<Map<strin
 function getStoreUrl(platform: string, storeIds: WikidataStoreIds): string | null {
   const storeIdKey = PLATFORM_STORE_ID_MAP[platform];
   if (!storeIdKey) return null;
-  return buildStoreUrl(platform, storeIds[storeIdKey]);
+  const id = storeIds[storeIdKey];
+  if (!id) return null;
+  // Use STORE_URL_BUILDERS which handles platform-specific URL formats (e.g., PlayStation concept vs product URLs)
+  return STORE_URL_BUILDERS[platform]?.(id) ?? null;
 }
 
 /**

@@ -282,6 +282,26 @@
       border-color: #66c0f4;
       box-shadow: 0 0 0 2px rgba(102, 192, 244, 0.2);
     }
+
+    .toggle-with-options {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toggle-with-options .toggle-row {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .toggle-with-options .select-row {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-top: none;
+    }
+
+    .toggle-with-options .select-row.hidden {
+      display: none;
+    }
   </style>
 </head>
 <body class="is-loading">
@@ -305,9 +325,9 @@
   </div>
 
   <div class="section">
-    <h2 class="section-title">Platform Settings</h2>
+    <h2 class="section-title">Console Platforms</h2>
     <p class="help-text" style="margin-top: 0;">
-      Choose which platforms to display on your wishlist.
+      Show availability on other gaming stores.
     </p>
 
     <div class="toggle-group">
@@ -334,7 +354,16 @@
           <span class="toggle-desc">Show availability on Xbox Store</span>
         </span>
       </label>
+    </div>
+  </div>
 
+  <div class="section">
+    <h2 class="section-title">Game Info</h2>
+    <p class="help-text" style="margin-top: 0;">
+      Additional details about each game.
+    </p>
+
+    <div class="toggle-group">
       <label class="toggle-row">
         <input type="checkbox" id="show-steamdeck">
         <span class="toggle-label">
@@ -343,21 +372,23 @@
         </span>
       </label>
 
-      <label class="toggle-row">
-        <input type="checkbox" id="show-hltb">
-        <span class="toggle-label">
-          <strong>How Long To Beat</strong>
-          <span class="toggle-desc">Show estimated completion times from HowLongToBeat.com</span>
-        </span>
-      </label>
+      <div class="toggle-with-options">
+        <label class="toggle-row">
+          <input type="checkbox" id="show-hltb">
+          <span class="toggle-label">
+            <strong>How Long To Beat</strong>
+            <span class="toggle-desc">Show estimated completion times from HowLongToBeat.com</span>
+          </span>
+        </label>
 
-      <div class="select-row" id="hltb-stat-row">
-        <label for="hltb-display-stat" class="select-label">Display Stat:</label>
-        <select id="hltb-display-stat">
-          <option value="mainStory">Main Story</option>
-          <option value="mainExtra">Main + Extras</option>
-          <option value="completionist">Completionist</option>
-        </select>
+        <div class="select-row" id="hltb-stat-row">
+          <label for="hltb-display-stat" class="select-label">Display Stat:</label>
+          <select id="hltb-display-stat">
+            <option value="mainStory">Main Story</option>
+            <option value="mainExtra">Main + Extras</option>
+            <option value="completionist">Completionist</option>
+          </select>
+        </div>
       </div>
     </div>
 

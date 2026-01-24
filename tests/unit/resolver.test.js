@@ -8,10 +8,24 @@ describe('resolver.js', () => {
   let mockCache;
   let mockWikidataClient;
   let mockStoreUrls;
+  let originalFetch;
 
   beforeEach(() => {
     jest.resetModules();
     clearMockStorage();
+
+    // Mock fetch for URL validation - return success for official URLs
+    // Must include 'url' property since validation checks for error page redirects
+    originalFetch = global.fetch;
+    global.fetch = jest.fn().mockImplementation((url) => {
+      // Official URLs should be valid (return same URL, not an error page)
+      if (url.includes('official.') || url.includes('nintendo.com') ||
+          url.includes('playstation.com') || url.includes('xbox.com')) {
+        return Promise.resolve({ ok: true, status: 200, url: url });
+      }
+      // Other URLs fail validation (simulate redirect to error page)
+      return Promise.resolve({ ok: true, status: 200, url: url + '/error?notfound' });
+    });
 
     // Create mock Cache
     mockCache = {
@@ -78,6 +92,8 @@ describe('resolver.js', () => {
     delete globalThis.XCPW_StoreUrls;
     delete globalThis.XCPW_ProtonDBClient;
     delete globalThis.XCPW_Resolver;
+    // Restore original fetch
+    global.fetch = originalFetch;
   });
 
   describe('exports', () => {
@@ -250,6 +266,69 @@ describe('resolver.js', () => {
       expect(result.entry.platforms.playstation.storeUrl).toContain('playstation');
 
       expect(mockCache.saveToCache).toHaveBeenCalled();
+    });
+
+    it('should use US fallback URLs when direct URL validation fails', async () => {
+      const Resolver = globalThis.XCPW_Resolver;
+
+      // Mock fetch to fail for all invalid store URLs (redirect to error page)
+      global.fetch = jest.fn().mockImplementation((url) => {
+        // All invalid-store.com URLs fail validation (simulate error page redirect)
+        if (url.includes('invalid-store.com')) {
+          return Promise.resolve({ ok: true, status: 200, url: url + '/error?notfound' });
+        }
+        return Promise.resolve({ ok: true, status: 200, url: url });
+      });
+
+      mockWikidataClient.queryBySteamAppId.mockResolvedValueOnce({
+        found: true,
+        wikidataId: 'Q99999',
+        gameName: 'Fallback Test',
+        platforms: { nintendo: true, playstation: true, xbox: true, steamdeck: false },
+        storeIds: { eshop: 'test-id', psStore: 'test-ps', xbox: 'test-xbox' }
+      });
+
+      // Return invalid URLs that will all fail validation
+      mockWikidataClient.getStoreUrl
+        .mockReturnValueOnce('https://invalid-store.com/nintendo/test')
+        .mockReturnValueOnce('https://invalid-store.com/playstation/test')
+        .mockReturnValueOnce('https://invalid-store.com/xbox/test');
+
+      const result = await Resolver.resolvePlatformData('77777', 'Fallback Test');
+
+      // Should use US fallback URLs since all direct URLs failed validation
+      expect(result.entry.platforms.nintendo.storeUrl).toContain('/us/');
+      expect(result.entry.platforms.nintendo.storeUrl).toContain('nintendo.com');
+      expect(result.entry.platforms.playstation.storeUrl).toContain('/en-us/');
+      expect(result.entry.platforms.playstation.storeUrl).toContain('playstation.com');
+      expect(result.entry.platforms.xbox.storeUrl).toContain('/en-US/');
+      expect(result.entry.platforms.xbox.storeUrl).toContain('xbox.com');
+    });
+
+    it('should handle network errors during URL validation gracefully', async () => {
+      const Resolver = globalThis.XCPW_Resolver;
+
+      // Mock fetch to throw network error
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      mockWikidataClient.queryBySteamAppId.mockResolvedValueOnce({
+        found: true,
+        wikidataId: 'Q88888',
+        gameName: 'Network Test',
+        platforms: { nintendo: true, playstation: false, xbox: false, steamdeck: false },
+        storeIds: { eshop: 'test-id', psStore: null, xbox: null }
+      });
+
+      mockWikidataClient.getStoreUrl
+        .mockReturnValueOnce('https://nintendo.com/test')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(null);
+
+      const result = await Resolver.resolvePlatformData('66666', 'Network Test');
+
+      // Should still resolve, using fallback URL due to network error
+      expect(result.entry).toBeDefined();
+      expect(result.entry.platforms.nintendo.storeUrl).toContain('nintendo.com');
     });
 
     it('should create fallback entry and cache it when Wikidata returns not found', async () => {

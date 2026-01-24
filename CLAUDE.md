@@ -164,9 +164,21 @@ Current global thresholds:
 4. **Fallback**: Return "unknown" for all platforms
 
 ### Store URLs
-- Nintendo: `https://www.nintendo.com/search/...` (region-agnostic, auto-redirects)
-- PlayStation: `https://store.playstation.com/en-us/search/...` (US store, matches Wikidata format)
-- Xbox: `https://www.xbox.com/search/...` (region-agnostic, auto-redirects)
+
+**Direct Links (from Wikidata):** When Wikidata provides a store ID, the resolver validates the URL before caching:
+1. Make HEAD request to check if URL is accessible
+2. If valid (2xx/3xx) → use direct product link
+3. If invalid (404/error) → fall back to US search URL
+
+**Fallback URLs (when validation fails):**
+- Nintendo: `https://www.nintendo.com/us/search/...`
+- PlayStation: `https://store.playstation.com/en-us/search/...`
+- Xbox: `https://www.xbox.com/en-US/search/...`
+
+**Default Search URLs (no Wikidata store ID):**
+- Nintendo: `https://www.nintendo.com/search/...` (region-agnostic)
+- PlayStation: `https://store.playstation.com/search/...` (region-agnostic)
+- Xbox: `https://www.xbox.com/search/...` (region-agnostic)
 
 ## Testing Data
 

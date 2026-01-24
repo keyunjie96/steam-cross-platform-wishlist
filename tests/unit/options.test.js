@@ -16,6 +16,7 @@ describe('options.js', () => {
   let showXboxCheckbox;
   let showSteamDeckCheckbox;
   let showHltbCheckbox;
+  let hltbStatRow;
 
   beforeEach(() => {
     jest.resetModules();
@@ -83,6 +84,11 @@ describe('options.js', () => {
     showHltbCheckbox.id = 'show-hltb';
     showHltbCheckbox.checked = true;
     document.body.appendChild(showHltbCheckbox);
+
+    hltbStatRow = document.createElement('div');
+    hltbStatRow.id = 'hltb-stat-row';
+    hltbStatRow.className = '';
+    document.body.appendChild(hltbStatRow);
 
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage.mockClear();
@@ -750,6 +756,69 @@ describe('options.js', () => {
       // The else-if branch: button.dataset.originalText is undefined
 
       expect(clearCacheBtn.disabled).toBe(false);
+    });
+  });
+
+  describe('HLTB row visibility', () => {
+    it('should show hltb-stat-row when HLTB checkbox is checked', async () => {
+      // Start with hidden
+      hltbStatRow.classList.add('hidden');
+      showHltbCheckbox.checked = true;
+
+      // Re-require to reinitialize with our DOM
+      jest.resetModules();
+      require('../../dist/options.js');
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Row should be visible (hidden class removed)
+      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+    });
+
+    it('should hide hltb-stat-row when HLTB checkbox is unchecked', async () => {
+      // Start visible
+      hltbStatRow.classList.remove('hidden');
+
+      // Mock storage to return showHltb: false so loadSettings sets checkbox to unchecked
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: false }
+      });
+
+      // Re-require to reinitialize with our DOM
+      jest.resetModules();
+      require('../../dist/options.js');
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Row should be hidden
+      expect(hltbStatRow.classList.contains('hidden')).toBe(true);
+    });
+
+    it('should toggle hltb-stat-row visibility when checkbox changes', async () => {
+      // Dispatch DOMContentLoaded first
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Initially checkbox is checked, row should be visible
+      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+
+      // Uncheck the checkbox
+      showHltbCheckbox.checked = false;
+      showHltbCheckbox.dispatchEvent(new Event('change'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Row should now be hidden
+      expect(hltbStatRow.classList.contains('hidden')).toBe(true);
+
+      // Check the checkbox again
+      showHltbCheckbox.checked = true;
+      showHltbCheckbox.dispatchEvent(new Event('change'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Row should be visible again
+      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
     });
   });
 });
