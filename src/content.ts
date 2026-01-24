@@ -648,14 +648,14 @@ function createHltbBadge(hltbData: HltbData): HTMLElement {
   const extraTime = formatHltbTime(hltbData.mainExtra);
   const completionistTime = formatHltbTime(hltbData.completionist);
 
-  // Display just the main story time with tilde (estimate indicator)
+  // Display just the main story time
   // This keeps the UI clean - full stats are in the tooltip
   if (hltbData.mainStory > 0) {
-    badge.textContent = `~${mainTime}`;
+    badge.textContent = mainTime;
   } else if (hltbData.mainExtra > 0) {
-    badge.textContent = `~${extraTime}`;
+    badge.textContent = extraTime;
   } else if (hltbData.completionist > 0) {
-    badge.textContent = `~${completionistTime}`;
+    badge.textContent = completionistTime;
   } else {
     badge.textContent = '?h';
   }
@@ -669,7 +669,7 @@ function createHltbBadge(hltbData: HltbData): HTMLElement {
     badge.setAttribute('title', tooltip);
     badge.setAttribute('aria-label', tooltip);
   } else {
-    const tooltipParts: string[] = ['How Long To Beat'];
+    const tooltipParts: string[] = [];
     if (hltbData.mainStory > 0) {
       tooltipParts.push(`Main Story: ${mainTime}`);
     }

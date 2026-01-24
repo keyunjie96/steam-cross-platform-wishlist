@@ -2260,8 +2260,8 @@ describe('content.js', () => {
       const badge = createHltbBadge(hltbData);
 
       expect(badge.classList.contains('xcpw-hltb-badge')).toBe(true);
-      // Shows just main story time with tilde (estimate indicator)
-      expect(badge.textContent).toBe('~25h');
+      // Shows just main story time
+      expect(badge.textContent).toBe('25h');
       // Tooltip contains full breakdown
       expect(badge.getAttribute('title')).toContain('Main Story: 25h');
       expect(badge.getAttribute('title')).toContain('Main + Extras: 40h');
@@ -2282,7 +2282,7 @@ describe('content.js', () => {
 
       const badge = createHltbBadge(hltbData);
 
-      expect(badge.textContent).toBe('~30h');
+      expect(badge.textContent).toBe('30h');
       expect(badge.getAttribute('title')).toContain('Main Story: 30h');
       expect(badge.getAttribute('title')).not.toContain('Main + Extras');
       expect(badge.getAttribute('title')).not.toContain('Completionist');
@@ -2321,7 +2321,7 @@ describe('content.js', () => {
       const badge = createHltbBadge(hltbData);
 
       // Badge falls back to mainExtra time
-      expect(badge.textContent).toBe('~50h');
+      expect(badge.textContent).toBe('50h');
       // Tooltip shows available times
       expect(badge.getAttribute('title')).toContain('Main + Extras: 50h');
       expect(badge.getAttribute('title')).toContain('Completionist: 80h');
@@ -2342,7 +2342,7 @@ describe('content.js', () => {
       const badge = createHltbBadge(hltbData);
 
       // Badge falls back to completionist time
-      expect(badge.textContent).toBe('~100h');
+      expect(badge.textContent).toBe('100h');
       expect(badge.getAttribute('title')).toContain('Completionist: 100h');
     });
 
