@@ -33,3 +33,9 @@ CLAUDE.local.md
 *.pem
 *.crx
 coverage/
+
+# Playwright MCP temp files
+.playwright-mcp/
+
+# Debug/test scripts
+test-*.mjs

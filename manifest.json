@@ -3,6 +3,11 @@
   "name": "Steam Cross-Platform Wishlist",
   "version": "0.6.0",
   "description": "Shows cross-platform availability (Switch/PlayStation/Xbox/Steam Deck) on Steam wishlist pages using Wikidata and Steam",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
   "permissions": ["storage", "declarativeNetRequest"],
   "host_permissions": [
     "https://store.steampowered.com/*",
@@ -14,7 +19,12 @@
   ],
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "Steam Cross-Platform Wishlist"
+    "default_title": "Steam Cross-Platform Wishlist",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
   },
   "background": {
     "service_worker": "dist/background.js"

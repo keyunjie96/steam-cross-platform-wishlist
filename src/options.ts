@@ -132,7 +132,24 @@ function getCurrentSettings(): UserSettings {
 function updateHltbRowVisibility(): void {
   const hltbCheckbox = checkboxes.get('showHltb');
   if (hltbStatRow && hltbCheckbox) {
+    // Support multiple CSS class conventions: .hidden, .visible, .nested-option.visible
     hltbStatRow.classList.toggle('hidden', !hltbCheckbox.checked);
+    hltbStatRow.classList.toggle('visible', hltbCheckbox.checked);
+  }
+}
+
+/**
+ * Updates the visual active state of all platform toggles
+ */
+function updateToggleActiveStates(): void {
+  for (const [key, checkbox] of checkboxes) {
+    if (checkbox) {
+      // Support both old (.platform-toggle) and new (.option-item) class names
+      const toggleLabel = checkbox.closest('.platform-toggle') || checkbox.closest('.option-item');
+      if (toggleLabel) {
+        toggleLabel.classList.toggle('active', checkbox.checked);
+      }
+    }
   }
 }
 
@@ -140,6 +157,7 @@ function updateHltbRowVisibility(): void {
  * Handles platform toggle change
  */
 async function handlePlatformToggle(): Promise<void> {
+  updateToggleActiveStates();
   updateHltbRowVisibility();
   const settings = getCurrentSettings();
   await saveSettings(settings);
@@ -254,7 +272,8 @@ function initializePage(): void {
 
   // Load initial data, then reveal UI
   Promise.all([loadCacheStats(), loadSettings()]).then(() => {
-    // Update HLTB row visibility based on loaded settings
+    // Update toggle active states and HLTB row visibility based on loaded settings
+    updateToggleActiveStates();
     updateHltbRowVisibility();
     // Remove loading class to reveal content with smooth transition
     document.body.classList.remove('is-loading');

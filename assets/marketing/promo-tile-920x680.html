@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=920, height=680">
+  <title>Steam Cross-Platform Wishlist - Promotional Tile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Motiva+Sans:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --steam-dark: #1b2838;
+      --steam-darker: #171a21;
+      --steam-card: #1e2837;
+      --steam-card-hover: #2a3f5f;
+      --steam-blue: #66c0f4;
+      --steam-blue-light: #a4d7f5;
+      --steam-text: #c7d5e0;
+      --steam-text-dim: #8f98a0;
+      --nintendo-red: #e60012;
+      --playstation-blue: #006fcd;
+      --xbox-green: #107c10;
+      --steamdeck-purple: #c957e6;
+    }
+
+    body {
+      width: 920px;
+      height: 680px;
+      background: var(--steam-darker);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Atmospheric background */
+    .bg-gradient {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 20%, rgba(102, 192, 244, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(201, 87, 230, 0.06) 0%, transparent 50%),
+        linear-gradient(180deg, var(--steam-darker) 0%, var(--steam-dark) 100%);
+    }
+
+    /* Subtle grid pattern */
+    .bg-pattern {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(102, 192, 244, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(102, 192, 244, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(ellipse 70% 70% at center, black, transparent);
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      padding: 48px 56px;
+    }
+
+    /* Left side - Hero content */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    .extension-badge {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .extension-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1a9fff 0%, #66c0f4 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow:
+        0 8px 32px rgba(102, 192, 244, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .extension-icon::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      background: var(--steam-darker);
+      border-radius: 12px;
+    }
+
+    .icon-inner {
+      position: relative;
+      z-index: 1;
+      width: 36px;
+      height: 24px;
+      background: var(--steam-text);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-inner::before,
+    .icon-inner::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 14px;
+      background: var(--steam-text);
+      border-radius: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .icon-inner::before { left: -4px; }
+    .icon-inner::after { right: -4px; }
+
+    /* Platform dots on icon */
+    .platform-dots {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+
+    .platform-dot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .platform-dot.nintendo { top: 4px; left: 4px; background: var(--nintendo-red); color: var(--nintendo-red); }
+    .platform-dot.playstation { top: 4px; right: 4px; background: var(--playstation-blue); color: var(--playstation-blue); }
+    .platform-dot.xbox { bottom: 4px; left: 4px; background: var(--xbox-green); color: var(--xbox-green); }
+    .platform-dot.steamdeck { bottom: 4px; right: 4px; background: var(--steamdeck-purple); color: var(--steamdeck-purple); }
+
+    .extension-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--steam-text);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .tagline {
+      font-size: 36px;
+      font-weight: 600;
+      color: white;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+
+    .tagline .highlight {
+      color: var(--steam-blue);
+    }
+
+    .description {
+      font-size: 16px;
+      color: var(--steam-text-dim);
+      line-height: 1.6;
+      max-width: 340px;
+    }
+
+    .platform-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--steam-text-dim);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.nintendo { background: var(--nintendo-red); }
+    .legend-dot.playstation { background: var(--playstation-blue); }
+    .legend-dot.xbox { background: var(--xbox-green); }
+    .legend-dot.steamdeck { background: var(--steamdeck-purple); }
+
+    /* Right side - Mockup */
+    .mockup {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      perspective: 1000px;
+    }
+
+    .mockup-header {
+      font-size: 13px;
+      color: var(--steam-text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .wishlist-card {
+      background: var(--steam-card);
+      border-radius: 4px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transform: rotateY(-2deg) rotateX(1deg);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .wishlist-card:hover {
+      background: var(--steam-card-hover);
+      transform: rotateY(0) rotateX(0) translateX(-4px);
+    }
+
+    .game-art {
+      width: 120px;
+      height: 45px;
+      border-radius: 3px;
+      background: linear-gradient(135deg, #2a475e 0%, #1b2838 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--steam-text);
+      text-align: center;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+
+    .game-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .game-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .game-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .game-price {
+      font-size: 12px;
+      color: var(--steam-text-dim);
+    }
+
+    .platform-icons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding-left: 8px;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .platform-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .platform-icon svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .platform-icon.nintendo svg { fill: var(--nintendo-red); filter: drop-shadow(0 0 4px var(--nintendo-red)); }
+    .platform-icon.playstation svg { fill: var(--playstation-blue); filter: drop-shadow(0 0 4px var(--playstation-blue)); }
+    .platform-icon.xbox svg { fill: var(--xbox-green); filter: drop-shadow(0 0 4px var(--xbox-green)); }
+    .platform-icon.steamdeck svg { fill: var(--steamdeck-purple); filter: drop-shadow(0 0 4px var(--steamdeck-purple)); }
+
+    .platform-icon.dim svg {
+      opacity: 0.35;
+      filter: none;
+    }
+
+    .hltb-badge {
+      background: rgba(102, 192, 244, 0.15);
+      color: var(--steam-blue);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid rgba(102, 192, 244, 0.3);
+    }
+
+    /* Chrome Web Store badge */
+    .store-badge {
+      position: absolute;
+      bottom: 48px;
+      left: 56px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .store-badge svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .store-badge span {
+      font-size: 12px;
+      color: var(--steam-text);
+      font-weight: 500;
+    }
+
+    /* Decorative elements */
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .glow-orb.blue {
+      width: 200px;
+      height: 200px;
+      background: var(--steam-blue);
+      top: -50px;
+      right: 100px;
+    }
+
+    .glow-orb.purple {
+      width: 150px;
+      height: 150px;
+      background: var(--steamdeck-purple);
+      bottom: 50px;
+      right: -30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="bg-pattern"></div>
+  <div class="glow-orb blue"></div>
+  <div class="glow-orb purple"></div>
+
+  <div class="container">
+    <!-- Left: Hero Content -->
+    <div class="hero">
+      <div class="extension-badge">
+        <div class="extension-icon">
+          <div class="icon-inner"></div>
+          <div class="platform-dots">
+            <div class="platform-dot nintendo"></div>
+            <div class="platform-dot playstation"></div>
+            <div class="platform-dot xbox"></div>
+            <div class="platform-dot steamdeck"></div>
+          </div>
+        </div>
+        <div class="extension-name">Chrome Extension</div>
+      </div>
+
+      <h1 class="tagline">
+        See <span class="highlight">console availability</span> on your Steam wishlist
+      </h1>
+
+      <p class="description">
+        Instantly know which wishlist games are on Nintendo Switch, PlayStation, Xbox, and Steam Deck. Click to open store pages.
+      </p>
+
+      <div class="platform-legend">
+        <div class="legend-item">
+          <div class="legend-dot nintendo"></div>
+          <span>Switch</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot playstation"></div>
+          <span>PlayStation</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot xbox"></div>
+          <span>Xbox</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot steamdeck"></div>
+          <span>Deck</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Wishlist Mockup -->
+    <div class="mockup">
+      <div class="mockup-header">Your Wishlist</div>
+
+      <!-- Game 1: Hollow Knight - All platforms -->
+      <div class="wishlist-card">
+        <div class="game-art">Hollow Knight</div>
+        <div class="game-info">
+          <div class="game-title">Hollow Knight</div>
+          <div class="game-meta">
+            <span class="game-price">$14.99</span>
+            <div class="platform-icons">
+              <div class="platform-icon nintendo">
+                <svg viewBox="0 0 32 32"><path d="M18.901 32h4.901c4.5 0 8.198-3.698 8.198-8.198v-15.604c0-4.5-3.698-8.198-8.198-8.198h-5c-0.099 0-0.203 0.099-0.203 0.198v31.604c0 0.099 0.099 0.198 0.302 0.198zM25 14.401c1.802 0 3.198 1.5 3.198 3.198 0 1.802-1.5 3.198-3.198 3.198-1.802 0-3.198-1.396-3.198-3.198-0.104-1.797 1.396-3.198 3.198-3.198zM15.198 0h-7c-4.5 0-8.198 3.698-8.198 8.198v15.604c0 4.5 3.698 8.198 8.198 8.198h7c0.099 0 0.203-0.099 0.203-0.198v-31.604c0-0.099-0.099-0.198-0.203-0.198zM12.901 29.401h-4.703c-3.099 0-5.599-2.5-5.599-5.599v-15.604c0-3.099 2.5-5.599 5.599-5.599h4.604zM5 9.599c0 1.698 1.302 3 3 3s3-1.302 3-3c0-1.698-1.302-3-3-3s-3 1.302-3 3z"/></svg>
+              </div>
+              <div class="platform-icon playstation">
+                <svg viewBox="0 0 32 32"><path d="M3.262 24.248c-2.374-0.681-2.767-2.084-1.69-2.899 0.776-0.51 1.668-0.954 2.612-1.288l0.087-0.027 7.017-2.516v2.89l-5.030 1.839c-0.881 0.339-1.031 0.79-0.299 1.032 0.365 0.093 0.783 0.147 1.214 0.147 0.615 0 1.204-0.109 1.749-0.308l-0.035 0.011 2.422-0.882v2.592c-0.15 0.037-0.32 0.055-0.487 0.091-0.775 0.136-1.667 0.214-2.577 0.214-1.778 0-3.486-0.298-5.078-0.846l0.11 0.033zM18.049 24.544l7.868-2.843c0.893-0.322 1.032-0.781 0.307-1.022-0.363-0.089-0.779-0.14-1.208-0.14-0.622 0-1.22 0.108-1.774 0.305l0.037-0.011-5.255 1.874v-2.983l0.3-0.106c1.050-0.349 2.284-0.62 3.557-0.761l0.083-0.008c0.468-0.050 1.010-0.078 1.559-0.078 1.877 0 3.677 0.331 5.343 0.939l-0.108-0.035c2.309 0.751 2.549 1.839 1.969 2.589-0.559 0.557-1.235 0.998-1.988 1.282l-0.039 0.013-10.677 3.883v-2.869zM12.231 4.248v21.927l4.892 1.576v-18.39c0-0.862 0.38-1.438 0.992-1.238 0.795 0.225 0.95 1.017 0.95 1.881v7.342c3.050 1.491 5.451-0.003 5.451-3.939 0-4.045-1.407-5.842-5.546-7.282-1.785-0.648-4.040-1.294-6.347-1.805l-0.389-0.072z"/></svg>
+              </div>
+              <div class="platform-icon xbox">
+                <svg viewBox="0 0 32 32"><path d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.110 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.430 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.100-0.052l-0.003-0.001c-0.100-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.290-4.483 3.390-12.240 11.897-9.886 14.290z"/></svg>
+              </div>
+              <div class="platform-icon steamdeck">
+                <svg viewBox="0 0 600.75 799.79"><path d="M200.25 600.27C89.51 600.27 0 510.89 0 400.32s89.51-199.95 200.25-199.95 200.26 89.38 200.26 199.95-89.52 199.95-200.26 199.95z"/><path d="M456.98 399.89c0-141.57-114.95-256.34-256.74-256.34V0c221.2 0 400.51 179.04 400.51 399.89 0 220.86-179.31 399.9-400.51 399.9V656.24c141.79 0 256.74-114.77 256.74-256.35z"/></svg>
+              </div>
+            </div>
+            <span class="hltb-badge">25h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game 2: Elden Ring - PS/Xbox only -->
+      <div class="wishlist-card">
+        <div class="game-art">Elden Ring</div>
+        <div class="game-info">
+          <div class="game-title">Elden Ring</div>
+          <div class="game-meta">
+            <span class="game-price">$59.99</span>
+            <div class="platform-icons">
+              <div class="platform-icon playstation">
+                <svg viewBox="0 0 32 32"><path d="M3.262 24.248c-2.374-0.681-2.767-2.084-1.69-2.899 0.776-0.51 1.668-0.954 2.612-1.288l0.087-0.027 7.017-2.516v2.89l-5.030 1.839c-0.881 0.339-1.031 0.79-0.299 1.032 0.365 0.093 0.783 0.147 1.214 0.147 0.615 0 1.204-0.109 1.749-0.308l-0.035 0.011 2.422-0.882v2.592c-0.15 0.037-0.32 0.055-0.487 0.091-0.775 0.136-1.667 0.214-2.577 0.214-1.778 0-3.486-0.298-5.078-0.846l0.11 0.033zM18.049 24.544l7.868-2.843c0.893-0.322 1.032-0.781 0.307-1.022-0.363-0.089-0.779-0.14-1.208-0.14-0.622 0-1.22 0.108-1.774 0.305l0.037-0.011-5.255 1.874v-2.983l0.3-0.106c1.050-0.349 2.284-0.62 3.557-0.761l0.083-0.008c0.468-0.050 1.010-0.078 1.559-0.078 1.877 0 3.677 0.331 5.343 0.939l-0.108-0.035c2.309 0.751 2.549 1.839 1.969 2.589-0.559 0.557-1.235 0.998-1.988 1.282l-0.039 0.013-10.677 3.883v-2.869zM12.231 4.248v21.927l4.892 1.576v-18.39c0-0.862 0.38-1.438 0.992-1.238 0.795 0.225 0.95 1.017 0.95 1.881v7.342c3.050 1.491 5.451-0.003 5.451-3.939 0-4.045-1.407-5.842-5.546-7.282-1.785-0.648-4.040-1.294-6.347-1.805l-0.389-0.072z"/></svg>
+              </div>
+              <div class="platform-icon xbox">
+                <svg viewBox="0 0 32 32"><path d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.110 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.430 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.100-0.052l-0.003-0.001c-0.100-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.290-4.483 3.390-12.240 11.897-9.886 14.290z"/></svg>
+              </div>
+              <div class="platform-icon steamdeck dim">
+                <svg viewBox="0 0 600.75 799.79"><path d="M200.25 600.27C89.51 600.27 0 510.89 0 400.32s89.51-199.95 200.25-199.95 200.26 89.38 200.26 199.95-89.52 199.95-200.26 199.95z"/><path d="M456.98 399.89c0-141.57-114.95-256.34-256.74-256.34V0c221.2 0 400.51 179.04 400.51 399.89 0 220.86-179.31 399.9-400.51 399.9V656.24c141.79 0 256.74-114.77 256.74-256.35z"/></svg>
+              </div>
+            </div>
+            <span class="hltb-badge">55h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game 3: Celeste - All platforms -->
+      <div class="wishlist-card">
+        <div class="game-art">Celeste</div>
+        <div class="game-info">
+          <div class="game-title">Celeste</div>
+          <div class="game-meta">
+            <span class="game-price">$19.99</span>
+            <div class="platform-icons">
+              <div class="platform-icon nintendo">
+                <svg viewBox="0 0 32 32"><path d="M18.901 32h4.901c4.5 0 8.198-3.698 8.198-8.198v-15.604c0-4.5-3.698-8.198-8.198-8.198h-5c-0.099 0-0.203 0.099-0.203 0.198v31.604c0 0.099 0.099 0.198 0.302 0.198zM25 14.401c1.802 0 3.198 1.5 3.198 3.198 0 1.802-1.5 3.198-3.198 3.198-1.802 0-3.198-1.396-3.198-3.198-0.104-1.797 1.396-3.198 3.198-3.198zM15.198 0h-7c-4.5 0-8.198 3.698-8.198 8.198v15.604c0 4.5 3.698 8.198 8.198 8.198h7c0.099 0 0.203-0.099 0.203-0.198v-31.604c0-0.099-0.099-0.198-0.203-0.198zM12.901 29.401h-4.703c-3.099 0-5.599-2.5-5.599-5.599v-15.604c0-3.099 2.5-5.599 5.599-5.599h4.604zM5 9.599c0 1.698 1.302 3 3 3s3-1.302 3-3c0-1.698-1.302-3-3-3s-3 1.302-3 3z"/></svg>
+              </div>
+              <div class="platform-icon playstation">
+                <svg viewBox="0 0 32 32"><path d="M3.262 24.248c-2.374-0.681-2.767-2.084-1.69-2.899 0.776-0.51 1.668-0.954 2.612-1.288l0.087-0.027 7.017-2.516v2.89l-5.030 1.839c-0.881 0.339-1.031 0.79-0.299 1.032 0.365 0.093 0.783 0.147 1.214 0.147 0.615 0 1.204-0.109 1.749-0.308l-0.035 0.011 2.422-0.882v2.592c-0.15 0.037-0.32 0.055-0.487 0.091-0.775 0.136-1.667 0.214-2.577 0.214-1.778 0-3.486-0.298-5.078-0.846l0.11 0.033zM18.049 24.544l7.868-2.843c0.893-0.322 1.032-0.781 0.307-1.022-0.363-0.089-0.779-0.14-1.208-0.14-0.622 0-1.22 0.108-1.774 0.305l0.037-0.011-5.255 1.874v-2.983l0.3-0.106c1.050-0.349 2.284-0.62 3.557-0.761l0.083-0.008c0.468-0.050 1.010-0.078 1.559-0.078 1.877 0 3.677 0.331 5.343 0.939l-0.108-0.035c2.309 0.751 2.549 1.839 1.969 2.589-0.559 0.557-1.235 0.998-1.988 1.282l-0.039 0.013-10.677 3.883v-2.869zM12.231 4.248v21.927l4.892 1.576v-18.39c0-0.862 0.38-1.438 0.992-1.238 0.795 0.225 0.95 1.017 0.95 1.881v7.342c3.050 1.491 5.451-0.003 5.451-3.939 0-4.045-1.407-5.842-5.546-7.282-1.785-0.648-4.040-1.294-6.347-1.805l-0.389-0.072z"/></svg>
+              </div>
+              <div class="platform-icon xbox">
+                <svg viewBox="0 0 32 32"><path d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.110 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.430 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.100-0.052l-0.003-0.001c-0.100-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.290-4.483 3.390-12.240 11.897-9.886 14.290z"/></svg>
+              </div>
+              <div class="platform-icon steamdeck">
+                <svg viewBox="0 0 600.75 799.79"><path d="M200.25 600.27C89.51 600.27 0 510.89 0 400.32s89.51-199.95 200.25-199.95 200.26 89.38 200.26 199.95-89.52 199.95-200.26 199.95z"/><path d="M456.98 399.89c0-141.57-114.95-256.34-256.74-256.34V0c221.2 0 400.51 179.04 400.51 399.89 0 220.86-179.31 399.9-400.51 399.9V656.24c141.79 0 256.74-114.77 256.74-256.35z"/></svg>
+              </div>
+            </div>
+            <span class="hltb-badge">8h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game 4: Stardew Valley -->
+      <div class="wishlist-card">
+        <div class="game-art">Stardew Valley</div>
+        <div class="game-info">
+          <div class="game-title">Stardew Valley</div>
+          <div class="game-meta">
+            <span class="game-price">$14.99</span>
+            <div class="platform-icons">
+              <div class="platform-icon nintendo">
+                <svg viewBox="0 0 32 32"><path d="M18.901 32h4.901c4.5 0 8.198-3.698 8.198-8.198v-15.604c0-4.5-3.698-8.198-8.198-8.198h-5c-0.099 0-0.203 0.099-0.203 0.198v31.604c0 0.099 0.099 0.198 0.302 0.198zM25 14.401c1.802 0 3.198 1.5 3.198 3.198 0 1.802-1.5 3.198-3.198 3.198-1.802 0-3.198-1.396-3.198-3.198-0.104-1.797 1.396-3.198 3.198-3.198zM15.198 0h-7c-4.5 0-8.198 3.698-8.198 8.198v15.604c0 4.5 3.698 8.198 8.198 8.198h7c0.099 0 0.203-0.099 0.203-0.198v-31.604c0-0.099-0.099-0.198-0.203-0.198zM12.901 29.401h-4.703c-3.099 0-5.599-2.5-5.599-5.599v-15.604c0-3.099 2.5-5.599 5.599-5.599h4.604zM5 9.599c0 1.698 1.302 3 3 3s3-1.302 3-3c0-1.698-1.302-3-3-3s-3 1.302-3 3z"/></svg>
+              </div>
+              <div class="platform-icon playstation">
+                <svg viewBox="0 0 32 32"><path d="M3.262 24.248c-2.374-0.681-2.767-2.084-1.69-2.899 0.776-0.51 1.668-0.954 2.612-1.288l0.087-0.027 7.017-2.516v2.89l-5.030 1.839c-0.881 0.339-1.031 0.79-0.299 1.032 0.365 0.093 0.783 0.147 1.214 0.147 0.615 0 1.204-0.109 1.749-0.308l-0.035 0.011 2.422-0.882v2.592c-0.15 0.037-0.32 0.055-0.487 0.091-0.775 0.136-1.667 0.214-2.577 0.214-1.778 0-3.486-0.298-5.078-0.846l0.11 0.033zM18.049 24.544l7.868-2.843c0.893-0.322 1.032-0.781 0.307-1.022-0.363-0.089-0.779-0.14-1.208-0.14-0.622 0-1.22 0.108-1.774 0.305l0.037-0.011-5.255 1.874v-2.983l0.3-0.106c1.050-0.349 2.284-0.62 3.557-0.761l0.083-0.008c0.468-0.050 1.010-0.078 1.559-0.078 1.877 0 3.677 0.331 5.343 0.939l-0.108-0.035c2.309 0.751 2.549 1.839 1.969 2.589-0.559 0.557-1.235 0.998-1.988 1.282l-0.039 0.013-10.677 3.883v-2.869zM12.231 4.248v21.927l4.892 1.576v-18.39c0-0.862 0.38-1.438 0.992-1.238 0.795 0.225 0.95 1.017 0.95 1.881v7.342c3.050 1.491 5.451-0.003 5.451-3.939 0-4.045-1.407-5.842-5.546-7.282-1.785-0.648-4.040-1.294-6.347-1.805l-0.389-0.072z"/></svg>
+              </div>
+              <div class="platform-icon xbox">
+                <svg viewBox="0 0 32 32"><path d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.110 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.430 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.100-0.052l-0.003-0.001c-0.100-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.290-4.483 3.390-12.240 11.897-9.886 14.290z"/></svg>
+              </div>
+              <div class="platform-icon steamdeck">
+                <svg viewBox="0 0 600.75 799.79"><path d="M200.25 600.27C89.51 600.27 0 510.89 0 400.32s89.51-199.95 200.25-199.95 200.26 89.38 200.26 199.95-89.52 199.95-200.26 199.95z"/><path d="M456.98 399.89c0-141.57-114.95-256.34-256.74-256.34V0c221.2 0 400.51 179.04 400.51 399.89 0 220.86-179.31 399.9-400.51 399.9V656.24c141.79 0 256.74-114.77 256.74-256.35z"/></svg>
+              </div>
+            </div>
+            <span class="hltb-badge">52h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="store-badge">
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#4285f4"/>
+      <circle cx="12" cy="12" r="4" fill="#fff"/>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10" stroke="#34a853" stroke-width="3" fill="none"/>
+      <path d="M22 12c0-5.52-4.48-10-10-10" stroke="#ea4335" stroke-width="3" fill="none"/>
+      <path d="M12 22c5.52 0 10-4.48 10-10" stroke="#fbbc04" stroke-width="3" fill="none"/>
+    </svg>
+    <span>Available on Chrome Web Store</span>
+  </div>
+</body>
+</html>

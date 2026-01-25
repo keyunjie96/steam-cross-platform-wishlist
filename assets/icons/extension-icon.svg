@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <!-- Steam Deck gradient for accent -->
+    <linearGradient id="steam-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a9fff"/>
+      <stop offset="100%" stop-color="#66c0f4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle (Steam blue) -->
+  <circle cx="64" cy="64" r="60" fill="url(#steam-gradient)"/>
+
+  <!-- Inner dark circle for contrast -->
+  <circle cx="64" cy="64" r="52" fill="#1b2838"/>
+
+  <!-- Stylized controller/gamepad shape in center -->
+  <g fill="#c7d5e0">
+    <!-- Center controller body -->
+    <ellipse cx="64" cy="64" rx="28" ry="18"/>
+    <!-- Left grip -->
+    <ellipse cx="40" cy="68" rx="8" ry="14"/>
+    <!-- Right grip -->
+    <ellipse cx="88" cy="68" rx="8" ry="14"/>
+    <!-- D-pad area (left) -->
+    <circle cx="48" cy="62" r="6" fill="#2a475e"/>
+    <!-- Buttons area (right) -->
+    <circle cx="80" cy="62" r="6" fill="#2a475e"/>
+  </g>
+
+  <!-- Platform indicator dots (corners) -->
+  <!-- Nintendo (red) - top left -->
+  <circle cx="20" cy="20" r="10" fill="#e60012"/>
+  <!-- PlayStation (blue) - top right -->
+  <circle cx="108" cy="20" r="10" fill="#006fcd"/>
+  <!-- Xbox (green) - bottom left -->
+  <circle cx="20" cy="108" r="10" fill="#107c10"/>
+  <!-- Steam Deck (purple) - bottom right -->
+  <circle cx="108" cy="108" r="10" fill="#c957e6"/>
+</svg>
