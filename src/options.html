@@ -6,20 +6,23 @@
   <title>Steam Cross-Platform Wishlist - Options</title>
   <style>
     :root {
-      /* Modern Steam-inspired palette */
-      --bg-body: #171d25;
-      --bg-card: #1e2837;
-      --bg-card-hover: #232f3e;
-      --bg-input: #141a22;
+      /* Steam-inspired color palette */
+      --bg-body: #1b2838;
+      --bg-card: #16202d;
+      --bg-card-light: #1e2c3a;
+      --bg-input: #32404f;
+      --bg-hover: #2a3f5f;
 
       --text-primary: #c6d4df;
       --text-secondary: #8f98a0;
       --text-bright: #ffffff;
+      --text-muted: #6b7785;
 
       --border-color: #2a3f5f;
-      --border-subtle: #232f3e;
+      --border-subtle: #1e2c3a;
 
       --accent: #1a9fff;
+      --accent-hover: #00bbff;
       --accent-soft: rgba(26, 159, 255, 0.15);
 
       /* Platform colors */
@@ -29,12 +32,12 @@
       --steamdeck: #8b5cf6;
       --hltb: #1a9fff;
 
-      --success: #4ade80;
-      --danger: #ef4444;
+      --success: #5ba32b;
+      --danger: #c03030;
 
-      /* Shadows */
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      /* Gradients - Steam style */
+      --gradient-button: linear-gradient(to right, #47bfff 0%, #1a9fff 100%);
+      --gradient-button-hover: linear-gradient(to right, #5bc7ff 0%, #47bfff 100%);
     }
 
     * {
@@ -44,33 +47,36 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg-body);
+      font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
+      background: linear-gradient(to bottom, #1b2838 0%, #171a21 100%);
+      background-attachment: fixed;
       color: var(--text-primary);
-      line-height: 1.6;
+      line-height: 1.5;
       min-height: 100vh;
-      padding: 32px 24px;
+      padding: 24px;
     }
 
     .container {
-      max-width: 520px;
+      max-width: 600px;
       margin: 0 auto;
     }
 
-    /* Header - Modern */
+    /* Header */
     .header {
       display: flex;
       align-items: center;
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
     }
 
     .header-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       flex-shrink: 0;
     }
 
@@ -81,42 +87,69 @@
     }
 
     .header-text h1 {
-      font-size: 20px;
-      font-weight: 600;
+      font-size: 22px;
+      font-weight: 300;
       color: var(--text-bright);
-      letter-spacing: -0.3px;
+      letter-spacing: 0.5px;
     }
 
-    .header-text p {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-top: 2px;
+    .header-text .version {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
     }
 
-    /* Sections - Modern card style */
+    /* Sections */
     .section {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow-sm);
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-light) 100%);
+      border-radius: 4px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
     }
 
     .section-header {
-      padding: 16px 20px 14px;
-      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: default;
+    }
+
+    .section-header.collapsible {
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .section-header.collapsible:hover {
+      background: rgba(0, 0, 0, 0.3);
     }
 
     .section-header h2 {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 500;
       color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 1px;
+    }
+
+    .collapse-icon {
+      color: var(--text-muted);
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+
+    .section.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    .section.collapsed .section-body {
+      display: none;
     }
 
     .section-body {
-      padding: 16px 20px 20px;
+      padding: 16px;
     }
 
     .section-desc {
@@ -125,42 +158,42 @@
       margin-bottom: 16px;
     }
 
-    /* Toggle list - Modern */
+    /* Toggle list */
     .toggle-list {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 2px;
     }
 
     .toggle-item {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 12px 14px;
-      border-radius: 8px;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 4px;
       cursor: pointer;
-      transition: background 0.15s ease;
+      transition: background 0.15s;
     }
 
     .toggle-item:hover {
-      background: var(--bg-card-hover);
+      background: var(--bg-hover);
     }
 
     .toggle-item.active {
       background: var(--accent-soft);
     }
 
-    /* Platform icon in toggle */
+    /* Platform icon */
     .toggle-icon {
       width: 32px;
       height: 32px;
-      border-radius: 8px;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       background: var(--bg-input);
-      border: 1px solid var(--border-subtle);
+      transition: all 0.2s;
     }
 
     .toggle-icon svg {
@@ -173,7 +206,7 @@
     .toggle-item[data-platform="nintendo"] .toggle-icon { color: var(--nintendo); }
     .toggle-item[data-platform="playstation"] .toggle-icon { color: var(--playstation); }
     .toggle-item[data-platform="xbox"] .toggle-icon { color: var(--xbox); }
-    .toggle-item[data-platform="steamdeck"] .toggle-icon { color: var(--steamdeck); }
+    .toggle-item[data-platform="steamdeck"] .toggle-icon { background: #3d4450; } /* Dark grey background for SD */
     .toggle-item[data-platform="hltb"] .toggle-icon { color: var(--hltb); }
 
     .toggle-item.active .toggle-icon {
@@ -199,14 +232,14 @@
     .toggle-desc {
       font-size: 12px;
       color: var(--text-secondary);
-      margin-top: 1px;
+      margin-top: 2px;
     }
 
-    /* Modern toggle switch */
+    /* Steam-style toggle switch */
     .toggle-switch {
       position: relative;
-      width: 44px;
-      height: 24px;
+      width: 40px;
+      height: 20px;
       flex-shrink: 0;
     }
 
@@ -221,26 +254,24 @@
       cursor: pointer;
       inset: 0;
       background: var(--bg-input);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      transition: all 0.2s ease;
+      border-radius: 10px;
+      transition: all 0.2s;
     }
 
     .toggle-switch .slider::before {
       position: absolute;
       content: "";
-      height: 18px;
-      width: 18px;
-      left: 2px;
-      top: 2px;
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      top: 3px;
       background: var(--text-secondary);
       border-radius: 50%;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
     }
 
     .toggle-switch input:checked + .slider {
       background: var(--accent);
-      border-color: var(--accent);
     }
 
     .toggle-switch input:checked + .slider::before {
@@ -254,19 +285,18 @@
     }
 
     /* Platform-colored toggles when active */
-    .toggle-item[data-platform="nintendo"] .toggle-switch input:checked + .slider { background: var(--nintendo); border-color: var(--nintendo); }
-    .toggle-item[data-platform="playstation"] .toggle-switch input:checked + .slider { background: var(--playstation); border-color: var(--playstation); }
-    .toggle-item[data-platform="xbox"] .toggle-switch input:checked + .slider { background: var(--xbox); border-color: var(--xbox); }
-    .toggle-item[data-platform="steamdeck"] .toggle-switch input:checked + .slider { background: var(--steamdeck); border-color: var(--steamdeck); }
-    .toggle-item[data-platform="hltb"] .toggle-switch input:checked + .slider { background: var(--hltb); border-color: var(--hltb); }
+    .toggle-item[data-platform="nintendo"] .toggle-switch input:checked + .slider { background: var(--nintendo); }
+    .toggle-item[data-platform="playstation"] .toggle-switch input:checked + .slider { background: var(--playstation); }
+    .toggle-item[data-platform="xbox"] .toggle-switch input:checked + .slider { background: var(--xbox); }
+    .toggle-item[data-platform="steamdeck"] .toggle-switch input:checked + .slider { background: var(--steamdeck); }
+    .toggle-item[data-platform="hltb"] .toggle-switch input:checked + .slider { background: var(--hltb); }
 
-    /* Sub-option (HLTB stat selector) */
+    /* Sub-option (HLTB stat selector) - matches toggle-item layout */
     .sub-option {
       display: none;
-      margin: 8px 0 4px 60px;
-      padding: 12px 14px;
-      background: var(--bg-input);
-      border-radius: 8px;
+      padding: 10px 12px;
+      padding-left: 56px; /* Align with toggle-content (32px icon + 12px gap + 12px padding) */
+      border-radius: 4px;
       align-items: center;
       gap: 12px;
     }
@@ -282,16 +312,16 @@
     }
 
     .sub-option select {
-      flex: 1;
-      padding: 8px 12px;
-      background: var(--bg-card);
+      padding: 6px 10px;
+      background: var(--bg-input);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border-radius: 4px;
       color: var(--text-primary);
       font-family: inherit;
       font-size: 13px;
       cursor: pointer;
       transition: border-color 0.15s;
+      min-width: 140px;
     }
 
     .sub-option select:hover {
@@ -313,16 +343,15 @@
 
     .stat-box {
       background: var(--bg-input);
-      border-radius: 8px;
+      border-radius: 4px;
       padding: 16px;
       text-align: center;
     }
 
     .stat-value {
       font-size: 28px;
-      font-weight: 600;
+      font-weight: 300;
       color: var(--accent);
-      font-variant-numeric: tabular-nums;
     }
 
     .stat-label {
@@ -333,7 +362,7 @@
       margin-top: 4px;
     }
 
-    /* Buttons */
+    /* Steam-style buttons */
     .button-row {
       display: flex;
       gap: 10px;
@@ -341,16 +370,18 @@
 
     button {
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
-      padding: 10px 16px;
-      border-radius: 8px;
+      padding: 8px 16px;
+      border-radius: 2px;
       border: none;
       cursor: pointer;
       transition: all 0.15s;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     button:disabled {
@@ -358,37 +389,42 @@
       cursor: not-allowed;
     }
 
+    .btn-primary {
+      background: var(--gradient-button);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--gradient-button-hover);
+    }
+
     .btn-secondary {
-      background: var(--bg-input);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
+      background: rgba(103, 193, 245, 0.2);
+      color: #67c1f5;
     }
 
     .btn-secondary:hover:not(:disabled) {
-      background: var(--bg-card-hover);
-      border-color: var(--accent);
+      background: rgba(103, 193, 245, 0.3);
     }
 
     .btn-danger {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(192, 48, 48, 0.3);
+      color: #e87070;
     }
 
     .btn-danger:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.25);
-      border-color: var(--danger);
+      background: rgba(192, 48, 48, 0.5);
     }
 
     button svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
     }
 
     /* Status messages */
     .status {
-      padding: 12px 14px;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border-radius: 4px;
       margin-top: 12px;
       font-size: 13px;
       display: none;
@@ -396,25 +432,26 @@
 
     .status.success {
       display: block;
-      background: rgba(74, 222, 128, 0.1);
-      color: var(--success);
-      border: 1px solid rgba(74, 222, 128, 0.2);
+      background: rgba(91, 163, 43, 0.2);
+      color: #8bc34a;
+      border-left: 3px solid var(--success);
     }
 
     .status.error {
       display: block;
-      background: rgba(239, 68, 68, 0.1);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.2);
+      background: rgba(192, 48, 48, 0.2);
+      color: #e87070;
+      border-left: 3px solid var(--danger);
     }
 
     /* Info box */
     .info-box {
       background: var(--bg-input);
-      border-radius: 8px;
-      padding: 14px 16px;
+      border-radius: 4px;
+      padding: 12px 14px;
       font-size: 13px;
       color: var(--text-secondary);
+      border-left: 3px solid var(--accent);
     }
 
     .info-box strong {
@@ -437,7 +474,14 @@
     }
 
     .info-box li {
-      padding: 3px 0;
+      padding: 2px 0;
+    }
+
+    /* Section divider */
+    .section-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 8px 0;
     }
 
     /* Loading state */
@@ -459,17 +503,44 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Separator */
-    .section-divider {
-      height: 1px;
-      background: var(--border-subtle);
-      margin: 8px 0;
-    }
-
     /* Focus styles */
     button:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      body {
+        padding: 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-row {
+        flex-direction: column;
+      }
+
+      .sub-option {
+        padding-left: 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .sub-option select {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -481,7 +552,7 @@
       </div>
       <div class="header-text">
         <h1>Steam Cross-Platform Wishlist</h1>
-        <p>Extension Settings</p>
+        <div class="version">Version 0.6.0</div>
       </div>
     </header>
 
@@ -494,7 +565,7 @@
         <div class="toggle-list">
           <label class="toggle-item" data-platform="nintendo">
             <div class="toggle-icon">
-              <svg viewBox="0 0 24 24"><path d="M10.04 20.4H7.12c-.93 0-1.82-.4-2.48-1.04C4 18.7 3.6 17.81 3.6 16.88V7.12c0-.93.4-1.82 1.04-2.48C5.3 4 6.19 3.6 7.12 3.6h2.92V20.4zm-2.32-4.67c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zM20.4 16.88c0 .93-.4 1.82-1.04 2.48-.66.64-1.55 1.04-2.48 1.04h-2.92V3.6h2.92c.93 0 1.82.4 2.48 1.04.64.66 1.04 1.55 1.04 2.48v9.76zm-3.88-7.65c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/></svg>
+              <svg viewBox="0 0 32 32"><path d="M18.901 32h4.901c4.5 0 8.198-3.698 8.198-8.198v-15.604c0-4.5-3.698-8.198-8.198-8.198h-5c-0.099 0-0.203 0.099-0.203 0.198v31.604c0 0.099 0.099 0.198 0.302 0.198zM25 14.401c1.802 0 3.198 1.5 3.198 3.198 0 1.802-1.5 3.198-3.198 3.198-1.802 0-3.198-1.396-3.198-3.198-0.104-1.797 1.396-3.198 3.198-3.198zM15.198 0h-7c-4.5 0-8.198 3.698-8.198 8.198v15.604c0 4.5 3.698 8.198 8.198 8.198h7c0.099 0 0.203-0.099 0.203-0.198v-31.604c0-0.099-0.099-0.198-0.203-0.198zM12.901 29.401h-4.703c-3.099 0-5.599-2.5-5.599-5.599v-15.604c0-3.099 2.5-5.599 5.599-5.599h4.604zM5 9.599c0 1.698 1.302 3 3 3s3-1.302 3-3c0-1.698-1.302-3-3-3s-3 1.302-3 3z"/></svg>
             </div>
             <div class="toggle-content">
               <div class="toggle-label">Nintendo Switch</div>
@@ -508,7 +579,7 @@
 
           <label class="toggle-item" data-platform="playstation">
             <div class="toggle-icon">
-              <svg viewBox="0 0 24 24"><path d="M9.5 4v13.5l3 1V6.6c0-.5.2-.8.6-.9.5-.1.8.2.8.8v7.6c1.8.7 3.5-.2 3.5-2.4 0-2.4-1.2-3.5-3.5-4.4V4c4 1.2 5.5 3.5 5.5 6.5 0 3.5-2 5.5-5.5 5V20l-4.5-1.5V5.5L9.5 4zm-5 11.5l5.5-2v1.5l-3.5 1c-1 .3-1 .5-.5.8s1.5 0 2-.2l2 .7v1.5l-5.5-1.8V15.5zm15-1.5l-3.5 1.5v1.5l5.5-2.3v-1.2l-2-.8z"/></svg>
+              <svg viewBox="0 0 32 32"><path d="M3.262 24.248c-2.374-0.681-2.767-2.084-1.69-2.899 0.776-0.51 1.668-0.954 2.612-1.288l0.087-0.027 7.017-2.516v2.89l-5.030 1.839c-0.881 0.339-1.031 0.79-0.299 1.032 0.365 0.093 0.783 0.147 1.214 0.147 0.615 0 1.204-0.109 1.749-0.308l-0.035 0.011 2.422-0.882v2.592c-0.15 0.037-0.32 0.055-0.487 0.091-0.775 0.136-1.667 0.214-2.577 0.214-1.778 0-3.486-0.298-5.078-0.846l0.11 0.033zM18.049 24.544l7.868-2.843c0.893-0.322 1.032-0.781 0.307-1.022-0.363-0.089-0.779-0.14-1.208-0.14-0.622 0-1.22 0.108-1.774 0.305l0.037-0.011-5.255 1.874v-2.983l0.3-0.106c1.050-0.349 2.284-0.62 3.557-0.761l0.083-0.008c0.468-0.050 1.010-0.078 1.559-0.078 1.877 0 3.677 0.331 5.343 0.939l-0.108-0.035c2.309 0.751 2.549 1.839 1.969 2.589-0.559 0.557-1.235 0.998-1.988 1.282l-0.039 0.013-10.677 3.883v-2.869zM12.231 4.248v21.927l4.892 1.576v-18.39c0-0.862 0.38-1.438 0.992-1.238 0.795 0.225 0.95 1.017 0.95 1.881v7.342c3.050 1.491 5.451-0.003 5.451-3.939 0-4.045-1.407-5.842-5.546-7.282-1.785-0.648-4.040-1.294-6.347-1.805l-0.389-0.072z"/></svg>
             </div>
             <div class="toggle-content">
               <div class="toggle-label">PlayStation</div>
@@ -522,7 +593,7 @@
 
           <label class="toggle-item" data-platform="xbox">
             <div class="toggle-icon">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c.82 0 1.6.13 2.35.35-.54.39-1.1.9-1.65 1.52-.35-.1-.7-.15-1.05-.2-.2.05-.4.1-.6.18-.55-.62-1.1-1.13-1.65-1.52A8.08 8.08 0 0112 4zm-4.5 2.95c.55.38 1.1.88 1.65 1.48-.85.95-1.65 2.18-2.25 3.55-.85-.25-1.65-.4-2.35-.45.35-1.8 1.25-3.4 2.55-4.55.15-.02.25-.02.4-.03zm9 0c.15 0 .25 0 .4.03 1.3 1.15 2.2 2.75 2.55 4.55-.7.05-1.5.2-2.35.45-.6-1.37-1.4-2.6-2.25-3.55.55-.6 1.1-1.1 1.65-1.48zM12 8.5c.95 1.05 1.85 2.4 2.5 4-.8.35-1.65.65-2.5.85-.85-.2-1.7-.5-2.5-.85.65-1.6 1.55-2.95 2.5-4zM5.1 13.1c.75 0 1.55.15 2.4.4.25.95.55 1.85.95 2.65-.95-.15-2-.5-2.9-1.1-.3-.55-.45-1.25-.45-1.95zm13.8 0c0 .7-.15 1.4-.45 1.95-.9.6-1.95.95-2.9 1.1.4-.8.7-1.7.95-2.65.85-.25 1.65-.4 2.4-.4zm-9.4 2.7c.6.2 1.2.35 1.85.45.35.55.7 1.05 1.1 1.5-.25.1-.5.15-.8.2-1.05-.45-1.75-1.2-2.15-2.15zm5 0c-.4.95-1.1 1.7-2.15 2.15-.3-.05-.55-.1-.8-.2.4-.45.75-.95 1.1-1.5.65-.1 1.25-.25 1.85-.45z"/></svg>
+              <svg viewBox="0 0 32 32"><path d="M16 5.425c-1.888-1.125-4.106-1.922-6.473-2.249l-0.092-0.010c-0.070-0.005-0.152-0.008-0.234-0.008-0.613 0-1.188 0.16-1.687 0.441l0.017-0.009c2.357-1.634 5.277-2.61 8.426-2.61 0.008 0 0.016 0 0.024 0h0.019c0.005 0 0.011 0 0.018 0 3.157 0 6.086 0.976 8.501 2.642l-0.050-0.033c-0.478-0.272-1.051-0.433-1.662-0.433-0.085 0-0.169 0.003-0.252 0.009l0.011-0.001c-2.459 0.336-4.677 1.13-6.648 2.297l0.082-0.045zM5.554 5.268c-0.041 0.014-0.077 0.032-0.11 0.054l0.002-0.001c-2.758 2.723-4.466 6.504-4.466 10.684 0 3.584 1.256 6.875 3.353 9.457l-0.022-0.028c-1.754-3.261 4.48-12.455 7.61-16.159-3.53-3.521-5.277-4.062-6.015-4.062-0.010-0-0.021-0.001-0.032-0.001-0.115 0-0.225 0.021-0.326 0.060l0.006-0.002zM20.083 9.275c3.129 3.706 9.367 12.908 7.605 16.161 2.075-2.554 3.332-5.845 3.332-9.43 0-4.181-1.709-7.962-4.467-10.684l-0.002-0.002c-0.029-0.021-0.063-0.039-0.1-0.052l-0.003-0.001c-0.1-0.036-0.216-0.056-0.336-0.056-0.005 0-0.011 0-0.016 0h0.001c-0.741-0-2.485 0.543-6.014 4.063zM6.114 27.306c2.627 2.306 6.093 3.714 9.888 3.714s7.261-1.407 9.905-3.728l-0.017 0.015c2.349-2.393-5.402-10.901-9.89-14.29-4.483 3.39-12.24 11.897-9.886 14.29z"/></svg>
             </div>
             <div class="toggle-content">
               <div class="toggle-label">Xbox</div>
@@ -545,8 +616,17 @@
         <p class="section-desc">Compatibility and playtime information</p>
         <div class="toggle-list">
           <label class="toggle-item" data-platform="steamdeck">
-            <div class="toggle-icon">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.1 0 2 .9 2 2v2h-4V7c0-1.1.9-2 2-2zm-5 7h2v2H7v-2zm10 0h-2v2h2v-2zm-5-2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>
+            <div class="toggle-icon steamdeck-icon">
+              <svg viewBox="0 0 600.75 799.79">
+                <defs>
+                  <linearGradient id="sd-gradient" gradientUnits="userSpaceOnUse" x1="-154.087" x2="316.283" y1="274.041" y2="501.116">
+                    <stop offset=".107" stop-color="#c957e6"/>
+                    <stop offset="1" stop-color="#1a9fff"/>
+                  </linearGradient>
+                </defs>
+                <path d="M200.25 600.27C89.51 600.27 0 510.89 0 400.32s89.51-199.95 200.25-199.95 200.26 89.38 200.26 199.95-89.52 199.95-200.26 199.95z" fill="url(#sd-gradient)"/>
+                <path d="M456.98 399.89c0-141.57-114.95-256.34-256.74-256.34V0c221.2 0 400.51 179.04 400.51 399.89 0 220.86-179.31 399.9-400.51 399.9V656.24c141.79 0 256.74-114.77 256.74-256.35z" fill="#ffffff"/>
+              </svg>
             </div>
             <div class="toggle-content">
               <div class="toggle-label">Steam Deck Compatibility</div>
@@ -592,7 +672,6 @@
         <h2>Cache</h2>
       </div>
       <div class="section-body">
-        <p class="section-desc">Game data cached locally for 7 days</p>
         <div class="stats-grid">
           <div class="stat-box">
             <div class="stat-value" id="cache-count">-</div>
@@ -623,9 +702,10 @@
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-header">
+    <section class="section collapsed">
+      <div class="section-header collapsible" onclick="this.parentElement.classList.toggle('collapsed')">
         <h2>Privacy</h2>
+        <span class="collapse-icon">▼</span>
       </div>
       <div class="section-body">
         <div class="info-box">
@@ -640,9 +720,10 @@
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-header">
+    <section class="section collapsed">
+      <div class="section-header collapsible" onclick="this.parentElement.classList.toggle('collapsed')">
         <h2>Data Sources</h2>
+        <span class="collapse-icon">▼</span>
       </div>
       <div class="section-body">
         <div class="info-box">
