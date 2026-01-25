@@ -323,57 +323,32 @@
 
     /* All switches use unified accent color (platform colors stay on icons) */
 
-    /* Sub-option (HLTB stat selector) - subordinate to parent toggle */
-    .sub-option {
-      /* Align inner content with toggle text column:
-         margin-left positions container, but we subtract padding-x
-         so the label/select start exactly under toggle-label */
-      --sub-pad-x: 14px;
-      margin-left: calc(var(--icon-size) + var(--col-gap) + 16px - var(--sub-pad-x));
-      margin-right: calc(16px - var(--sub-pad-x));
+    /* Inline option (HLTB stat selector - inside toggle-content) */
+    .inline-option {
       margin-top: 8px;
-      padding: 12px var(--sub-pad-x);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
-    .sub-option[hidden] {
+    .inline-option[hidden] {
       display: none;
     }
 
-    .sub-option label {
-      font-size: 13px;
-      color: var(--text-secondary);
-      white-space: nowrap;
-      min-width: 90px;
-      line-height: 1.2;
-    }
-
-    .sub-option select {
-      padding: 8px 12px;
+    .inline-option select {
+      padding: 6px 10px;
       background: var(--bg-input);
       border: 1px solid var(--border-color);
       border-radius: 4px;
       color: var(--text-primary);
       font-family: inherit;
-      font-size: 13px;
-      line-height: normal;
+      font-size: 12px;
       cursor: pointer;
       transition: border-color 0.15s;
-      min-width: 160px;
-      height: 36px;
-      line-height: 1;
     }
 
-    .sub-option select:hover {
+    .inline-option select:hover {
       border-color: var(--accent);
     }
 
-    .sub-option select:focus {
+    .inline-option select:focus {
       outline: none;
       border-color: var(--accent);
     }
@@ -587,17 +562,8 @@
         grid-template-columns: 1fr;
       }
 
-      .sub-option {
-        margin-left: 14px;
-        margin-right: 14px;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-      }
-
-      .sub-option select {
+      .inline-option select {
         width: 100%;
-        min-width: unset;
       }
     }
   </style>
@@ -705,21 +671,19 @@
             <div class="toggle-content">
               <div class="toggle-label">How Long To Beat</div>
               <div class="toggle-desc">Show completion time estimates</div>
+              <div class="inline-option" id="hltb-stat-row" hidden>
+                <select id="hltb-display-stat">
+                  <option value="mainStory">Main Story</option>
+                  <option value="mainExtra">Main + Extras</option>
+                  <option value="completionist">Completionist</option>
+                </select>
+              </div>
             </div>
             <div class="toggle-switch">
               <input type="checkbox" id="show-hltb">
               <span class="slider"></span>
             </div>
           </label>
-
-          <div class="sub-option" id="hltb-stat-row" hidden>
-            <label for="hltb-display-stat">Display stat:</label>
-            <select id="hltb-display-stat">
-              <option value="mainStory">Main Story</option>
-              <option value="mainExtra">Main + Extras</option>
-              <option value="completionist">Completionist</option>
-            </select>
-          </div>
         </div>
         <div id="settings-status" class="status"></div>
       </div>
