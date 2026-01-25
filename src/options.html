@@ -31,8 +31,11 @@
       --nintendo: #e60012;
       --playstation: #006fcd;
       --xbox: #107c10;
-      --steamdeck: #8b5cf6;
       --hltb: #4aa3ff;
+
+      /* Steam Deck special colors */
+      --sd-tile: #3b4452;
+      --sd-arc: #0f172a;
 
       --success: #5ba32b;
       --danger: #c03030;
@@ -243,16 +246,33 @@
     .toggle-item[data-platform="nintendo"] .toggle-icon { color: var(--nintendo); }
     .toggle-item[data-platform="playstation"] .toggle-icon { color: var(--playstation); }
     .toggle-item[data-platform="xbox"] .toggle-icon { color: var(--xbox); }
-    .toggle-item[data-platform="steamdeck"] .toggle-icon { background: #3d4450; } /* Dark grey background for SD */
     .toggle-item[data-platform="hltb"] .toggle-icon { color: var(--hltb); }
 
-    .toggle-item.active .toggle-icon {
+    /* Active icon tint for all platforms EXCEPT Steam Deck */
+    .toggle-item.active:not([data-platform="steamdeck"]) .toggle-icon {
       background: currentColor;
     }
 
-    .toggle-item.active .toggle-icon svg {
+    .toggle-item.active:not([data-platform="steamdeck"]) .toggle-icon svg {
       fill: white;
       opacity: 1;
+    }
+
+    /* Steam Deck icon tile: always premium grey */
+    .toggle-item[data-platform="steamdeck"] .toggle-icon {
+      background: var(--sd-tile);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Steam Deck SVG should NOT inherit fill: currentColor */
+    .toggle-item[data-platform="steamdeck"] .toggle-icon svg {
+      fill: none;
+      opacity: 1;
+    }
+
+    /* Make the arc (2nd path) dark */
+    .toggle-item[data-platform="steamdeck"] .toggle-icon svg path:last-of-type {
+      fill: var(--sd-arc);
     }
 
     .toggle-content {
