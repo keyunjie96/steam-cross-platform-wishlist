@@ -48,12 +48,12 @@ describe('hltbClient.js', () => {
   let HltbClient;
 
   beforeAll(() => {
-    HltbClient = globalThis.XCPW_HltbClient;
+    HltbClient = globalThis.SCPW_HltbClient;
   });
 
   describe('exports', () => {
-    it('should export XCPW_HltbClient to globalThis', () => {
-      expect(globalThis.XCPW_HltbClient).toBeDefined();
+    it('should export SCPW_HltbClient to globalThis', () => {
+      expect(globalThis.SCPW_HltbClient).toBeDefined();
     });
 
     it('should export all required functions', () => {

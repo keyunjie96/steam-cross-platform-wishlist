@@ -10,8 +10,8 @@
 
 import type { Platform, PlatformStatus, CacheEntry, DeckCategory, GetPlatformDataResponse, HltbData, GetHltbDataBatchResponse } from './types';
 
-const PROCESSED_ATTR = 'data-xcpw-processed';
-const ICONS_INJECTED_ATTR = 'data-xcpw-icons';
+const PROCESSED_ATTR = 'data-scpw-processed';
+const ICONS_INJECTED_ATTR = 'data-scpw-icons';
 const LOG_PREFIX = '[Steam Cross-Platform Wishlist]';
 const DEBUG = false; // Set to true for verbose debugging
 
@@ -55,7 +55,7 @@ function cleanupAllIcons(): void {
   steamDeckRefreshAttempts = 0;
 
   // Remove all icon containers from DOM
-  document.querySelectorAll('.xcpw-platforms').forEach(el => el.remove());
+  document.querySelectorAll('.scpw-platforms').forEach(el => el.remove());
 
   // Clear tracking state
   injectedAppIds.clear();
@@ -91,7 +91,7 @@ function checkDeckFilterActive(): boolean {
 const ALL_PLATFORMS: Platform[] = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
 // Get centralized settings definitions from types.ts
-const { DEFAULT_USER_SETTINGS } = globalThis.XCPW_UserSettings;
+const { DEFAULT_USER_SETTINGS } = globalThis.SCPW_UserSettings;
 
 /** User settings (loaded from storage) - initialized from centralized defaults */
 let userSettings: typeof DEFAULT_USER_SETTINGS = { ...DEFAULT_USER_SETTINGS };
@@ -162,9 +162,9 @@ function isAnyConsolePlatformEnabled(): boolean {
  */
 async function loadUserSettings(): Promise<void> {
   try {
-    const result = await chrome.storage.sync.get('xcpwSettings');
-    if (result.xcpwSettings) {
-      userSettings = { ...userSettings, ...result.xcpwSettings };
+    const result = await chrome.storage.sync.get('scpwSettings');
+    if (result.scpwSettings) {
+      userSettings = { ...userSettings, ...result.scpwSettings };
     }
     if (DEBUG) console.log(`${LOG_PREFIX} Settings loaded: showHltb=${userSettings.showHltb}`);
   } catch (error) {
@@ -183,12 +183,12 @@ function setupSettingsChangeListener(): void {
   }
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== 'sync' || !changes.xcpwSettings) {
+    if (areaName !== 'sync' || !changes.scpwSettings) {
       return;
     }
 
-    const oldSettings = changes.xcpwSettings.oldValue || {};
-    const newSettings = changes.xcpwSettings.newValue || {};
+    const oldSettings = changes.scpwSettings.oldValue || {};
+    const newSettings = changes.scpwSettings.newValue || {};
 
     // Update local settings
     userSettings = { ...userSettings, ...newSettings };
@@ -220,10 +220,10 @@ function setupSettingsChangeListener(): void {
       // Also update ALL containers with loaders (not just pending ones)
       // This handles lazy-loaded games that may have stale references or were just created
       // Use querySelectorAll with filter for browser compatibility (avoids :has() selector)
-      const allContainers = document.querySelectorAll<HTMLElement>('.xcpw-platforms');
+      const allContainers = document.querySelectorAll<HTMLElement>('.scpw-platforms');
       for (const container of allContainers) {
         // Skip containers without loaders
-        if (!container.querySelector('.xcpw-loader')) continue;
+        if (!container.querySelector('.scpw-loader')) continue;
         const appid = container.getAttribute('data-appid');
         if (!appid) continue;
 
@@ -244,7 +244,7 @@ function setupSettingsChangeListener(): void {
       for (const [appid, pendingInfo] of pendingItems) {
         if (!document.body.contains(pendingInfo.container)) {
           // Container is stale - try to find fresh one
-          const freshContainer = document.querySelector<HTMLElement>(`.xcpw-platforms[data-appid="${appid}"]`);
+          const freshContainer = document.querySelector<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
           if (freshContainer) {
             pendingInfo.container = freshContainer;
           }
@@ -253,7 +253,7 @@ function setupSettingsChangeListener(): void {
 
       // If Steam Deck was just enabled, fetch Steam Deck data
       if (platformsJustEnabled.includes('steamdeck') && !steamDeckData) {
-        const SteamDeck = globalThis.XCPW_SteamDeck;
+        const SteamDeck = globalThis.SCPW_SteamDeck;
         if (SteamDeck) {
           SteamDeck.waitForDeckData().then((data: Map<string, DeckCategory>) => {
             if (data.size > 0) {
@@ -301,7 +301,7 @@ function refreshIconsFromCache(reason: string): void {
   let refreshedCount = 0;
 
   for (const [appid, data] of cachedEntriesByAppId) {
-    const container = document.querySelector<HTMLElement>(`.xcpw-platforms[data-appid="${appid}"]`);
+    const container = document.querySelector<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
     if (!container || !document.body.contains(container)) continue;
 
     updateIconsWithData(container, data);
@@ -320,7 +320,7 @@ function refreshIconsFromCache(reason: string): void {
  */
 async function refreshSteamDeckData(reason: string): Promise<void> {
   if (steamDeckRefreshInFlight) return;
-  const SteamDeck = globalThis.XCPW_SteamDeck;
+  const SteamDeck = globalThis.SCPW_SteamDeck;
   if (!SteamDeck || !userSettings.showSteamDeck) return;
 
   steamDeckRefreshInFlight = true;
@@ -354,7 +354,7 @@ async function refreshSteamDeckData(reason: string): Promise<void> {
  * Schedules a Steam Deck refresh after a short delay.
  */
 function scheduleSteamDeckRefresh(reason: string): void {
-  if (!userSettings.showSteamDeck || !globalThis.XCPW_SteamDeck) return;
+  if (!userSettings.showSteamDeck || !globalThis.SCPW_SteamDeck) return;
   if (steamDeckRefreshAttempts >= STEAM_DECK_REFRESH_DELAYS_MS.length) return;
   if (steamDeckRefreshTimer) return;
 
@@ -370,7 +370,7 @@ function scheduleSteamDeckRefresh(reason: string): void {
  * Tracks appids missing Steam Deck data and schedules a refresh.
  */
 function markMissingSteamDeckData(appid: string): void {
-  if (!appid || !userSettings.showSteamDeck || !globalThis.XCPW_SteamDeck) return;
+  if (!appid || !userSettings.showSteamDeck || !globalThis.SCPW_SteamDeck) return;
 
   const wasEmpty = missingSteamDeckAppIds.size === 0;
   missingSteamDeckAppIds.add(appid);
@@ -384,10 +384,10 @@ function markMissingSteamDeckData(appid: string): void {
 
 // Definitions loaded from types.js and icons.js
 // Note: StoreUrls is declared in types.js, access via globalThis to avoid redeclaration
-const PLATFORM_ICONS = globalThis.XCPW_Icons;
-const PLATFORM_INFO = globalThis.XCPW_PlatformInfo;
-const STATUS_INFO = globalThis.XCPW_StatusInfo;
-const STEAM_DECK_TIERS = globalThis.XCPW_SteamDeckTiers;
+const PLATFORM_ICONS = globalThis.SCPW_Icons;
+const PLATFORM_INFO = globalThis.SCPW_PlatformInfo;
+const STATUS_INFO = globalThis.SCPW_StatusInfo;
+const STEAM_DECK_TIERS = globalThis.SCPW_SteamDeckTiers;
 
 // ============================================================================
 // Appid Extraction
@@ -456,7 +456,7 @@ function findWishlistItems(root: Element | Document = document): Element[] {
       const appid = extractAppId(item);
       if (!appid) return;
       const processedAppId = item.getAttribute(PROCESSED_ATTR);
-      const hasIcons = !!item.querySelector('.xcpw-platforms');
+      const hasIcons = !!item.querySelector('.scpw-platforms');
       if (processedAppId === appid && hasIcons) return;
       items.set(appid, item);
     });
@@ -464,14 +464,14 @@ function findWishlistItems(root: Element | Document = document): Element[] {
   // Strategy 2: Filtered view - find app links and walk up to row
   root.querySelectorAll('a[href*="/app/"]').forEach(link => {
     // Skip links inside our own icons
-    if (link.closest('.xcpw-platforms')) return;
+    if (link.closest('.scpw-platforms')) return;
 
     const row = findWishlistRow(link);
     if (!row) return;
     const appid = extractAppId(row);
     if (!appid) return;
     const processedAppId = row.getAttribute(PROCESSED_ATTR);
-    const hasIcons = !!row.querySelector('.xcpw-platforms');
+    const hasIcons = !!row.querySelector('.scpw-platforms');
     if (processedAppId === appid && hasIcons) return;
     if (!items.has(appid)) items.set(appid, row);
   });
@@ -558,13 +558,13 @@ function parseSvg(svgString: string): SVGElement | null {
  */
 function createIconsContainer(appid: string, gameName: string): HTMLElement {
   const container = document.createElement('span');
-  container.className = 'xcpw-platforms';
+  container.className = 'scpw-platforms';
   container.setAttribute('data-appid', appid);
   container.setAttribute('data-game-name', gameName);
 
   // Single subtle loader instead of 4 platform icons
   const loader = document.createElement('span');
-  loader.className = 'xcpw-loader';
+  loader.className = 'scpw-loader';
   loader.setAttribute('aria-hidden', 'true');
   container.appendChild(loader);
 
@@ -581,13 +581,13 @@ function createPlatformIcon(
   storeUrl?: string,
   tier?: string
 ): HTMLElement {
-  const url = storeUrl || globalThis.XCPW_StoreUrls[platform](gameName);
+  const url = storeUrl || globalThis.SCPW_StoreUrls[platform](gameName);
   // Steam Deck icons are not clickable (just informational)
   // Console platforms: clickable when available or unknown (to search)
   const isClickable = platform !== 'steamdeck' && status !== 'unavailable';
   const icon = document.createElement(isClickable ? 'a' : 'span');
 
-  icon.className = `xcpw-platform-icon xcpw-${status}`;
+  icon.className = `scpw-platform-icon scpw-${status}`;
   icon.setAttribute('data-platform', platform);
 
   // Special handling for Steam Deck tier-based tooltip
@@ -634,7 +634,7 @@ function createHltbBadge(hltbData: HltbData): HTMLElement {
 
   // Create link or span depending on whether we have an HLTB ID
   const badge = document.createElement(isClickable ? 'a' : 'span') as HTMLAnchorElement | HTMLSpanElement;
-  badge.className = 'xcpw-hltb-badge';
+  badge.className = 'scpw-hltb-badge';
 
   if (isClickable && badge instanceof HTMLAnchorElement) {
     badge.href = `https://howlongtobeat.com/game/${hltbData.hltbId}`;
@@ -713,10 +713,10 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
   const iconsToAdd: HTMLElement[] = [];
 
   // Reset previous icons to keep updates idempotent
-  container.querySelectorAll('.xcpw-platform-icon, .xcpw-separator, .xcpw-hltb-badge').forEach(el => el.remove());
+  container.querySelectorAll('.scpw-platform-icon, .scpw-separator, .scpw-hltb-badge').forEach(el => el.remove());
 
   // Get Steam Deck client if available
-  const SteamDeck = globalThis.XCPW_SteamDeck;
+  const SteamDeck = globalThis.SCPW_SteamDeck;
 
   for (const platform of enabledPlatforms) {
     // Special handling for Steam Deck - use pre-extracted SSR data
@@ -759,7 +759,7 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
   }
 
   // Remove the loader
-  const loader = container.querySelector('.xcpw-loader');
+  const loader = container.querySelector('.scpw-loader');
   if (loader) loader.remove();
 
   // Get HLTB data if available
@@ -770,7 +770,7 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
   // Only add separator and icons if we have visible icons or HLTB badge
   if (iconsToAdd.length > 0 || showHltbBadge) {
     const separator = document.createElement('span');
-    separator.className = 'xcpw-separator';
+    separator.className = 'scpw-separator';
     container.appendChild(separator);
 
     for (const icon of iconsToAdd) {
@@ -789,7 +789,7 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
  * Creates a concise log string describing rendered icons for a container.
  */
 function getRenderedIconSummary(container: HTMLElement): string {
-  const icons = Array.from(container.querySelectorAll('.xcpw-platform-icon'));
+  const icons = Array.from(container.querySelectorAll('.scpw-platform-icon'));
   if (icons.length === 0) return 'none';
 
   const summaries = icons.map(icon => {
@@ -797,9 +797,9 @@ function getRenderedIconSummary(container: HTMLElement): string {
     const tier = icon.getAttribute('data-tier');
     if (tier) return `${platform}:${tier}`;
 
-    const status = icon.classList.contains('xcpw-available')
+    const status = icon.classList.contains('scpw-available')
       ? 'available'
-      : icon.classList.contains('xcpw-unavailable')
+      : icon.classList.contains('scpw-unavailable')
         ? 'unavailable'
         : 'unknown';
     return `${platform}:${status}`;
@@ -814,7 +814,7 @@ function getRenderedIconSummary(container: HTMLElement): string {
  * The container will be empty (no icons shown) on failure.
  */
 function removeLoadingState(container: HTMLElement): void {
-  const loader = container.querySelector('.xcpw-loader');
+  const loader = container.querySelector('.scpw-loader');
   if (loader) loader.remove();
 }
 
@@ -852,10 +852,10 @@ function findInjectionPoint(item: Element): InjectionPoint {
   }
 
   // Secondary: Find the largest SVG icon group (platform icons are typically grouped)
-  const svgIcons = item.querySelectorAll('svg:not(.xcpw-platforms svg)');
+  const svgIcons = item.querySelectorAll('svg:not(.scpw-platforms svg)');
   const groupCounts = new Map<Element, { count: number; lastWrapper: Element }>();
   for (const svg of svgIcons) {
-    if (svg.closest('.xcpw-platforms')) continue;
+    if (svg.closest('.scpw-platforms')) continue;
     const parent = svg.parentElement;
     if (!parent) continue;
     const group = parent.parentElement || parent;
@@ -1065,7 +1065,7 @@ async function processPendingBatch(): Promise<void> {
         // BUG-13 FIX: Update ALL containers for this appid, not just the one in containerMap
         // React's virtualization can create multiple containers when items are re-rendered
         // while a batch request is in flight, causing duplicate containers with ghost loaders
-        const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.xcpw-platforms[data-appid="${appid}"]`);
+        const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
 
         if (allContainersForAppid.length === 0) {
           if (DEBUG) console.log(`${LOG_PREFIX} No containers found for ${appid}, data cached for reuse`);
@@ -1192,7 +1192,7 @@ async function processPendingHltbBatch(): Promise<void> {
           hltbDataByAppId.set(appid, hltbData);
 
           // Find ALL containers for this appid (React virtualization may have re-rendered)
-          const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.xcpw-platforms[data-appid="${appid}"]`);
+          const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
 
           if (allContainersForAppid.length === 0) {
             if (DEBUG) console.log(`${LOG_PREFIX} HLTB: No containers found for ${appid}, data cached for reuse`);
@@ -1248,7 +1248,7 @@ const INJECTION_BASE_DELAY_MS = 150;
 function resetItemForReprocess(item: Element, previousAppId: string | null): void {
   item.removeAttribute(PROCESSED_ATTR);
   item.removeAttribute(ICONS_INJECTED_ATTR);
-  const existingIcons = item.querySelector('.xcpw-platforms');
+  const existingIcons = item.querySelector('.scpw-platforms');
   if (existingIcons) existingIcons.remove();
 
   if (previousAppId) {
@@ -1297,7 +1297,7 @@ async function processItem(item: Element): Promise<void> {
   }
 
   // Check if icons actually exist in DOM for this item
-  let iconsExistInDom = item.querySelector('.xcpw-platforms');
+  let iconsExistInDom = item.querySelector('.scpw-platforms');
 
   const processedAppId = item.getAttribute(PROCESSED_ATTR);
   if (processedAppId) {
@@ -1476,7 +1476,7 @@ async function init(): Promise<void> {
   setupSettingsChangeListener();
 
   // Load Steam Deck data from page script (runs in MAIN world)
-  const SteamDeck = globalThis.XCPW_SteamDeck;
+  const SteamDeck = globalThis.SCPW_SteamDeck;
   if (SteamDeck && userSettings.showSteamDeck) {
     const latestDeckData = await SteamDeck.waitForDeckData();
     if (latestDeckData.size > 0) {
@@ -1517,7 +1517,7 @@ async function init(): Promise<void> {
 
         // Refresh Steam Deck data (SSR may have updated with new filter results)
         if (userSettings.showSteamDeck) {
-          const SteamDeck = globalThis.XCPW_SteamDeck;
+          const SteamDeck = globalThis.SCPW_SteamDeck;
           if (SteamDeck) {
             const latestDeckData = await SteamDeck.waitForDeckData();
             if (latestDeckData.size > 0) {
@@ -1546,7 +1546,7 @@ if (document.readyState === 'loading') {
 
 // Export internal functions for testing (not used in production)
 if (typeof globalThis !== 'undefined') {
-  globalThis.XCPW_ContentTestExports = {
+  globalThis.SCPW_ContentTestExports = {
     queueForBatchResolution,
     processPendingBatch,
     pendingItems,

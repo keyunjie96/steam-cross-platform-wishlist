@@ -9,13 +9,29 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --bg-0: #1b2838;
+      --bg-1: #171a21;
+      --text: rgba(255, 255, 255, 0.82);
+      --text-muted: rgba(255, 255, 255, 0.55);
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.10);
+      --card-bg-hover: rgba(255, 255, 255, 0.075);
+      --card-border-hover: rgba(255, 255, 255, 0.14);
+      --accent: #4aa3ff;
+      --accent-ring: rgba(74, 163, 255, 0.65);
+      --danger-bg: rgba(150, 54, 54, 0.85);
+      --danger-bg-hover: rgba(176, 68, 68, 0.90);
+      --danger-border: rgba(192, 48, 48, 0.35);
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       width: 280px;
       margin: 0;
       padding: 16px;
-      background: #1b2838;
-      color: #c7d5e0;
+      background: linear-gradient(to bottom, var(--bg-0) 0%, var(--bg-1) 100%);
+      color: var(--text);
       line-height: 1.5;
     }
 
@@ -25,13 +41,13 @@
       gap: 10px;
       margin-bottom: 16px;
       padding-bottom: 12px;
-      border-bottom: 1px solid #3d4f5f;
+      border-bottom: 1px solid var(--card-border);
     }
 
     .header svg {
       width: 24px;
       height: 24px;
-      color: #66c0f4;
+      color: var(--accent);
       flex-shrink: 0;
     }
 
@@ -51,20 +67,23 @@
     .stat {
       flex: 1;
       text-align: center;
-      background: #2a475e;
-      border-radius: 6px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
       padding: 12px 8px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .stat-value {
       font-size: 1.5rem;
       font-weight: 600;
-      color: #ffffff;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
     }
 
     .stat-label {
       font-size: 11px;
-      color: #8f98a0;
+      color: var(--text-muted);
       margin-top: 2px;
     }
 
@@ -76,12 +95,13 @@
     button {
       flex: 1;
       padding: 8px 12px;
-      border: none;
-      border-radius: 4px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
       transition: background-color 0.15s, opacity 0.15s;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     button:disabled {
@@ -90,29 +110,36 @@
     }
 
     .btn-secondary {
-      background: #3d4f5f;
-      color: #c7d5e0;
+      background: rgba(103, 193, 245, 0.20);
+      color: #67c1f5;
     }
 
     .btn-secondary:hover:not(:disabled) {
-      background: #4a6375;
+      background: rgba(103, 193, 245, 0.30);
     }
 
     .btn-danger {
-      background: #963636;
+      border-color: var(--danger-border);
+      background: var(--danger-bg);
       color: #ffffff;
     }
 
     .btn-danger:hover:not(:disabled) {
-      background: #b04444;
+      background: var(--danger-bg-hover);
     }
 
     .status {
       padding: 8px 12px;
-      border-radius: 4px;
+      border-radius: 8px;
       margin-top: 12px;
       font-size: 12px;
       display: none;
+    }
+
+    .platform-toggle,
+    button,
+    .footer a {
+      user-select: none;
     }
 
     .status.success {
@@ -132,26 +159,22 @@
     .footer {
       margin-top: 12px;
       padding-top: 12px;
-      border-top: 1px solid #3d4f5f;
+      border-top: 1px solid var(--card-border);
       text-align: center;
     }
 
     .footer a {
-      color: #66c0f4;
+      color: var(--accent);
       text-decoration: none;
       font-size: 12px;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
     }
 
     .loading {
       display: inline-block;
       width: 12px;
       height: 12px;
-      border: 2px solid #3d4f5f;
-      border-top-color: #66c0f4;
+      border: 2px solid var(--card-border);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
       margin-right: 6px;
@@ -165,7 +188,8 @@
     /* Prevent flicker: hide content until JS loads settings */
     body.is-loading .stats,
     body.is-loading .platforms,
-    body.is-loading .actions {
+    body.is-loading .actions,
+    body.is-loading .footer {
       opacity: 0;
     }
 
@@ -182,42 +206,74 @@
 
     .platforms-title {
       font-size: 11px;
-      color: #8f98a0;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 8px;
     }
 
     .platform-toggles {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     .platform-toggle {
       display: flex;
       align-items: center;
-      gap: 4px;
-      background: #2a475e;
-      border: 1px solid #3d4f5f;
-      border-radius: 4px;
-      padding: 6px 8px;
+      gap: 8px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 9px 10px;
       cursor: pointer;
       transition: background-color 0.15s, border-color 0.15s;
-      font-size: 11px;
-      color: #c7d5e0;
+      font-size: 12px;
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .platform-toggle:hover {
-      background: #3d4f5f;
+      background: var(--card-bg-hover);
+      border-color: var(--card-border-hover);
     }
 
     .platform-toggle input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       margin: 0;
-      accent-color: #66c0f4;
+      accent-color: var(--accent);
       cursor: pointer;
+    }
+
+    .platform-toggle.span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .platform-toggle span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .platform-toggle:focus-within,
+    button:focus-visible,
+    .footer a:focus-visible {
+      outline: 2px solid var(--accent-ring);
+      outline-offset: 2px;
+    }
+
+    .footer a {
+      display: inline-block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+    }
+
+    .footer a:hover {
+      background: var(--card-bg-hover);
     }
 
     .platform-toggle.disabled {
@@ -230,7 +286,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
     </svg>
-    <h1>Cross-Platform Wishlist</h1>
+    <h1>Steam Cross-Platform Wishlist</h1>
   </div>
 
   <div class="stats">
@@ -263,7 +319,7 @@
         <input type="checkbox" id="show-steamdeck">
         <span>Deck</span>
       </label>
-      <label class="platform-toggle">
+      <label class="platform-toggle span-2">
         <input type="checkbox" id="show-hltb">
         <span>HLTB</span>
       </label>

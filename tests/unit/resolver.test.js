@@ -41,7 +41,7 @@ describe('resolver.js', () => {
       },
       PLATFORMS: ['nintendo', 'playstation', 'xbox', 'steamdeck']
     };
-    globalThis.XCPW_Cache = mockCache;
+    globalThis.SCPW_Cache = mockCache;
 
     // Create mock WikidataClient
     mockWikidataClient = {
@@ -55,7 +55,7 @@ describe('resolver.js', () => {
       batchQueryBySteamAppIds: jest.fn().mockResolvedValue(new Map()),
       getStoreUrl: jest.fn().mockReturnValue(null)
     };
-    globalThis.XCPW_WikidataClient = mockWikidataClient;
+    globalThis.SCPW_WikidataClient = mockWikidataClient;
 
     // Create mock StoreUrls
     mockStoreUrls = {
@@ -64,10 +64,10 @@ describe('resolver.js', () => {
       xbox: jest.fn((name) => `https://xbox.example.com/search/${encodeURIComponent(name)}`),
       steamdeck: jest.fn((name) => `https://steamdeck.example.com/search/${encodeURIComponent(name)}`)
     };
-    globalThis.XCPW_StoreUrls = mockStoreUrls;
+    globalThis.SCPW_StoreUrls = mockStoreUrls;
 
     // Create mock ProtonDBClient
-    globalThis.XCPW_ProtonDBClient = {
+    globalThis.SCPW_ProtonDBClient = {
       queryByAppId: jest.fn().mockResolvedValue({
         found: true,
         tier: 'platinum',
@@ -87,23 +87,23 @@ describe('resolver.js', () => {
   });
 
   afterEach(() => {
-    delete globalThis.XCPW_Cache;
-    delete globalThis.XCPW_WikidataClient;
-    delete globalThis.XCPW_StoreUrls;
-    delete globalThis.XCPW_ProtonDBClient;
-    delete globalThis.XCPW_Resolver;
+    delete globalThis.SCPW_Cache;
+    delete globalThis.SCPW_WikidataClient;
+    delete globalThis.SCPW_StoreUrls;
+    delete globalThis.SCPW_ProtonDBClient;
+    delete globalThis.SCPW_Resolver;
     // Restore original fetch
     global.fetch = originalFetch;
   });
 
   describe('exports', () => {
-    it('should export XCPW_Resolver to globalThis', () => {
-      expect(globalThis.XCPW_Resolver).toBeDefined();
-      expect(typeof globalThis.XCPW_Resolver).toBe('object');
+    it('should export SCPW_Resolver to globalThis', () => {
+      expect(globalThis.SCPW_Resolver).toBeDefined();
+      expect(typeof globalThis.SCPW_Resolver).toBe('object');
     });
 
     it('should export all required functions', () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
       expect(typeof Resolver.resolvePlatformData).toBe('function');
       expect(typeof Resolver.batchResolvePlatformData).toBe('function');
       expect(typeof Resolver.forceRefresh).toBe('function');
@@ -113,7 +113,7 @@ describe('resolver.js', () => {
 
   describe('createFallbackEntry', () => {
     it('should create entry with unknown status for all platforms', () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
       const entry = Resolver.createFallbackEntry('12345', 'Test Game');
 
       expect(entry.appid).toBe('12345');
@@ -126,7 +126,7 @@ describe('resolver.js', () => {
     });
 
     it('should include search URLs for all platforms', () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
       const entry = Resolver.createFallbackEntry('12345', 'Test Game');
 
       expect(entry.platforms.nintendo.storeUrl).toContain('nintendo');
@@ -141,7 +141,7 @@ describe('resolver.js', () => {
     });
 
     it('should set source to fallback', () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
       const entry = Resolver.createFallbackEntry('12345', 'Test Game');
 
       expect(entry.source).toBe('fallback');
@@ -149,7 +149,7 @@ describe('resolver.js', () => {
     });
 
     it('should set resolvedAt and ttlDays', () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
       const before = Date.now();
       const entry = Resolver.createFallbackEntry('12345', 'Test Game');
       const after = Date.now();
@@ -162,7 +162,7 @@ describe('resolver.js', () => {
 
   describe('resolvePlatformData', () => {
     it('should return cached entry when available', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       const cachedEntry = {
         appid: '12345',
@@ -187,7 +187,7 @@ describe('resolver.js', () => {
     });
 
     it('should update game name when cached entry has different name', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       const cachedEntry = {
         appid: '12345',
@@ -219,7 +219,7 @@ describe('resolver.js', () => {
     });
 
     it('should use manual override when available', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       const result = await Resolver.resolvePlatformData('367520', 'Hollow Knight');
 
@@ -235,7 +235,7 @@ describe('resolver.js', () => {
     });
 
     it('should query Wikidata when not in cache and no manual override', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       mockWikidataClient.queryBySteamAppId.mockResolvedValueOnce({
         found: true,
@@ -269,7 +269,7 @@ describe('resolver.js', () => {
     });
 
     it('should use US fallback URLs when direct URL validation fails', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       // Mock fetch to fail for all invalid store URLs (redirect to error page)
       global.fetch = jest.fn().mockImplementation((url) => {
@@ -306,7 +306,7 @@ describe('resolver.js', () => {
     });
 
     it('should handle network errors during URL validation gracefully', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       // Mock fetch to throw network error
       global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
@@ -332,7 +332,7 @@ describe('resolver.js', () => {
     });
 
     it('should create fallback entry and cache it when Wikidata returns not found', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       mockWikidataClient.queryBySteamAppId.mockResolvedValueOnce({
         found: false,
@@ -353,7 +353,7 @@ describe('resolver.js', () => {
     });
 
     it('should NOT cache when Wikidata query fails with error', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       mockWikidataClient.queryBySteamAppId.mockRejectedValueOnce(new Error('Network error'));
 
@@ -367,33 +367,33 @@ describe('resolver.js', () => {
     });
 
     it('should throw error when Cache module is missing', async () => {
-      delete globalThis.XCPW_Cache;
+      delete globalThis.SCPW_Cache;
       jest.resetModules();
 
-      globalThis.XCPW_WikidataClient = mockWikidataClient;
-      globalThis.XCPW_StoreUrls = mockStoreUrls;
+      globalThis.SCPW_WikidataClient = mockWikidataClient;
+      globalThis.SCPW_StoreUrls = mockStoreUrls;
       require('../../dist/resolver.js');
 
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       await expect(Resolver.resolvePlatformData('12345', 'Test')).rejects.toThrow('Cache module not loaded');
     });
 
     it('should throw error when WikidataClient module is missing', async () => {
-      delete globalThis.XCPW_WikidataClient;
+      delete globalThis.SCPW_WikidataClient;
       jest.resetModules();
 
-      globalThis.XCPW_Cache = mockCache;
-      globalThis.XCPW_StoreUrls = mockStoreUrls;
+      globalThis.SCPW_Cache = mockCache;
+      globalThis.SCPW_StoreUrls = mockStoreUrls;
       require('../../dist/resolver.js');
 
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       await expect(Resolver.resolvePlatformData('12345', 'Test')).rejects.toThrow('WikidataClient module not loaded');
     });
 
     it('should handle Wikidata QID as game name by using Steam name instead', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       // Sometimes Wikidata returns QID instead of label
       mockWikidataClient.queryBySteamAppId.mockResolvedValueOnce({
@@ -413,7 +413,7 @@ describe('resolver.js', () => {
 
   describe('batchResolvePlatformData', () => {
     it('should return cached entries without querying Wikidata', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       const cachedEntry = {
         appid: '11111',
@@ -458,7 +458,7 @@ describe('resolver.js', () => {
     });
 
     it('should handle all games in cache', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       const cachedEntry1 = { appid: '11111', gameName: 'Game 1', platforms: {}, source: 'cache', resolvedAt: Date.now(), ttlDays: 7 };
       const cachedEntry2 = { appid: '22222', gameName: 'Game 2', platforms: {}, source: 'cache', resolvedAt: Date.now(), ttlDays: 7 };
@@ -479,7 +479,7 @@ describe('resolver.js', () => {
     });
 
     it('should handle manual overrides in batch', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       // 367520 is Hollow Knight with manual override
       const games = [
@@ -500,7 +500,7 @@ describe('resolver.js', () => {
     });
 
     it('should NOT cache when batch Wikidata query fails', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       mockWikidataClient.batchQueryBySteamAppIds.mockRejectedValueOnce(new Error('Network error'));
 
@@ -520,7 +520,7 @@ describe('resolver.js', () => {
     });
 
     it('should handle empty input array', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       const results = await Resolver.batchResolvePlatformData([]);
 
@@ -530,7 +530,7 @@ describe('resolver.js', () => {
 
   describe('forceRefresh', () => {
     it('should remove from cache and resolve fresh', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       mockWikidataClient.queryBySteamAppId.mockResolvedValueOnce({
         found: true,
@@ -551,7 +551,7 @@ describe('resolver.js', () => {
     });
 
     it('should use correct cache key format', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       mockWikidataClient.queryBySteamAppId.mockResolvedValueOnce({
         found: false,
@@ -569,7 +569,7 @@ describe('resolver.js', () => {
 
   describe('resolution priority', () => {
     it('should check in order: cache -> manual override -> wikidata', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       // No cache hit
       mockCache.getFromCache.mockResolvedValueOnce(null);
@@ -593,7 +593,7 @@ describe('resolver.js', () => {
     });
 
     it('should stop at cache if found', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       mockCache.getFromCache.mockResolvedValueOnce({
         appid: '99999',
@@ -609,7 +609,7 @@ describe('resolver.js', () => {
     });
 
     it('should stop at manual override if found', async () => {
-      const Resolver = globalThis.XCPW_Resolver;
+      const Resolver = globalThis.SCPW_Resolver;
 
       // 367520 has manual override
       await Resolver.resolvePlatformData('367520', 'Hollow Knight');

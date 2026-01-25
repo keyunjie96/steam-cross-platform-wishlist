@@ -5,7 +5,7 @@
  */
 
 describe('options.js', () => {
-  let statusEl;
+  let cacheStatusEl;
   let settingsStatusEl;
   let cacheCountEl;
   let cacheAgeEl;
@@ -16,7 +16,7 @@ describe('options.js', () => {
   let showXboxCheckbox;
   let showSteamDeckCheckbox;
   let showHltbCheckbox;
-  let hltbStatRow;
+  let hltbDisplayStatSelect;
 
   beforeEach(() => {
     jest.resetModules();
@@ -25,10 +25,10 @@ describe('options.js', () => {
     // Set up DOM elements that options.js expects using DOM API
     document.body.textContent = '';
 
-    statusEl = document.createElement('div');
-    statusEl.id = 'status';
-    statusEl.className = 'status';
-    document.body.appendChild(statusEl);
+    cacheStatusEl = document.createElement('div');
+    cacheStatusEl.id = 'cache-status';
+    cacheStatusEl.className = 'status';
+    document.body.appendChild(cacheStatusEl);
 
     settingsStatusEl = document.createElement('div');
     settingsStatusEl.id = 'settings-status';
@@ -85,10 +85,15 @@ describe('options.js', () => {
     showHltbCheckbox.checked = true;
     document.body.appendChild(showHltbCheckbox);
 
-    hltbStatRow = document.createElement('div');
-    hltbStatRow.id = 'hltb-stat-row';
-    hltbStatRow.className = '';
-    document.body.appendChild(hltbStatRow);
+    hltbDisplayStatSelect = document.createElement('select');
+    hltbDisplayStatSelect.id = 'hltb-display-stat';
+    hltbDisplayStatSelect.hidden = true;
+    // Add default option to match production HTML
+    const defaultOption = document.createElement('option');
+    defaultOption.value = 'mainStory';
+    defaultOption.textContent = 'Main Story';
+    hltbDisplayStatSelect.appendChild(defaultOption);
+    document.body.appendChild(hltbDisplayStatSelect);
 
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage.mockClear();
@@ -108,13 +113,14 @@ describe('options.js', () => {
     global.confirm = jest.fn(() => true);
 
     // Mock UserSettings (centralized settings from types.js)
-    globalThis.XCPW_UserSettings = {
+    globalThis.SCPW_UserSettings = {
       DEFAULT_USER_SETTINGS: {
         showNintendo: true,
         showPlaystation: true,
         showXbox: true,
         showSteamDeck: true,
-        showHltb: true
+        showHltb: true,
+        hltbDisplayStat: 'mainStory'
       },
       SETTING_CHECKBOX_IDS: {
         showNintendo: 'show-nintendo',
@@ -137,7 +143,7 @@ describe('options.js', () => {
 
   describe('initialization', () => {
     it('should get all required DOM elements', () => {
-      expect(statusEl).toBeTruthy();
+      expect(cacheStatusEl).toBeTruthy();
       expect(cacheCountEl).toBeTruthy();
       expect(cacheAgeEl).toBeTruthy();
       expect(refreshStatsBtn).toBeTruthy();
@@ -340,8 +346,8 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('cleared successfully');
-      expect(statusEl.className).toContain('success');
+      expect(cacheStatusEl.textContent).toContain('cleared successfully');
+      expect(cacheStatusEl.className).toContain('success');
     });
 
     it('should show error status on failed clear', async () => {
@@ -351,8 +357,8 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('Failed');
-      expect(statusEl.className).toContain('error');
+      expect(cacheStatusEl.textContent).toContain('Failed');
+      expect(cacheStatusEl.className).toContain('error');
     });
 
     it('should show error status on exception', async () => {
@@ -362,8 +368,8 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('Failed');
-      expect(statusEl.className).toContain('error');
+      expect(cacheStatusEl.textContent).toContain('Failed');
+      expect(cacheStatusEl.className).toContain('error');
     });
 
     it('should disable button while loading', async () => {
@@ -442,7 +448,7 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent.length).toBeGreaterThan(0);
+      expect(cacheStatusEl.textContent.length).toBeGreaterThan(0);
     });
 
     it('should set success class for success type', async () => {
@@ -452,7 +458,7 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.classList.contains('success')).toBe(true);
+      expect(cacheStatusEl.classList.contains('success')).toBe(true);
     });
 
     it('should set error class for error type', async () => {
@@ -462,7 +468,7 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.classList.contains('error')).toBe(true);
+      expect(cacheStatusEl.classList.contains('error')).toBe(true);
     });
   });
 
@@ -481,8 +487,8 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
     });
 
-    it('should save original text to dataset', async () => {
-      const originalText = clearCacheBtn.textContent;
+    it('should save original html to dataset', async () => {
+      const originalHtml = clearCacheBtn.innerHTML;
 
       let resolveMessage;
       chrome.runtime.sendMessage.mockReturnValueOnce(new Promise(resolve => {
@@ -491,14 +497,14 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      expect(clearCacheBtn.dataset.originalText).toBe(originalText);
+      expect(clearCacheBtn.dataset.originalHtml).toBe(originalHtml);
 
       resolveMessage({ success: true });
       await jest.advanceTimersByTimeAsync(0);
     });
 
-    it('should restore original text when loading completes', async () => {
-      const originalText = clearCacheBtn.textContent;
+    it('should restore original html when loading completes', async () => {
+      const originalHtml = clearCacheBtn.innerHTML;
 
       // Mock both CLEAR_CACHE and the subsequent GET_CACHE_STATS call
       chrome.runtime.sendMessage
@@ -512,7 +518,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // After completion, original text should be restored
-      expect(clearCacheBtn.textContent).toBe(originalText);
+      expect(clearCacheBtn.innerHTML).toBe(originalHtml);
       expect(clearCacheBtn.disabled).toBe(false);
     });
   });
@@ -524,13 +530,13 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(chrome.storage.sync.get).toHaveBeenCalledWith('xcpwSettings');
+      expect(chrome.storage.sync.get).toHaveBeenCalledWith('scpwSettings');
     });
 
     it('should set checkbox to saved value when loading settings', async () => {
       // Set up mock before re-requiring the module
       chrome.storage.sync.get.mockResolvedValue({
-        xcpwSettings: { showNintendo: false, showPlaystation: true, showXbox: false, showSteamDeck: false }
+        scpwSettings: { showNintendo: false, showPlaystation: true, showXbox: false, showSteamDeck: false }
       });
 
       // Re-require to test fresh load with saved settings
@@ -577,7 +583,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false, showHltb: true }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false, showHltb: true, hltbDisplayStat: 'mainStory' }
       });
     });
 
@@ -588,7 +594,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: { showNintendo: false, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true }
+        scpwSettings: { showNintendo: false, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
       });
     });
 
@@ -599,7 +605,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: { showNintendo: true, showPlaystation: false, showXbox: true, showSteamDeck: true, showHltb: true }
+        scpwSettings: { showNintendo: true, showPlaystation: false, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
       });
     });
 
@@ -610,7 +616,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: false, showSteamDeck: true, showHltb: true }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: false, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
       });
     });
 
@@ -621,7 +627,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
       });
     });
 
@@ -742,9 +748,9 @@ describe('options.js', () => {
       expect(chrome.storage.sync.get).toHaveBeenCalled();
     });
 
-    it('should handle setButtonLoading without originalText', async () => {
-      // Delete the originalText dataset before it can be set
-      delete clearCacheBtn.dataset.originalText;
+    it('should handle setButtonLoading without originalHtml', async () => {
+      // Delete the originalHtml dataset before it can be set
+      delete clearCacheBtn.dataset.originalHtml;
       clearCacheBtn.textContent = 'Test';
 
       // Set loading
@@ -753,7 +759,7 @@ describe('options.js', () => {
 
       // Set not loading without originalText
       clearCacheBtn.disabled = false;
-      // The else-if branch: button.dataset.originalText is undefined
+      // The else-if branch: button.dataset.originalHtml is undefined
 
       expect(clearCacheBtn.disabled).toBe(false);
     });
@@ -761,8 +767,8 @@ describe('options.js', () => {
 
   describe('HLTB row visibility', () => {
     it('should show hltb-stat-row when HLTB checkbox is checked', async () => {
-      // Start with hidden
-      hltbStatRow.classList.add('hidden');
+      // Start with hidden attribute
+      hltbDisplayStatSelect.hidden = true;
       showHltbCheckbox.checked = true;
 
       // Re-require to reinitialize with our DOM
@@ -772,17 +778,17 @@ describe('options.js', () => {
       document.dispatchEvent(new Event('DOMContentLoaded'));
       await jest.advanceTimersByTimeAsync(0);
 
-      // Row should be visible (hidden class removed)
-      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+      // Row should be visible (hidden attribute removed)
+      expect(hltbDisplayStatSelect.hidden).toBe(false);
     });
 
     it('should hide hltb-stat-row when HLTB checkbox is unchecked', async () => {
       // Start visible
-      hltbStatRow.classList.remove('hidden');
+      hltbDisplayStatSelect.hidden = false;
 
       // Mock storage to return showHltb: false so loadSettings sets checkbox to unchecked
       chrome.storage.sync.get.mockResolvedValueOnce({
-        xcpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: false }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: false }
       });
 
       // Re-require to reinitialize with our DOM
@@ -793,7 +799,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Row should be hidden
-      expect(hltbStatRow.classList.contains('hidden')).toBe(true);
+      expect(hltbDisplayStatSelect.hidden).toBe(true);
     });
 
     it('should toggle hltb-stat-row visibility when checkbox changes', async () => {
@@ -802,7 +808,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Initially checkbox is checked, row should be visible
-      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+      expect(hltbDisplayStatSelect.hidden).toBe(false);
 
       // Uncheck the checkbox
       showHltbCheckbox.checked = false;
@@ -810,7 +816,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Row should now be hidden
-      expect(hltbStatRow.classList.contains('hidden')).toBe(true);
+      expect(hltbDisplayStatSelect.hidden).toBe(true);
 
       // Check the checkbox again
       showHltbCheckbox.checked = true;
@@ -818,7 +824,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Row should be visible again
-      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+      expect(hltbDisplayStatSelect.hidden).toBe(false);
     });
   });
 });

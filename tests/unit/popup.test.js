@@ -26,7 +26,6 @@ describe('popup.js', () => {
     statusEl = document.createElement('div');
     statusEl.id = 'status';
     statusEl.className = 'status';
-    statusEl.setAttribute('role', 'alert');
     document.body.appendChild(statusEl);
 
     cacheCountEl = document.createElement('div');
@@ -56,30 +55,25 @@ describe('popup.js', () => {
     document.body.appendChild(optionsLink);
 
     // Platform toggle checkboxes
-    showNintendoCheckbox = document.createElement('input');
-    showNintendoCheckbox.type = 'checkbox';
-    showNintendoCheckbox.id = 'show-nintendo';
-    document.body.appendChild(showNintendoCheckbox);
+    const createToggle = (id) => {
+      const label = document.createElement('label');
+      label.className = 'platform-toggle';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = id;
+      label.appendChild(checkbox);
+      const span = document.createElement('span');
+      span.textContent = id.replace('show-', '');
+      label.appendChild(span);
+      document.body.appendChild(label);
+      return checkbox;
+    };
 
-    showPlaystationCheckbox = document.createElement('input');
-    showPlaystationCheckbox.type = 'checkbox';
-    showPlaystationCheckbox.id = 'show-playstation';
-    document.body.appendChild(showPlaystationCheckbox);
-
-    showXboxCheckbox = document.createElement('input');
-    showXboxCheckbox.type = 'checkbox';
-    showXboxCheckbox.id = 'show-xbox';
-    document.body.appendChild(showXboxCheckbox);
-
-    showSteamDeckCheckbox = document.createElement('input');
-    showSteamDeckCheckbox.type = 'checkbox';
-    showSteamDeckCheckbox.id = 'show-steamdeck';
-    document.body.appendChild(showSteamDeckCheckbox);
-
-    showHltbCheckbox = document.createElement('input');
-    showHltbCheckbox.type = 'checkbox';
-    showHltbCheckbox.id = 'show-hltb';
-    document.body.appendChild(showHltbCheckbox);
+    showNintendoCheckbox = createToggle('show-nintendo');
+    showPlaystationCheckbox = createToggle('show-playstation');
+    showXboxCheckbox = createToggle('show-xbox');
+    showSteamDeckCheckbox = createToggle('show-steamdeck');
+    showHltbCheckbox = createToggle('show-hltb');
 
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage.mockClear();
@@ -95,12 +89,13 @@ describe('popup.js', () => {
     // Mock chrome.storage.sync
     chrome.storage.sync.get.mockClear();
     chrome.storage.sync.get.mockResolvedValue({
-      xcpwSettings: {
+      scpwSettings: {
         showNintendo: true,
         showPlaystation: true,
         showXbox: false,
         showSteamDeck: true,
-        showHltb: true
+        showHltb: true,
+        hltbDisplayStat: 'mainStory'
       }
     });
     chrome.storage.sync.set.mockClear();
@@ -110,13 +105,14 @@ describe('popup.js', () => {
     global.confirm = jest.fn(() => true);
 
     // Mock UserSettings (centralized settings from types.js)
-    globalThis.XCPW_UserSettings = {
+    globalThis.SCPW_UserSettings = {
       DEFAULT_USER_SETTINGS: {
         showNintendo: true,
         showPlaystation: true,
         showXbox: true,
         showSteamDeck: true,
-        showHltb: true
+        showHltb: true,
+        hltbDisplayStat: 'mainStory'
       },
       SETTING_CHECKBOX_IDS: {
         showNintendo: 'show-nintendo',
@@ -136,6 +132,14 @@ describe('popup.js', () => {
     jest.useRealTimers();
     delete global.confirm;
   });
+
+  // Helper to get status message
+  const getStatusMessage = () => statusEl.textContent;
+  const getStatusType = () => {
+    if (statusEl.classList.contains('success')) return 'success';
+    if (statusEl.classList.contains('error')) return 'error';
+    return null;
+  };
 
   describe('initialization', () => {
     it('should get all required DOM elements', () => {
@@ -327,7 +331,7 @@ describe('popup.js', () => {
 
       refreshBtn.click();
 
-      expect(refreshBtn.innerHTML).toContain('loading');
+      expect(refreshBtn.querySelector('.loading')).toBeTruthy();
 
       resolveMessage({ success: true, count: 5, oldestEntry: Date.now() });
 
@@ -393,8 +397,8 @@ describe('popup.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('cleared');
-      expect(statusEl.className).toContain('success');
+      expect(getStatusMessage()).toContain('cleared');
+      expect(getStatusType()).toBe('success');
     });
 
     it('should show error status on failed clear', async () => {
@@ -404,8 +408,8 @@ describe('popup.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('Failed');
-      expect(statusEl.className).toContain('error');
+      expect(getStatusMessage()).toContain('Failed');
+      expect(getStatusType()).toBe('error');
     });
 
     it('should show error status on exception', async () => {
@@ -415,8 +419,8 @@ describe('popup.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('Failed');
-      expect(statusEl.className).toContain('error');
+      expect(getStatusMessage()).toContain('Failed');
+      expect(getStatusType()).toBe('error');
     });
 
     it('should disable button while loading', async () => {
@@ -446,7 +450,7 @@ describe('popup.js', () => {
 
       clearBtn.click();
 
-      expect(clearBtn.innerHTML).toContain('loading');
+      expect(clearBtn.querySelector('.loading')).toBeTruthy();
 
       resolveMessage({ success: true });
 
@@ -479,19 +483,19 @@ describe('popup.js', () => {
       expect(calls.some(call => call[0].type === 'GET_CACHE_STATS')).toBe(true);
     });
 
-    it('should auto-hide status after 3 seconds', async () => {
+    it('should auto-hide status after duration', async () => {
       chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
 
       clearBtn.click();
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.className).toContain('success');
+      expect(getStatusType()).toBe('success');
 
-      // Advance past the 3 second timeout
-      await jest.advanceTimersByTimeAsync(3100);
+      // Advance past the 3 second status duration
+      await jest.advanceTimersByTimeAsync(3500);
 
-      expect(statusEl.className).toBe('status');
+      expect(getStatusType()).toBe(null);
     });
   });
 
@@ -511,38 +515,6 @@ describe('popup.js', () => {
       optionsLink.dispatchEvent(event);
 
       expect(preventDefaultSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('showStatus', () => {
-    it('should update status element text', async () => {
-      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
-
-      clearBtn.click();
-
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(statusEl.textContent.length).toBeGreaterThan(0);
-    });
-
-    it('should set success class for success type', async () => {
-      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: true });
-
-      clearBtn.click();
-
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(statusEl.classList.contains('success')).toBe(true);
-    });
-
-    it('should set error class for error type', async () => {
-      chrome.runtime.sendMessage.mockResolvedValueOnce({ success: false });
-
-      clearBtn.click();
-
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(statusEl.classList.contains('error')).toBe(true);
     });
   });
 
@@ -596,17 +568,18 @@ describe('popup.js', () => {
       document.dispatchEvent(new Event('DOMContentLoaded'));
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(chrome.storage.sync.get).toHaveBeenCalledWith('xcpwSettings');
+      expect(chrome.storage.sync.get).toHaveBeenCalledWith('scpwSettings');
     });
 
     it('should set checkbox states based on loaded settings', async () => {
       chrome.storage.sync.get.mockResolvedValueOnce({
-        xcpwSettings: {
+        scpwSettings: {
           showNintendo: true,
           showPlaystation: false,
           showXbox: true,
           showSteamDeck: false,
-          showHltb: true
+          showHltb: true,
+          hltbDisplayStat: 'mainStory'
         }
       });
 
@@ -647,7 +620,7 @@ describe('popup.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        xcpwSettings: expect.objectContaining({
+        scpwSettings: expect.objectContaining({
           showNintendo: false
         })
       });
@@ -677,8 +650,8 @@ describe('popup.js', () => {
       showNintendoCheckbox.dispatchEvent(new Event('change'));
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('saved');
-      expect(statusEl.className).toContain('success');
+      expect(getStatusMessage()).toContain('saved');
+      expect(getStatusType()).toBe('success');
     });
 
     it('should show error status when settings fail to save', async () => {
@@ -691,8 +664,8 @@ describe('popup.js', () => {
       showNintendoCheckbox.dispatchEvent(new Event('change'));
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('Failed');
-      expect(statusEl.className).toContain('error');
+      expect(getStatusMessage()).toContain('Failed');
+      expect(getStatusType()).toBe('error');
     });
 
     it('should handle loadSettings error gracefully', async () => {
@@ -723,11 +696,11 @@ describe('popup.js', () => {
 
     it('should handle missing checkbox elements gracefully', async () => {
       // Remove all checkboxes from DOM to test null checks
-      showNintendoCheckbox.remove();
-      showPlaystationCheckbox.remove();
-      showXboxCheckbox.remove();
-      showSteamDeckCheckbox.remove();
-      showHltbCheckbox.remove();
+      showNintendoCheckbox.parentElement.remove();
+      showPlaystationCheckbox.parentElement.remove();
+      showXboxCheckbox.parentElement.remove();
+      showSteamDeckCheckbox.parentElement.remove();
+      showHltbCheckbox.parentElement.remove();
 
       jest.resetModules();
       require('../../dist/popup.js');

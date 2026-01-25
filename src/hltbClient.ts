@@ -11,7 +11,7 @@
 import type { HltbSearchResult } from './types';
 
 const HLTB_BASE_URL = 'https://howlongtobeat.com';
-const HLTB_LOG_PREFIX = '[XCPW HLTB]';
+const HLTB_LOG_PREFIX = '[SCPW HLTB]';
 const HLTB_DEBUG = false;
 
 const REQUEST_DELAY_MS = 500;
@@ -343,7 +343,7 @@ async function batchQueryByGameNames(
 }
 
 // Export for service worker
-globalThis.XCPW_HltbClient = {
+globalThis.SCPW_HltbClient = {
   queryByGameName,
   batchQueryByGameNames,
   formatHours,

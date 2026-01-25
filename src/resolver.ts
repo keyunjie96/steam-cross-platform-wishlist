@@ -22,7 +22,7 @@ type StoreUrlsType = {
   steamdeck: (gameName: string) => string;
 };
 
-const RESOLVER_LOG_PREFIX = '[XCPW Resolver]';
+const RESOLVER_LOG_PREFIX = '[SCPW Resolver]';
 const RESOLVER_DEBUG = false;
 
 // US-specific fallback URLs when direct store links fail validation
@@ -34,12 +34,12 @@ const US_FALLBACK_URLS: Record<string, (gameName: string) => string> = {
 
 // Helper to get PLATFORMS - uses cache module in service worker, fallback for tests
 function getPlatforms(): Platform[] {
-  return globalThis.XCPW_Cache?.PLATFORMS || ['nintendo', 'playstation', 'xbox'];
+  return globalThis.SCPW_Cache?.PLATFORMS || ['nintendo', 'playstation', 'xbox'];
 }
 
-// Use globalThis.XCPW_StoreUrls (set by types.ts at runtime, can be mocked in tests)
+// Use globalThis.SCPW_StoreUrls (set by types.ts at runtime, can be mocked in tests)
 function getStoreUrls(): StoreUrlsType {
-  return globalThis.XCPW_StoreUrls;
+  return globalThis.SCPW_StoreUrls;
 }
 
 /**
@@ -131,7 +131,7 @@ function createManualOverrideEntry(appid: string, gameName: string, override: Re
  * Validates direct store URLs and falls back to US search if they fail.
  */
 async function wikidataResultToCacheEntry(appid: string, gameName: string, wikidataResult: WikidataResult): Promise<CacheEntry> {
-  const WikidataClient = globalThis.XCPW_WikidataClient;
+  const WikidataClient = globalThis.SCPW_WikidataClient;
   const StoreUrls = getStoreUrls();
 
   // Use Wikidata game name only if it's not a QID (fallback for missing labels)
@@ -193,7 +193,7 @@ async function updateCachedEntryIfNeeded(cached: CacheEntry, gameName: string): 
     return cached;
   }
 
-  const Cache = globalThis.XCPW_Cache;
+  const Cache = globalThis.SCPW_Cache;
   const StoreUrls = getStoreUrls();
 
   cached.gameName = gameName;
@@ -219,15 +219,15 @@ interface ResolveResult {
 async function resolvePlatformData(appid: string, gameName: string): Promise<ResolveResult> {
   if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} resolvePlatformData called: appid=${appid}, gameName=${gameName}`);
 
-  const Cache = globalThis.XCPW_Cache;
-  const WikidataClient = globalThis.XCPW_WikidataClient;
+  const Cache = globalThis.SCPW_Cache;
+  const WikidataClient = globalThis.SCPW_WikidataClient;
 
   if (!Cache) {
-    console.error(`${RESOLVER_LOG_PREFIX} CRITICAL: XCPW_Cache not available!`);
+    console.error(`${RESOLVER_LOG_PREFIX} CRITICAL: SCPW_Cache not available!`);
     throw new Error('Cache module not loaded');
   }
   if (!WikidataClient) {
-    console.error(`${RESOLVER_LOG_PREFIX} CRITICAL: XCPW_WikidataClient not available!`);
+    console.error(`${RESOLVER_LOG_PREFIX} CRITICAL: SCPW_WikidataClient not available!`);
     throw new Error('WikidataClient module not loaded');
   }
 
@@ -288,8 +288,8 @@ async function resolvePlatformData(appid: string, gameName: string): Promise<Res
  * More efficient for bulk operations.
  */
 async function batchResolvePlatformData(games: Array<{ appid: string; gameName: string }>): Promise<Map<string, ResolveResult>> {
-  const Cache = globalThis.XCPW_Cache;
-  const WikidataClient = globalThis.XCPW_WikidataClient;
+  const Cache = globalThis.SCPW_Cache;
+  const WikidataClient = globalThis.SCPW_WikidataClient;
   const results = new Map<string, ResolveResult>();
 
   // 1. Check cache for all games
@@ -375,7 +375,7 @@ async function forceRefresh(appid: string, gameName: string): Promise<ResolveRes
 }
 
 // Export for service worker
-globalThis.XCPW_Resolver = {
+globalThis.SCPW_Resolver = {
   resolvePlatformData,
   batchResolvePlatformData,
   forceRefresh,

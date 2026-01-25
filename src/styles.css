@@ -1,12 +1,12 @@
 /**
  * Steam Cross-Platform Wishlist - Scoped Styles
  *
- * All styles are prefixed with 'xcpw-' to avoid conflicts with Steam's CSS.
+ * All styles are prefixed with 'scpw-' to avoid conflicts with Steam's CSS.
  * Designed to match Steam's subtle, gray aesthetic.
  */
 
 /* Container for platform icons - positioned next to OS icons */
-.xcpw-platforms {
+.scpw-platforms {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -18,7 +18,7 @@
 }
 
 /* Individual platform icon button/link */
-.xcpw-platform-icon {
+.scpw-platform-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -34,45 +34,45 @@
   color: inherit;
 }
 
-.xcpw-platform-icon:link,
-.xcpw-platform-icon:visited {
+.scpw-platform-icon:link,
+.scpw-platform-icon:visited {
   color: inherit;
 }
 
 /* SVG icon styling */
-.xcpw-platform-icon svg {
+.scpw-platform-icon svg {
   width: 16px;
   height: 16px;
   display: block;
 }
 
 /* Available state - normal gray, clickable */
-.xcpw-platform-icon.xcpw-available {
+.scpw-platform-icon.scpw-available {
   opacity: 1;
 }
 
-.xcpw-platform-icon.xcpw-available:hover {
+.scpw-platform-icon.scpw-available:hover {
   opacity: 1;
   transform: scale(1.1);
 }
 
 /* Unknown state - dimmed, still clickable for search */
-.xcpw-platform-icon.xcpw-unknown {
+.scpw-platform-icon.scpw-unknown {
   opacity: 1;
 }
 
-.xcpw-platform-icon.xcpw-unknown:hover {
+.scpw-platform-icon.scpw-unknown:hover {
   opacity: 1;
   transform: scale(1.05);
 }
 
 /* Unavailable state - dimmed but still shows tooltip on hover */
-.xcpw-platform-icon.xcpw-unavailable {
+.scpw-platform-icon.scpw-unavailable {
   opacity: 0.35;
   cursor: default;
 }
 
-.xcpw-platform-icon.xcpw-unavailable:hover {
+.scpw-platform-icon.scpw-unavailable:hover {
   opacity: 0.5;
   transform: scale(1.05);
 }
@@ -80,32 +80,32 @@
 /*
  * Steam Deck tier-based styling (simplified):
  * - Runnable tiers (verified, playable, native, platinum, gold, silver, bronze): white (inherit from parent)
- * - Significant issues (borked, unsupported): dimmed via xcpw-unavailable class
+ * - Significant issues (borked, unsupported): dimmed via scpw-unavailable class
  * - Unknown/pending: hidden (removed from DOM by JS)
  * 
  * All runnable tiers use inherited white color from parent container.
- * No special color overrides needed - the xcpw-available class handles this.
+ * No special color overrides needed - the scpw-available class handles this.
  */
 
 /* Steam Deck icons: informational only - no click, no hover animation */
-.xcpw-platform-icon[data-platform="steamdeck"] {
+.scpw-platform-icon[data-platform="steamdeck"] {
   cursor: default !important;
 }
 
-.xcpw-platform-icon[data-platform="steamdeck"]:hover {
+.scpw-platform-icon[data-platform="steamdeck"]:hover {
   transform: none !important;
 }
 
-.xcpw-platform-icon.xcpw-available[data-platform="steamdeck"]:hover {
+.scpw-platform-icon.scpw-available[data-platform="steamdeck"]:hover {
   opacity: 1 !important;
 }
 
-.xcpw-platform-icon.xcpw-unavailable[data-platform="steamdeck"]:hover {
+.scpw-platform-icon.scpw-unavailable[data-platform="steamdeck"]:hover {
   opacity: 0.35 !important;
 }
 
 /* Custom tooltip (optional enhancement) */
-.xcpw-platform-icon::after {
+.scpw-platform-icon::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: 100%;
@@ -125,34 +125,34 @@
   margin-bottom: 4px;
 }
 
-.xcpw-platform-icon:hover::after {
+.scpw-platform-icon:hover::after {
   opacity: 1;
   visibility: visible;
 }
 
 /* Hide custom tooltip if no data-tooltip attribute */
-.xcpw-platform-icon:not([data-tooltip])::after {
+.scpw-platform-icon:not([data-tooltip])::after {
   display: none;
 }
 
 /* Loading state animation (legacy - kept for backwards compatibility) */
-.xcpw-platform-icon.xcpw-loading {
-  animation: xcpw-pulse 1s ease-in-out infinite;
+.scpw-platform-icon.scpw-loading {
+  animation: scpw-pulse 1s ease-in-out infinite;
 }
 
 /* Single subtle loader - replaces 4 pulsing icons for cleaner UX */
-.xcpw-loader {
+.scpw-loader {
   display: inline-block;
   width: 16px;
   height: 16px;
   margin-left: 6px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  animation: xcpw-pulse 1s ease-in-out infinite;
+  animation: scpw-pulse 1s ease-in-out infinite;
   vertical-align: middle;
 }
 
-@keyframes xcpw-pulse {
+@keyframes scpw-pulse {
 
   0%,
   100% {
@@ -165,7 +165,7 @@
 }
 
 /* Separator line between Steam icons and our icons */
-.xcpw-separator {
+.scpw-separator {
   width: 1px;
   height: 12px;
   background: #3d4450;
@@ -175,49 +175,49 @@
 }
 
 /* Focus states for accessibility */
-.xcpw-platform-icon:focus {
+.scpw-platform-icon:focus {
   outline: 1px solid #66c0f4;
   outline-offset: 2px;
 }
 
-.xcpw-platform-icon:focus:not(:focus-visible) {
+.scpw-platform-icon:focus:not(:focus-visible) {
   outline: none;
 }
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .xcpw-platform-icon.xcpw-available {
+  .scpw-platform-icon.scpw-available {
     opacity: 1;
   }
 
-  .xcpw-platform-icon.xcpw-unknown {
+  .scpw-platform-icon.scpw-unknown {
     opacity: 0.6;
   }
 
-  .xcpw-platform-icon.xcpw-unavailable {
+  .scpw-platform-icon.scpw-unavailable {
     opacity: 0.3;
   }
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .xcpw-platform-icon {
+  .scpw-platform-icon {
     transition: none;
   }
 
-  .xcpw-platform-icon.xcpw-loading {
+  .scpw-platform-icon.scpw-loading {
     animation: none;
     opacity: 0.4;
   }
 
-  .xcpw-loader {
+  .scpw-loader {
     animation: none;
     opacity: 0.4;
   }
 }
 
 /* HLTB (How Long To Beat) time badge */
-.xcpw-hltb-badge {
+.scpw-hltb-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -236,29 +236,29 @@
 }
 
 /* Make clickable badges look interactive */
-a.xcpw-hltb-badge {
+a.scpw-hltb-badge {
   cursor: pointer;
 }
 
-a.xcpw-hltb-badge:hover {
+a.scpw-hltb-badge:hover {
   background: rgba(102, 192, 244, 0.3);
   border-color: rgba(102, 192, 244, 0.6);
   color: #8dd4ff;
 }
 
 /* Non-clickable badges stay subtle */
-span.xcpw-hltb-badge {
+span.scpw-hltb-badge {
   cursor: default;
 }
 
-span.xcpw-hltb-badge:hover {
+span.scpw-hltb-badge:hover {
   background: rgba(102, 192, 244, 0.2);
   border-color: rgba(102, 192, 244, 0.4);
 }
 
 /* High contrast mode support for HLTB badge */
 @media (prefers-contrast: high) {
-  .xcpw-hltb-badge {
+  .scpw-hltb-badge {
     background: rgba(102, 192, 244, 0.3);
     border-color: #66c0f4;
   }
@@ -266,7 +266,7 @@ span.xcpw-hltb-badge:hover {
 
 /* Reduced motion support for HLTB badge */
 @media (prefers-reduced-motion: reduce) {
-  .xcpw-hltb-badge {
+  .scpw-hltb-badge {
     transition: none;
   }
 }

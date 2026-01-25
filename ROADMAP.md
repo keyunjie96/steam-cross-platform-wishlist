@@ -26,17 +26,8 @@
 
 ## Missing Components
 
-### MISSING-1: Extension icons for Chrome Web Store
-**File:** `manifest.json`
-**Issue:** No PNG icons defined (16x16, 48x48, 128x128). Required for Chrome Web Store publishing.
-**Fix:** Generate from existing SVGs in `assets/icons/`, add `icons` key to manifest.
-**Risk:** Low - straightforward asset generation.
+*All critical missing components have been addressed.*
 
-### MISSING-2: Popup UI
-**Files:** New `src/popup.html`, `src/popup.js`
-**Issue:** No quick-access popup. Users must open options page for cache stats.
-**Fix:** Create minimal popup with cache stats and quick-clear button.
-**Risk:** Low - isolated feature, no impact on core functionality.
 ---
 
 ## Feature Enhancements
@@ -154,6 +145,8 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] LIFECYCLE-1: Icon lifecycle management (fixed: cleanupAllIcons on URL change, stale container validation, strengthened duplicate prevention)
 - [x] FEAT-2: User preferences for platform visibility (added toggles for Nintendo, PlayStation, Xbox, Steam Deck in options)
 - [x] FEAT-5: HLTB integration (How Long To Beat) - displays completion time estimates as a badge in the icon row
+- [x] MISSING-1: Extension icons for Chrome Web Store (16x16, 48x48, 128x128 PNG icons created)
+- [x] MISSING-2: Popup UI (quick-access popup with cache stats and platform toggles)
 
 ---
 

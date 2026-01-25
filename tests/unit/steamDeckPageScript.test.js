@@ -10,7 +10,7 @@ describe('steamDeckPageScript.js', () => {
         jest.resetModules();
 
         // Clean up any existing data element
-        const existingEl = document.getElementById('xcpw-steamdeck-data');
+        const existingEl = document.getElementById('scpw-steamdeck-data');
         if (existingEl) {
             existingEl.remove();
         }
@@ -21,7 +21,7 @@ describe('steamDeckPageScript.js', () => {
 
     afterEach(() => {
         delete window.SSR;
-        const el = document.getElementById('xcpw-steamdeck-data');
+        const el = document.getElementById('scpw-steamdeck-data');
         if (el) el.remove();
     });
 
@@ -45,7 +45,7 @@ describe('steamDeckPageScript.js', () => {
             require('../../dist/steamDeckPageScript.js');
 
             // Check that data element was created
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             expect(dataEl).not.toBeNull();
             expect(dataEl.type).toBe('application/json');
         });
@@ -70,7 +70,7 @@ describe('steamDeckPageScript.js', () => {
 
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(data['12345']).toBe(3);
@@ -97,7 +97,7 @@ describe('steamDeckPageScript.js', () => {
 
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(data['12345']).toBe(3);
@@ -124,7 +124,7 @@ describe('steamDeckPageScript.js', () => {
 
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(data['12345']).toBeUndefined();
@@ -135,7 +135,7 @@ describe('steamDeckPageScript.js', () => {
             // No window.SSR set
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(Object.keys(data).length).toBe(0);
@@ -151,7 +151,7 @@ describe('steamDeckPageScript.js', () => {
             // Should not throw
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(Object.keys(data).length).toBe(0);
@@ -174,7 +174,7 @@ describe('steamDeckPageScript.js', () => {
 
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(data['99999']).toBe(1);
@@ -199,7 +199,7 @@ describe('steamDeckPageScript.js', () => {
 
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(data['88888']).toBe(2);
@@ -223,7 +223,7 @@ describe('steamDeckPageScript.js', () => {
 
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             // Should still get valid data from second item
@@ -234,7 +234,7 @@ describe('steamDeckPageScript.js', () => {
             // Create an existing element
             const existingEl = document.createElement('script');
             existingEl.type = 'application/json';
-            existingEl.id = 'xcpw-steamdeck-data';
+            existingEl.id = 'scpw-steamdeck-data';
             existingEl.textContent = '{"old": "data"}';
             document.documentElement.appendChild(existingEl);
 
@@ -253,7 +253,7 @@ describe('steamDeckPageScript.js', () => {
 
             require('../../dist/steamDeckPageScript.js');
 
-            const dataEl = document.getElementById('xcpw-steamdeck-data');
+            const dataEl = document.getElementById('scpw-steamdeck-data');
             const data = JSON.parse(dataEl.textContent);
 
             expect(data['11111']).toBe(2);

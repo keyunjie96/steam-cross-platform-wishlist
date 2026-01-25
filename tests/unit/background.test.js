@@ -35,14 +35,14 @@ describe('background.js', () => {
         fromCache: false
       })
     };
-    globalThis.XCPW_Resolver = mockResolver;
+    globalThis.SCPW_Resolver = mockResolver;
 
     // Create mock Cache
     mockCache = {
       getCacheStats: jest.fn().mockResolvedValue({ count: 5, oldestEntry: Date.now() - 86400000 }),
       clearCache: jest.fn().mockResolvedValue(undefined)
     };
-    globalThis.XCPW_Cache = mockCache;
+    globalThis.SCPW_Cache = mockCache;
 
     // Mock importScripts (used in service workers)
     globalThis.importScripts = jest.fn();
@@ -55,8 +55,8 @@ describe('background.js', () => {
   });
 
   afterEach(() => {
-    delete globalThis.XCPW_Resolver;
-    delete globalThis.XCPW_Cache;
+    delete globalThis.SCPW_Resolver;
+    delete globalThis.SCPW_Cache;
     delete globalThis.importScripts;
   });
 
@@ -210,7 +210,7 @@ describe('background.js', () => {
     });
 
     it('should fail when resolver is not available', async () => {
-      delete globalThis.XCPW_Resolver;
+      delete globalThis.SCPW_Resolver;
 
       const sendResponse = jest.fn();
       messageHandler({
@@ -386,7 +386,7 @@ describe('background.js', () => {
     });
 
     it('should fail when resolver is not available', async () => {
-      delete globalThis.XCPW_Resolver;
+      delete globalThis.SCPW_Resolver;
 
       const sendResponse = jest.fn();
       messageHandler({
@@ -638,7 +638,7 @@ describe('background.js', () => {
         }),
         batchQueryByGameNames: jest.fn()
       };
-      globalThis.XCPW_HltbClient = mockHltbClient;
+      globalThis.SCPW_HltbClient = mockHltbClient;
 
       // Also set up getFromCache for HLTB tests
       mockCache.getFromCache = jest.fn().mockResolvedValue(null);
@@ -646,7 +646,7 @@ describe('background.js', () => {
     });
 
     afterEach(() => {
-      delete globalThis.XCPW_HltbClient;
+      delete globalThis.SCPW_HltbClient;
     });
 
     it('should return true for async response', () => {
@@ -693,7 +693,7 @@ describe('background.js', () => {
     });
 
     it('should fail when HLTB client is not available', async () => {
-      delete globalThis.XCPW_HltbClient;
+      delete globalThis.SCPW_HltbClient;
 
       const sendResponse = jest.fn();
       messageHandler({
@@ -903,14 +903,14 @@ describe('background.js', () => {
           ])
         )
       };
-      globalThis.XCPW_HltbClient = mockHltbClient;
+      globalThis.SCPW_HltbClient = mockHltbClient;
 
       mockCache.getFromCache = jest.fn().mockResolvedValue(null);
       mockCache.saveToCache = jest.fn().mockResolvedValue(undefined);
     });
 
     afterEach(() => {
-      delete globalThis.XCPW_HltbClient;
+      delete globalThis.SCPW_HltbClient;
     });
 
     it('should return true for async response', () => {
@@ -956,7 +956,7 @@ describe('background.js', () => {
     });
 
     it('should fail when HLTB client is not available', async () => {
-      delete globalThis.XCPW_HltbClient;
+      delete globalThis.SCPW_HltbClient;
 
       const sendResponse = jest.fn();
       messageHandler({

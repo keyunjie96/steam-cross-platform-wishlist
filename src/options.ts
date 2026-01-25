@@ -9,13 +9,13 @@ import type { UserSettings, HltbDisplayStat } from './types';
 // Constants
 const MS_PER_HOUR = 1000 * 60 * 60;
 const MS_PER_DAY = MS_PER_HOUR * 24;
-const LOG_PREFIX = '[XCPW Options]';
+const LOG_PREFIX = '[SCPW Options]';
 
 // Get centralized settings definitions from types.ts
-const { DEFAULT_USER_SETTINGS, SETTING_CHECKBOX_IDS, USER_SETTING_KEYS } = globalThis.XCPW_UserSettings;
+const { DEFAULT_USER_SETTINGS, SETTING_CHECKBOX_IDS, USER_SETTING_KEYS } = globalThis.SCPW_UserSettings;
 
 // DOM Elements (initialized in DOMContentLoaded)
-let statusEl: HTMLElement;
+let cacheStatusEl: HTMLElement;
 let settingsStatusEl: HTMLElement | null;
 let cacheCountEl: HTMLElement;
 let cacheAgeEl: HTMLElement;
@@ -27,7 +27,7 @@ const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
 
 // Select elements (not checkboxes)
 let hltbDisplayStatSelect: HTMLSelectElement | null = null;
-let hltbStatRow: HTMLElement | null = null;
+let hltbRow: HTMLElement | null = null;
 
 /**
  * Formats a duration in milliseconds to a human-readable string
@@ -46,11 +46,11 @@ function formatAge(ms: number): string {
 }
 
 /**
- * Shows a status message
+ * Shows a status message for cache operations
  */
-function showStatus(message: string, type: 'success' | 'error'): void {
-  statusEl.textContent = message;
-  statusEl.className = `status ${type}`;
+function showCacheStatus(message: string, type: 'success' | 'error'): void {
+  cacheStatusEl.textContent = message;
+  cacheStatusEl.className = `status ${type}`;
 }
 
 /**
@@ -74,8 +74,8 @@ function showSettingsStatus(message: string, type: 'success' | 'error'): void {
  */
 async function loadSettings(): Promise<void> {
   try {
-    const result = await chrome.storage.sync.get('xcpwSettings');
-    const settings: UserSettings = { ...DEFAULT_USER_SETTINGS, ...result.xcpwSettings };
+    const result = await chrome.storage.sync.get('scpwSettings');
+    const settings: UserSettings = { ...DEFAULT_USER_SETTINGS, ...result.scpwSettings };
 
     // Dynamically update all checkboxes from the centralized settings definition
     for (const key of USER_SETTING_KEYS) {
@@ -99,7 +99,7 @@ async function loadSettings(): Promise<void> {
  */
 async function saveSettings(settings: UserSettings): Promise<void> {
   try {
-    await chrome.storage.sync.set({ xcpwSettings: settings });
+    await chrome.storage.sync.set({ scpwSettings: settings });
     showSettingsStatus('Settings saved', 'success');
   } catch (error) {
     console.error(`${LOG_PREFIX} Error saving settings:`, error);
@@ -127,12 +127,31 @@ function getCurrentSettings(): UserSettings {
 }
 
 /**
- * Updates HLTB stat row visibility based on checkbox state
+ * Updates HLTB select visibility based on checkbox state
  */
-function updateHltbRowVisibility(): void {
+function updateHltbSelectVisibility(): void {
   const hltbCheckbox = checkboxes.get('showHltb');
-  if (hltbStatRow && hltbCheckbox) {
-    hltbStatRow.classList.toggle('hidden', !hltbCheckbox.checked);
+  if (hltbDisplayStatSelect && hltbCheckbox) {
+    const shouldShow = hltbCheckbox.checked;
+    hltbDisplayStatSelect.hidden = !shouldShow;
+    if (hltbRow) {
+      hltbRow.classList.toggle('inline-select-hidden', !shouldShow);
+    }
+  }
+}
+
+/**
+ * Updates the visual active state of all platform toggles
+ */
+function updateToggleActiveStates(): void {
+  for (const [, checkbox] of checkboxes) {
+    if (checkbox) {
+      // Support multiple class names: .platform-toggle, .option-item, .toggle-item
+      const toggleLabel = checkbox.closest('.platform-toggle') || checkbox.closest('.option-item') || checkbox.closest('.toggle-item');
+      if (toggleLabel) {
+        toggleLabel.classList.toggle('active', checkbox.checked);
+      }
+    }
   }
 }
 
@@ -140,7 +159,8 @@ function updateHltbRowVisibility(): void {
  * Handles platform toggle change
  */
 async function handlePlatformToggle(): Promise<void> {
-  updateHltbRowVisibility();
+  updateToggleActiveStates();
+  updateHltbSelectVisibility();
   const settings = getCurrentSettings();
   await saveSettings(settings);
 }
@@ -151,10 +171,10 @@ async function handlePlatformToggle(): Promise<void> {
 function setButtonLoading(button: HTMLButtonElement, loading: boolean): void {
   button.disabled = loading;
   if (loading) {
-    button.dataset.originalText = button.textContent || '';
+    button.dataset.originalHtml = button.innerHTML;
     button.innerHTML = '<span class="loading"></span>Loading...';
-  } else if (button.dataset.originalText) {
-    button.textContent = button.dataset.originalText;
+  } else if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
   }
 }
 
@@ -203,17 +223,45 @@ async function clearCache(): Promise<void> {
     const response = await chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' }) as ClearCacheResponse;
 
     if (response?.success) {
-      showStatus('Cache cleared successfully.', 'success');
+      showCacheStatus('Cache cleared successfully.', 'success');
       await loadCacheStats();
     } else {
-      showStatus('Failed to clear cache.', 'error');
+      showCacheStatus('Failed to clear cache.', 'error');
     }
   } catch (error) {
     console.error(`${LOG_PREFIX} Error clearing cache:`, error);
-    showStatus('Failed to clear cache.', 'error');
+    showCacheStatus('Failed to clear cache.', 'error');
   } finally {
     setButtonLoading(clearCacheBtn, false);
   }
+}
+
+/**
+ * Initializes collapsible sections (CSP-compliant, no inline onclick)
+ */
+function initializeCollapsibleSections(): void {
+  document.querySelectorAll<HTMLElement>('section[data-collapsible] .collapse-btn').forEach((btn) => {
+    const bodyId = btn.getAttribute('aria-controls');
+    if (!bodyId) return;
+
+    const body = document.getElementById(bodyId);
+    const section = btn.closest('section');
+    if (!body || !section) return;
+
+    const setCollapsed = (collapsed: boolean): void => {
+      section.classList.toggle('collapsed', collapsed);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      body.hidden = collapsed;
+    };
+
+    // Set initial state from markup
+    setCollapsed(section.classList.contains('collapsed'));
+
+    btn.addEventListener('click', () => {
+      const isCollapsed = section.classList.contains('collapsed');
+      setCollapsed(!isCollapsed);
+    });
+  });
 }
 
 /**
@@ -221,7 +269,7 @@ async function clearCache(): Promise<void> {
  */
 function initializePage(): void {
   // Get DOM elements
-  statusEl = document.getElementById('status') as HTMLElement;
+  cacheStatusEl = document.getElementById('cache-status') as HTMLElement;
   settingsStatusEl = document.getElementById('settings-status') as HTMLElement | null;
   cacheCountEl = document.getElementById('cache-count') as HTMLElement;
   cacheAgeEl = document.getElementById('cache-age') as HTMLElement;
@@ -241,12 +289,15 @@ function initializePage(): void {
     }
   }
 
-  // HLTB display stat select and row
+  // HLTB display stat select (visibility controlled directly on the select)
   hltbDisplayStatSelect = document.getElementById('hltb-display-stat') as HTMLSelectElement | null;
-  hltbStatRow = document.getElementById('hltb-stat-row') as HTMLElement | null;
+  hltbRow = document.querySelector('.toggle-item.has-inline-option[data-platform="hltb"]') as HTMLElement | null;
   if (hltbDisplayStatSelect) {
     hltbDisplayStatSelect.addEventListener('change', handlePlatformToggle);
   }
+
+  // Initialize collapsible sections (CSP-compliant)
+  initializeCollapsibleSections();
 
   // Event Listeners for buttons
   refreshStatsBtn.addEventListener('click', loadCacheStats);
@@ -254,8 +305,9 @@ function initializePage(): void {
 
   // Load initial data, then reveal UI
   Promise.all([loadCacheStats(), loadSettings()]).then(() => {
-    // Update HLTB row visibility based on loaded settings
-    updateHltbRowVisibility();
+    // Update toggle active states and HLTB row visibility based on loaded settings
+    updateToggleActiveStates();
+    updateHltbSelectVisibility();
     // Remove loading class to reveal content with smooth transition
     document.body.classList.remove('is-loading');
   });

@@ -7,7 +7,7 @@ describe('steamDeckClient.js', () => {
         jest.resetModules();
 
         // Clear any existing data element
-        const existingEl = document.getElementById('xcpw-steamdeck-data');
+        const existingEl = document.getElementById('scpw-steamdeck-data');
         if (existingEl) {
             existingEl.remove();
         }
@@ -34,17 +34,17 @@ describe('steamDeckClient.js', () => {
 
     afterEach(() => {
         jest.restoreAllMocks();
-        delete globalThis.XCPW_SteamDeck;
+        delete globalThis.SCPW_SteamDeck;
     });
 
     describe('exports', () => {
-        it('should export XCPW_SteamDeck to globalThis', () => {
-            expect(globalThis.XCPW_SteamDeck).toBeDefined();
-            expect(typeof globalThis.XCPW_SteamDeck).toBe('object');
+        it('should export SCPW_SteamDeck to globalThis', () => {
+            expect(globalThis.SCPW_SteamDeck).toBeDefined();
+            expect(typeof globalThis.SCPW_SteamDeck).toBe('object');
         });
 
         it('should export all required functions', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             expect(typeof SteamDeck.extractDeckDataFromPage).toBe('function');
             expect(typeof SteamDeck.waitForDeckData).toBe('function');
             expect(typeof SteamDeck.getDeckStatus).toBe('function');
@@ -52,17 +52,17 @@ describe('steamDeckClient.js', () => {
         });
 
         it('should export CATEGORY_MAP', () => {
-            expect(globalThis.XCPW_SteamDeck.CATEGORY_MAP).toBeDefined();
-            expect(globalThis.XCPW_SteamDeck.CATEGORY_MAP[3]).toBe('verified');
-            expect(globalThis.XCPW_SteamDeck.CATEGORY_MAP[2]).toBe('playable');
-            expect(globalThis.XCPW_SteamDeck.CATEGORY_MAP[1]).toBe('unsupported');
-            expect(globalThis.XCPW_SteamDeck.CATEGORY_MAP[0]).toBe('unknown');
+            expect(globalThis.SCPW_SteamDeck.CATEGORY_MAP).toBeDefined();
+            expect(globalThis.SCPW_SteamDeck.CATEGORY_MAP[3]).toBe('verified');
+            expect(globalThis.SCPW_SteamDeck.CATEGORY_MAP[2]).toBe('playable');
+            expect(globalThis.SCPW_SteamDeck.CATEGORY_MAP[1]).toBe('unsupported');
+            expect(globalThis.SCPW_SteamDeck.CATEGORY_MAP[0]).toBe('unknown');
         });
     });
 
     describe('extractDeckDataFromPage', () => {
         it('should return empty Map when data element does not exist', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             const result = SteamDeck.extractDeckDataFromPage();
             expect(result).toBeInstanceOf(Map);
             expect(result.size).toBe(0);
@@ -72,11 +72,11 @@ describe('steamDeckClient.js', () => {
             // Create the data element that steamDeckPageScript.js would create
             const dataEl = document.createElement('script');
             dataEl.type = 'application/json';
-            dataEl.id = 'xcpw-steamdeck-data';
+            dataEl.id = 'scpw-steamdeck-data';
             dataEl.textContent = JSON.stringify({ '12345': 3, '67890': 2 });
             document.documentElement.appendChild(dataEl);
 
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             const result = SteamDeck.extractDeckDataFromPage();
 
             expect(result).toBeInstanceOf(Map);
@@ -90,11 +90,11 @@ describe('steamDeckClient.js', () => {
         it('should handle invalid JSON gracefully', () => {
             const dataEl = document.createElement('script');
             dataEl.type = 'application/json';
-            dataEl.id = 'xcpw-steamdeck-data';
+            dataEl.id = 'scpw-steamdeck-data';
             dataEl.textContent = 'invalid json';
             document.documentElement.appendChild(dataEl);
 
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             const result = SteamDeck.extractDeckDataFromPage();
 
             expect(result).toBeInstanceOf(Map);
@@ -106,11 +106,11 @@ describe('steamDeckClient.js', () => {
         it('should handle empty textContent', () => {
             const dataEl = document.createElement('script');
             dataEl.type = 'application/json';
-            dataEl.id = 'xcpw-steamdeck-data';
+            dataEl.id = 'scpw-steamdeck-data';
             dataEl.textContent = '';
             document.documentElement.appendChild(dataEl);
 
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             const result = SteamDeck.extractDeckDataFromPage();
 
             expect(result).toBeInstanceOf(Map);
@@ -122,7 +122,7 @@ describe('steamDeckClient.js', () => {
 
     describe('getDeckStatus', () => {
         it('should return found=true for existing appId', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             const deckData = new Map([['12345', 3]]);
 
             const result = SteamDeck.getDeckStatus(deckData, '12345');
@@ -133,7 +133,7 @@ describe('steamDeckClient.js', () => {
         });
 
         it('should return found=false for missing appId', () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             const deckData = new Map();
 
             const result = SteamDeck.getDeckStatus(deckData, '99999');
@@ -150,7 +150,7 @@ describe('steamDeckClient.js', () => {
             [0, 'unknown'],
             [99, 'unknown']
         ])('should map category %i to %s', (category, expectedStatus) => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             const deckData = new Map([['123', category]]);
             expect(SteamDeck.getDeckStatus(deckData, '123').status).toBe(expectedStatus);
         });
@@ -166,19 +166,19 @@ describe('steamDeckClient.js', () => {
             [null, 'unknown'],
             [undefined, 'unknown']
         ])('should convert %s to %s', (input, expected) => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
             expect(SteamDeck.statusToDisplayStatus(input)).toBe(expected);
         });
     });
 
     describe('waitForDeckData', () => {
         it('should return data when DOM element is already populated', async () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
 
             // Create the data element before calling waitForDeckData
             const dataEl = document.createElement('script');
             dataEl.type = 'application/json';
-            dataEl.id = 'xcpw-steamdeck-data';
+            dataEl.id = 'scpw-steamdeck-data';
             dataEl.textContent = JSON.stringify({ '12345': 3 });
             document.documentElement.appendChild(dataEl);
 
@@ -194,7 +194,7 @@ describe('steamDeckClient.js', () => {
         });
 
         it.skip('should return empty Map on timeout when no data element', async () => {
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
 
             // Don't create the data element - should timeout
             const promise = SteamDeck.waitForDeckData(100);
@@ -226,7 +226,7 @@ describe('steamDeckClient.js', () => {
 
             // Reload the module with new mock
             require('../../dist/steamDeckClient.js');
-            const SteamDeck = globalThis.XCPW_SteamDeck;
+            const SteamDeck = globalThis.SCPW_SteamDeck;
 
             const promise = SteamDeck.waitForDeckData(100);
             await jest.advanceTimersByTimeAsync(10);

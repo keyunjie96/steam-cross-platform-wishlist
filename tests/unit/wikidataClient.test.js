@@ -21,13 +21,13 @@ describe('wikidataClient.js', () => {
   });
 
   describe('exports', () => {
-    it('should export XCPW_WikidataClient to globalThis', () => {
-      expect(globalThis.XCPW_WikidataClient).toBeDefined();
-      expect(typeof globalThis.XCPW_WikidataClient).toBe('object');
+    it('should export SCPW_WikidataClient to globalThis', () => {
+      expect(globalThis.SCPW_WikidataClient).toBeDefined();
+      expect(typeof globalThis.SCPW_WikidataClient).toBe('object');
     });
 
     it('should export all required functions', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       expect(typeof Client.queryBySteamAppId).toBe('function');
       expect(typeof Client.batchQueryBySteamAppIds).toBe('function');
       expect(typeof Client.getStoreUrl).toBe('function');
@@ -35,13 +35,13 @@ describe('wikidataClient.js', () => {
     });
 
     it('should export STORE_URL_BUILDERS', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       expect(Client.STORE_URL_BUILDERS).toBeDefined();
       expect(typeof Client.STORE_URL_BUILDERS).toBe('object');
     });
 
     it('should export PLATFORM_QIDS', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       expect(Client.PLATFORM_QIDS).toBeDefined();
       expect(typeof Client.PLATFORM_QIDS).toBe('object');
     });
@@ -49,7 +49,7 @@ describe('wikidataClient.js', () => {
 
   describe('STORE_URL_BUILDERS', () => {
     it('should have builders for all supported stores', () => {
-      const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+      const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
       expect(typeof builders.nintendo).toBe('function');
       expect(typeof builders.playstation).toBe('function');
       expect(typeof builders.xbox).toBe('function');
@@ -62,13 +62,13 @@ describe('wikidataClient.js', () => {
 
     describe('nintendo URL builder', () => {
       it('should build correct Nintendo eShop URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         const url = builders.nintendo('hollow-knight');
         expect(url).toBe('https://www.nintendo.com/store/products/hollow-knight/');
       });
 
       it('should return null for null/undefined ID', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.nintendo(null)).toBeNull();
         expect(builders.nintendo(undefined)).toBeNull();
         expect(builders.nintendo('')).toBeNull();
@@ -77,13 +77,13 @@ describe('wikidataClient.js', () => {
 
     describe('playstation URL builder', () => {
       it('should build correct PlayStation Store URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         const url = builders.playstation('205366');
         expect(url).toBe('https://store.playstation.com/concept/205366');
       });
 
       it('should return null for null/undefined ID', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.playstation(null)).toBeNull();
         expect(builders.playstation('')).toBeNull();
       });
@@ -91,47 +91,47 @@ describe('wikidataClient.js', () => {
 
     describe('xbox URL builder', () => {
       it('should build correct Xbox Store URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         const url = builders.xbox('btd3rn00w2c8');
         expect(url).toBe('https://www.xbox.com/games/store/-/btd3rn00w2c8');
       });
 
       it('should return null for null/undefined ID', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.xbox(null)).toBeNull();
       });
     });
 
     describe('other store builders', () => {
       it('should build correct GOG URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.gog('hollow_knight')).toBe('https://www.gog.com/game/hollow_knight');
       });
 
       it('should build correct Epic URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.epic('hollow-knight')).toBe('https://store.epicgames.com/p/hollow-knight');
       });
 
       it('should build correct App Store URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.appStore('123456')).toBe('https://apps.apple.com/app/id123456');
       });
 
       it('should build correct Play Store URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.playStore('com.example.game')).toBe('https://play.google.com/store/apps/details?id=com.example.game');
       });
 
       it('should build correct itch.io URL', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.itch('hollow-knight')).toBe('https://hollow-knight.itch.io/');
       });
     });
 
     describe('URL format consistency', () => {
       it('should use HTTPS for all URLs', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         expect(builders.nintendo('test')).toMatch(/^https:\/\//);
         expect(builders.playstation('test')).toMatch(/^https:\/\//);
         expect(builders.xbox('test')).toMatch(/^https:\/\//);
@@ -143,7 +143,7 @@ describe('wikidataClient.js', () => {
       });
 
       it('should not include region codes (region-agnostic)', () => {
-        const builders = globalThis.XCPW_WikidataClient.STORE_URL_BUILDERS;
+        const builders = globalThis.SCPW_WikidataClient.STORE_URL_BUILDERS;
         const testId = 'test123';
 
         // No /us-en/ or similar region paths
@@ -156,18 +156,18 @@ describe('wikidataClient.js', () => {
 
   describe('PLATFORM_QIDS', () => {
     it('should have QID for Nintendo Switch', () => {
-      const qids = globalThis.XCPW_WikidataClient.PLATFORM_QIDS;
+      const qids = globalThis.SCPW_WikidataClient.PLATFORM_QIDS;
       expect(qids.SWITCH).toBe('Q19610114');
     });
 
     it('should have QIDs for PlayStation platforms', () => {
-      const qids = globalThis.XCPW_WikidataClient.PLATFORM_QIDS;
+      const qids = globalThis.SCPW_WikidataClient.PLATFORM_QIDS;
       expect(qids.PS4).toBe('Q5014725');
       expect(qids.PS5).toBe('Q63184502');
     });
 
     it('should have QIDs for Xbox platforms', () => {
-      const qids = globalThis.XCPW_WikidataClient.PLATFORM_QIDS;
+      const qids = globalThis.SCPW_WikidataClient.PLATFORM_QIDS;
       expect(qids.XBOX_ONE).toBe('Q13361286');
       expect(qids.XBOX_SERIES_X).toBe('Q64513817');
       expect(qids.XBOX_SERIES_S).toBe('Q98973368');
@@ -177,35 +177,35 @@ describe('wikidataClient.js', () => {
 
   describe('getStoreUrl', () => {
     it('should return Nintendo URL for nintendo platform', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       const storeIds = { eshop: 'hollow-knight', psStore: null, xbox: null };
       const url = Client.getStoreUrl('nintendo', storeIds);
       expect(url).toBe('https://www.nintendo.com/store/products/hollow-knight/');
     });
 
     it('should return PlayStation URL for playstation platform', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       const storeIds = { eshop: null, psStore: '205366', xbox: null };
       const url = Client.getStoreUrl('playstation', storeIds);
       expect(url).toBe('https://store.playstation.com/concept/205366');
     });
 
     it('should return Xbox URL for xbox platform', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       const storeIds = { eshop: null, psStore: null, xbox: 'abc123' };
       const url = Client.getStoreUrl('xbox', storeIds);
       expect(url).toBe('https://www.xbox.com/games/store/-/abc123');
     });
 
     it('should return null for unknown platform', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       const storeIds = { eshop: 'test', psStore: 'test', xbox: 'test' };
       const url = Client.getStoreUrl('unknown_platform', storeIds);
       expect(url).toBeNull();
     });
 
     it('should return null when store ID is missing', () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
       const storeIds = { eshop: null, psStore: null, xbox: null };
       expect(Client.getStoreUrl('nintendo', storeIds)).toBeNull();
       expect(Client.getStoreUrl('playstation', storeIds)).toBeNull();
@@ -220,7 +220,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should return not found result when game not in Wikidata', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -245,7 +245,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should parse Wikidata response correctly for game with platforms', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // Mock response for a game with P400 platforms
       mockFetch.mockResolvedValueOnce({
@@ -281,7 +281,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should detect platform from store IDs when P400 is missing', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // Mock response with store IDs but no P400 platforms
       mockFetch.mockResolvedValueOnce({
@@ -312,7 +312,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should exclude xbox-for-pc from Xbox detection', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // Mock response with Pure Xbox ID that indicates PC-only
       mockFetch.mockResolvedValueOnce({
@@ -338,7 +338,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should throw on network error (transient failure)', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
@@ -355,7 +355,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should throw on non-200 response (transient failure)', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -375,7 +375,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should retry on 429 rate limit with backoff', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // First call: 429
       // Second call: success
@@ -413,7 +413,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should throw after max retries on 429', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // Always return 429
       mockFetch.mockResolvedValue({
@@ -436,7 +436,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should include correct SPARQL query with Steam App ID', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -470,7 +470,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should return Map with results for multiple app IDs', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -521,7 +521,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should handle empty input array', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       const results = await Client.batchQueryBySteamAppIds([]);
 
@@ -533,7 +533,7 @@ describe('wikidataClient.js', () => {
       // Use real timers for this test since the rate limiting makes fake timers complex
       jest.useRealTimers();
 
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // Simulate query failure (fetch returns non-ok response)
       mockFetch.mockResolvedValueOnce({
@@ -549,7 +549,7 @@ describe('wikidataClient.js', () => {
     }, 10000); // Increase timeout to account for rate limiting delay
 
     it('should batch large arrays in chunks of 20', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // Create 25 app IDs to test batching
       const appIds = Array.from({ length: 25 }, (_, i) => String(1000 + i));
@@ -587,7 +587,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should return success when Portal 2 is found', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -611,7 +611,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should return success even if test game not found', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -628,7 +628,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should query for Portal 2 (Steam App ID 620)', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -645,7 +645,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should return failure when connection errors', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
@@ -666,7 +666,7 @@ describe('wikidataClient.js', () => {
     });
 
     it('should serialize concurrent requests', async () => {
-      const Client = globalThis.XCPW_WikidataClient;
+      const Client = globalThis.SCPW_WikidataClient;
 
       // Track call order
       const callOrder = [];

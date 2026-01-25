@@ -11,8 +11,8 @@
 import type { DeckCategory, DeckStatus } from './types';
 
 const STEAM_DECK_DEBUG = false;
-const STEAM_DECK_LOG_PREFIX = '[XCPW SteamDeck]';
-const DATA_ELEMENT_ID = 'xcpw-steamdeck-data';
+const STEAM_DECK_LOG_PREFIX = '[SCPW SteamDeck]';
+const DATA_ELEMENT_ID = 'scpw-steamdeck-data';
 
 const CATEGORY_MAP: Record<DeckCategory, DeckStatus> = {
   0: 'unknown',
@@ -139,7 +139,7 @@ function statusToDisplayStatus(status: DeckStatus): 'available' | 'unavailable' 
 }
 
 // Export for content script
-globalThis.XCPW_SteamDeck = {
+globalThis.SCPW_SteamDeck = {
   extractDeckDataFromPage,
   waitForDeckData,
   getDeckStatus,

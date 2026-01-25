@@ -12,8 +12,8 @@
   'use strict';
 
   const DEBUG = false;
-  const LOG_PREFIX = '[XCPW SteamDeck PageScript]';
-  const DATA_ELEMENT_ID = 'xcpw-steamdeck-data';
+  const LOG_PREFIX = '[SCPW SteamDeck PageScript]';
+  const DATA_ELEMENT_ID = 'scpw-steamdeck-data';
 
   interface TanStackQuery {
     queryKey?: (string | unknown)[];

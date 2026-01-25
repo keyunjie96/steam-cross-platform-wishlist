@@ -75,7 +75,7 @@ interface StatusInfoEntry {
 function createStatusInfo(status: PlatformStatus, message: string): StatusInfoEntry {
   return {
     tooltip: (platform: Platform) => `${PLATFORM_INFO[platform].name}: ${message}`,
-    className: `xcpw-${status}`
+    className: `scpw-${status}`
   };
 }
 
@@ -114,7 +114,7 @@ const STEAM_DECK_TIERS: Record<string, SteamDeckTierInfo> = {
 };
 
 // Export for content script (use globalThis for Chrome extension compatibility)
-globalThis.XCPW_Icons = PLATFORM_ICONS;
-globalThis.XCPW_PlatformInfo = PLATFORM_INFO;
-globalThis.XCPW_StatusInfo = STATUS_INFO;
-globalThis.XCPW_SteamDeckTiers = STEAM_DECK_TIERS;
+globalThis.SCPW_Icons = PLATFORM_ICONS;
+globalThis.SCPW_PlatformInfo = PLATFORM_INFO;
+globalThis.SCPW_StatusInfo = STATUS_INFO;
+globalThis.SCPW_SteamDeckTiers = STEAM_DECK_TIERS;

@@ -174,15 +174,15 @@ export const StoreUrls = {
     `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}`
 };
 
-// Global type declarations for XCPW modules
+// Global type declarations for SCPW modules
 declare global {
   interface Window {
-    XCPW_StoreUrls: typeof StoreUrls;
-    XCPW_Icons: Record<Platform, string>;
-    XCPW_PlatformInfo: Record<Platform, { name: string; abbr: string; searchLabel: string }>;
-    XCPW_StatusInfo: Record<PlatformStatus, { tooltip: (platform: Platform) => string; className: string }>;
-    XCPW_SteamDeckTiers: Record<string, { label: string; tooltip: string }>;
-    XCPW_Cache: {
+    SCPW_StoreUrls: typeof StoreUrls;
+    SCPW_Icons: Record<Platform, string>;
+    SCPW_PlatformInfo: Record<Platform, { name: string; abbr: string; searchLabel: string }>;
+    SCPW_StatusInfo: Record<PlatformStatus, { tooltip: (platform: Platform) => string; className: string }>;
+    SCPW_SteamDeckTiers: Record<string, { label: string; tooltip: string }>;
+    SCPW_Cache: {
       getFromCache: (appid: string) => Promise<CacheEntry | null>;
       saveToCache: (entry: CacheEntry) => Promise<void>;
       getOrCreatePlatformData: (appid: string, gameName: string) => Promise<{ entry: CacheEntry; fromCache: boolean }>;
@@ -192,7 +192,7 @@ declare global {
       MANUAL_OVERRIDES: Record<string, Record<Platform, PlatformStatus>>;
       PLATFORMS: Platform[];
     };
-    XCPW_WikidataClient: {
+    SCPW_WikidataClient: {
       queryBySteamAppId: (steamAppId: string) => Promise<WikidataResult>;
       batchQueryBySteamAppIds: (steamAppIds: string[]) => Promise<Map<string, WikidataResult>>;
       getStoreUrl: (platform: string, storeIds: WikidataStoreIds) => string | null;
@@ -200,20 +200,20 @@ declare global {
       STORE_URL_BUILDERS: Record<string, (id: string) => string | null>;
       PLATFORM_QIDS: Record<string, string>;
     };
-    XCPW_Resolver: {
+    SCPW_Resolver: {
       resolvePlatformData: (appid: string, gameName: string) => Promise<{ entry: CacheEntry; fromCache: boolean }>;
       batchResolvePlatformData: (games: Array<{ appid: string; gameName: string }>) => Promise<Map<string, { entry: CacheEntry; fromCache: boolean }>>;
       forceRefresh: (appid: string, gameName: string) => Promise<{ entry: CacheEntry; fromCache: boolean }>;
       createFallbackEntry: (appid: string, gameName: string) => CacheEntry;
     };
-    XCPW_SteamDeck: {
+    SCPW_SteamDeck: {
       extractDeckDataFromPage: () => Map<string, DeckCategory>;
       waitForDeckData: (maxWaitMs?: number) => Promise<Map<string, DeckCategory>>;
       getDeckStatus: (deckData: Map<string, DeckCategory>, appId: string) => { found: boolean; status: DeckStatus; category: DeckCategory };
       statusToDisplayStatus: (status: DeckStatus) => 'available' | 'unavailable' | 'unknown';
       CATEGORY_MAP: Record<DeckCategory, DeckStatus>;
     };
-    XCPW_HltbClient: {
+    SCPW_HltbClient: {
       queryByGameName: (gameName: string, steamAppId?: string) => Promise<HltbSearchResult | null>;
       batchQueryByGameNames: (games: Array<{ appid: string; gameName: string }>) => Promise<Map<string, HltbSearchResult | null>>;
       formatHours: (hours: number) => string;
@@ -221,7 +221,7 @@ declare global {
       calculateSimilarity: (a: string, b: string) => number;
       registerHeaderRules: () => Promise<void>;
     };
-    XCPW_ContentTestExports?: {
+    SCPW_ContentTestExports?: {
       queueForBatchResolution: (appid: string, gameName: string, iconsContainer: HTMLElement) => void;
       processPendingBatch: () => Promise<void>;
       pendingItems: Map<string, { gameName: string; container: HTMLElement }>;
@@ -290,29 +290,29 @@ declare global {
     };
   }
   // eslint-disable-next-line no-var
-  var XCPW_StoreUrls: typeof StoreUrls;
+  var SCPW_StoreUrls: typeof StoreUrls;
   // eslint-disable-next-line no-var
-  var XCPW_Icons: Record<Platform, string>;
+  var SCPW_Icons: Record<Platform, string>;
   // eslint-disable-next-line no-var
-  var XCPW_PlatformInfo: Record<Platform, { name: string; abbr: string; searchLabel: string }>;
+  var SCPW_PlatformInfo: Record<Platform, { name: string; abbr: string; searchLabel: string }>;
   // eslint-disable-next-line no-var
-  var XCPW_StatusInfo: Record<PlatformStatus, { tooltip: (platform: Platform) => string; className: string }>;
+  var SCPW_StatusInfo: Record<PlatformStatus, { tooltip: (platform: Platform) => string; className: string }>;
   // eslint-disable-next-line no-var
-  var XCPW_SteamDeckTiers: Record<string, { label: string; tooltip: string }>;
+  var SCPW_SteamDeckTiers: Record<string, { label: string; tooltip: string }>;
   // eslint-disable-next-line no-var
-  var XCPW_Cache: Window['XCPW_Cache'];
+  var SCPW_Cache: Window['SCPW_Cache'];
   // eslint-disable-next-line no-var
-  var XCPW_WikidataClient: Window['XCPW_WikidataClient'];
+  var SCPW_WikidataClient: Window['SCPW_WikidataClient'];
   // eslint-disable-next-line no-var
-  var XCPW_Resolver: Window['XCPW_Resolver'];
+  var SCPW_Resolver: Window['SCPW_Resolver'];
   // eslint-disable-next-line no-var
-  var XCPW_SteamDeck: Window['XCPW_SteamDeck'];
+  var SCPW_SteamDeck: Window['SCPW_SteamDeck'];
   // eslint-disable-next-line no-var
-  var XCPW_HltbClient: Window['XCPW_HltbClient'];
+  var SCPW_HltbClient: Window['SCPW_HltbClient'];
   // eslint-disable-next-line no-var
-  var XCPW_ContentTestExports: Window['XCPW_ContentTestExports'];
+  var SCPW_ContentTestExports: Window['SCPW_ContentTestExports'];
   // eslint-disable-next-line no-var
-  var XCPW_UserSettings: {
+  var SCPW_UserSettings: {
     DEFAULT_USER_SETTINGS: UserSettings;
     SETTING_CHECKBOX_IDS: Partial<Record<keyof UserSettings, string>>;
     USER_SETTING_KEYS: Array<keyof UserSettings>;
@@ -366,11 +366,11 @@ export interface HltbSearchResult {
 
 // Export globally for content scripts (ES modules not fully supported in Chrome extensions)
 // Only set if not already defined (allows mocking in tests)
-if (!globalThis.XCPW_StoreUrls) {
-  globalThis.XCPW_StoreUrls = StoreUrls;
+if (!globalThis.SCPW_StoreUrls) {
+  globalThis.SCPW_StoreUrls = StoreUrls;
 }
-if (!globalThis.XCPW_UserSettings) {
-  globalThis.XCPW_UserSettings = {
+if (!globalThis.SCPW_UserSettings) {
+  globalThis.SCPW_UserSettings = {
     DEFAULT_USER_SETTINGS,
     SETTING_CHECKBOX_IDS,
     USER_SETTING_KEYS

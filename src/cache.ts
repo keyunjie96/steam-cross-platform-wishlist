@@ -8,7 +8,7 @@
 import type { Platform, PlatformStatus, CacheEntry, PlatformData } from './types';
 
 // Use globalThis for StoreUrls (set by types.ts at runtime)
-const StoreUrls = globalThis.XCPW_StoreUrls;
+const StoreUrls = globalThis.SCPW_StoreUrls;
 
 const CACHE_DEBUG = false; // Set to true to enable manual test overrides
 const CACHE_KEY_PREFIX = 'xcpw_cache_';
@@ -176,7 +176,7 @@ async function getCacheStats(): Promise<{ count: number; oldestEntry: number | n
 }
 
 // Export for service worker
-globalThis.XCPW_Cache = {
+globalThis.SCPW_Cache = {
   getFromCache,
   saveToCache,
   getOrCreatePlatformData,

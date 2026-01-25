@@ -17,12 +17,12 @@ describe('icons.js', () => {
 
   describe('PLATFORM_ICONS', () => {
     it('should export PLATFORM_ICONS to window', () => {
-      expect(window.XCPW_Icons).toBeDefined();
-      expect(typeof window.XCPW_Icons).toBe('object');
+      expect(window.SCPW_Icons).toBeDefined();
+      expect(typeof window.SCPW_Icons).toBe('object');
     });
 
     it('should have all four platform icons', () => {
-      const icons = window.XCPW_Icons;
+      const icons = window.SCPW_Icons;
       expect(icons.nintendo).toBeDefined();
       expect(icons.playstation).toBeDefined();
       expect(icons.xbox).toBeDefined();
@@ -31,7 +31,7 @@ describe('icons.js', () => {
 
     describe('SVG format validation', () => {
       it('should have valid SVG strings for all platforms', () => {
-        const icons = window.XCPW_Icons;
+        const icons = window.SCPW_Icons;
         const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
@@ -41,7 +41,7 @@ describe('icons.js', () => {
       });
 
       it('should use currentColor for fill', () => {
-        const icons = window.XCPW_Icons;
+        const icons = window.SCPW_Icons;
         const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
@@ -50,7 +50,7 @@ describe('icons.js', () => {
       });
 
       it('should have 16x16 dimensions', () => {
-        const icons = window.XCPW_Icons;
+        const icons = window.SCPW_Icons;
         const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
@@ -60,7 +60,7 @@ describe('icons.js', () => {
       });
 
       it('should have aria-hidden for accessibility', () => {
-        const icons = window.XCPW_Icons;
+        const icons = window.SCPW_Icons;
         const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
@@ -69,7 +69,7 @@ describe('icons.js', () => {
       });
 
       it('should have focusable="false" for accessibility', () => {
-        const icons = window.XCPW_Icons;
+        const icons = window.SCPW_Icons;
         const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
@@ -78,7 +78,7 @@ describe('icons.js', () => {
       });
 
       it('should have xmlns attribute', () => {
-        const icons = window.XCPW_Icons;
+        const icons = window.SCPW_Icons;
         const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
@@ -90,12 +90,12 @@ describe('icons.js', () => {
 
   describe('PLATFORM_INFO', () => {
     it('should export PLATFORM_INFO to window', () => {
-      expect(window.XCPW_PlatformInfo).toBeDefined();
-      expect(typeof window.XCPW_PlatformInfo).toBe('object');
+      expect(window.SCPW_PlatformInfo).toBeDefined();
+      expect(typeof window.SCPW_PlatformInfo).toBe('object');
     });
 
     it('should have info for all four platforms', () => {
-      const info = window.XCPW_PlatformInfo;
+      const info = window.SCPW_PlatformInfo;
       expect(info.nintendo).toBeDefined();
       expect(info.playstation).toBeDefined();
       expect(info.xbox).toBeDefined();
@@ -104,7 +104,7 @@ describe('icons.js', () => {
 
     describe('platform info structure', () => {
       it('should have name, abbr, and searchLabel for each platform', () => {
-        const info = window.XCPW_PlatformInfo;
+        const info = window.SCPW_PlatformInfo;
         const platforms = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
         platforms.forEach(platform => {
@@ -118,28 +118,28 @@ describe('icons.js', () => {
       });
 
       it('should have correct Nintendo info', () => {
-        const info = window.XCPW_PlatformInfo;
+        const info = window.SCPW_PlatformInfo;
         expect(info.nintendo.name).toBe('Nintendo Switch');
         expect(info.nintendo.abbr).toBe('NS');
         expect(info.nintendo.searchLabel).toContain('Nintendo');
       });
 
       it('should have correct PlayStation info', () => {
-        const info = window.XCPW_PlatformInfo;
+        const info = window.SCPW_PlatformInfo;
         expect(info.playstation.name).toBe('PlayStation');
         expect(info.playstation.abbr).toBe('PS');
         expect(info.playstation.searchLabel).toContain('PlayStation');
       });
 
       it('should have correct Xbox info', () => {
-        const info = window.XCPW_PlatformInfo;
+        const info = window.SCPW_PlatformInfo;
         expect(info.xbox.name).toBe('Xbox');
         expect(info.xbox.abbr).toBe('XB');
         expect(info.xbox.searchLabel).toContain('Xbox');
       });
 
       it('should have correct Steam Deck info', () => {
-        const info = window.XCPW_PlatformInfo;
+        const info = window.SCPW_PlatformInfo;
         expect(info.steamdeck.name).toBe('Steam Deck');
         expect(info.steamdeck.abbr).toBe('SD');
         expect(info.steamdeck.searchLabel).toContain('ProtonDB');
@@ -149,12 +149,12 @@ describe('icons.js', () => {
 
   describe('STATUS_INFO', () => {
     it('should export STATUS_INFO to window', () => {
-      expect(window.XCPW_StatusInfo).toBeDefined();
-      expect(typeof window.XCPW_StatusInfo).toBe('object');
+      expect(window.SCPW_StatusInfo).toBeDefined();
+      expect(typeof window.SCPW_StatusInfo).toBe('object');
     });
 
     it('should have info for all three statuses', () => {
-      const status = window.XCPW_StatusInfo;
+      const status = window.SCPW_StatusInfo;
       expect(status.available).toBeDefined();
       expect(status.unavailable).toBeDefined();
       expect(status.unknown).toBeDefined();
@@ -162,7 +162,7 @@ describe('icons.js', () => {
 
     describe('status info structure', () => {
       it('should have tooltip function and className for each status', () => {
-        const status = window.XCPW_StatusInfo;
+        const status = window.SCPW_StatusInfo;
         const statuses = ['available', 'unavailable', 'unknown'];
 
         statuses.forEach(s => {
@@ -172,7 +172,7 @@ describe('icons.js', () => {
       });
 
       it('should generate correct tooltips for available status', () => {
-        const status = window.XCPW_StatusInfo;
+        const status = window.SCPW_StatusInfo;
         expect(status.available.tooltip('nintendo')).toContain('Nintendo Switch');
         expect(status.available.tooltip('nintendo')).toContain('Available');
         expect(status.available.tooltip('playstation')).toContain('PlayStation');
@@ -180,34 +180,34 @@ describe('icons.js', () => {
       });
 
       it('should generate correct tooltips for unavailable status', () => {
-        const status = window.XCPW_StatusInfo;
+        const status = window.SCPW_StatusInfo;
         expect(status.unavailable.tooltip('nintendo')).toContain('Not available');
         expect(status.unavailable.tooltip('playstation')).toContain('Not available');
       });
 
       it('should generate correct tooltips for unknown status', () => {
-        const status = window.XCPW_StatusInfo;
+        const status = window.SCPW_StatusInfo;
         expect(status.unknown.tooltip('xbox')).toContain('Unknown');
         expect(status.unknown.tooltip('xbox')).toContain('search');
       });
 
       it('should have correct CSS class names', () => {
-        const status = window.XCPW_StatusInfo;
-        expect(status.available.className).toBe('xcpw-available');
-        expect(status.unavailable.className).toBe('xcpw-unavailable');
-        expect(status.unknown.className).toBe('xcpw-unknown');
+        const status = window.SCPW_StatusInfo;
+        expect(status.available.className).toBe('scpw-available');
+        expect(status.unavailable.className).toBe('scpw-unavailable');
+        expect(status.unknown.className).toBe('scpw-unknown');
       });
     });
   });
 
   describe('STEAM_DECK_TIERS', () => {
     it('should export STEAM_DECK_TIERS to window', () => {
-      expect(window.XCPW_SteamDeckTiers).toBeDefined();
-      expect(typeof window.XCPW_SteamDeckTiers).toBe('object');
+      expect(window.SCPW_SteamDeckTiers).toBeDefined();
+      expect(typeof window.SCPW_SteamDeckTiers).toBe('object');
     });
 
     it('should have all tier levels', () => {
-      const tiers = window.XCPW_SteamDeckTiers;
+      const tiers = window.SCPW_SteamDeckTiers;
       const expectedTiers = ['verified', 'playable', 'unsupported', 'unknown'];
 
       expectedTiers.forEach(tier => {
@@ -216,7 +216,7 @@ describe('icons.js', () => {
     });
 
     it('should have label and tooltip for each tier', () => {
-      const tiers = window.XCPW_SteamDeckTiers;
+      const tiers = window.SCPW_SteamDeckTiers;
 
       Object.keys(tiers).forEach(tier => {
         expect(tiers[tier].label).toBeDefined();
@@ -227,7 +227,7 @@ describe('icons.js', () => {
     });
 
     it('should have correct labels for key tiers', () => {
-      const tiers = window.XCPW_SteamDeckTiers;
+      const tiers = window.SCPW_SteamDeckTiers;
       expect(tiers.verified.label).toBe('Verified');
       expect(tiers.playable.label).toBe('Playable');
       expect(tiers.unsupported.label).toBe('Unsupported');

@@ -27,7 +27,7 @@ import type {
   GetHltbDataBatchResponse
 } from './types';
 
-const LOG_PREFIX = '[XCPW Background]';
+const LOG_PREFIX = '[SCPW Background]';
 
 // Sentinel value for "searched HLTB but no match found" - prevents repeated searches
 const HLTB_NOT_FOUND_ID = -1;
@@ -134,11 +134,11 @@ async function getPlatformData(message: GetPlatformDataRequest): Promise<GetPlat
     return { success: false, data: null, fromCache: false };
   }
 
-  if (!globalThis.XCPW_Resolver) {
+  if (!globalThis.SCPW_Resolver) {
     return { success: false, data: null, fromCache: false, error: 'Resolver not loaded' };
   }
 
-  const { entry, fromCache } = await globalThis.XCPW_Resolver.resolvePlatformData(appid, gameName);
+  const { entry, fromCache } = await globalThis.SCPW_Resolver.resolvePlatformData(appid, gameName);
   console.log(`${LOG_PREFIX} ${fromCache ? 'Cache hit' : 'Resolved'} for appid ${appid} (source: ${entry.source || 'unknown'})`);
 
   return { success: true, data: entry, fromCache };
@@ -154,13 +154,13 @@ async function getBatchPlatformData(message: GetPlatformDataBatchRequest): Promi
     return { success: false, results: {} };
   }
 
-  if (!globalThis.XCPW_Resolver) {
+  if (!globalThis.SCPW_Resolver) {
     return { success: false, results: {}, error: 'Resolver not loaded' };
   }
 
   console.log(`${LOG_PREFIX} Batch request for ${games.length} games`);
 
-  const resultsMap = await globalThis.XCPW_Resolver.batchResolvePlatformData(games);
+  const resultsMap = await globalThis.SCPW_Resolver.batchResolvePlatformData(games);
 
   // Convert Map to plain object for message passing
   const results: Record<string, { data: CacheEntry; fromCache: boolean }> = {};
@@ -191,7 +191,7 @@ async function updateCache(message: UpdateCacheRequest): Promise<{ success: bool
     return { success: false };
   }
 
-  await globalThis.XCPW_Resolver.forceRefresh(appid, gameName);
+  await globalThis.SCPW_Resolver.forceRefresh(appid, gameName);
   console.log(`${LOG_PREFIX} Cache updated for appid ${appid}`);
 
   return { success: true };
@@ -201,7 +201,7 @@ async function updateCache(message: UpdateCacheRequest): Promise<{ success: bool
  * Gets cache statistics (handler wrapper to avoid name collision with cache.js)
  */
 async function handleGetCacheStats(): Promise<{ success: boolean; count: number; oldestEntry: number | null }> {
-  const stats = await globalThis.XCPW_Cache.getCacheStats();
+  const stats = await globalThis.SCPW_Cache.getCacheStats();
   return { success: true, count: stats.count, oldestEntry: stats.oldestEntry };
 }
 
@@ -209,7 +209,7 @@ async function handleGetCacheStats(): Promise<{ success: boolean; count: number;
  * Clears all cached data (handler wrapper to avoid name collision with cache.js)
  */
 async function handleClearCache(): Promise<{ success: boolean }> {
-  await globalThis.XCPW_Cache.clearCache();
+  await globalThis.SCPW_Cache.clearCache();
   console.log(`${LOG_PREFIX} Cache cleared`);
   return { success: true };
 }
@@ -224,12 +224,12 @@ async function getHltbData(message: GetHltbDataRequest): Promise<GetHltbDataResp
     return { success: false, data: null, error: 'Missing appid or gameName' };
   }
 
-  if (!globalThis.XCPW_HltbClient) {
+  if (!globalThis.SCPW_HltbClient) {
     return { success: false, data: null, error: 'HLTB client not loaded' };
   }
 
   // Check if we have cached HLTB data first
-  const cached = await globalThis.XCPW_Cache.getFromCache(appid);
+  const cached = await globalThis.SCPW_Cache.getFromCache(appid);
   const hltb = cached?.hltbData;
 
   // Check for "not found" marker - don't re-search
@@ -247,14 +247,14 @@ async function getHltbData(message: GetHltbDataRequest): Promise<GetHltbDataResp
   // Query HLTB
   try {
     console.log(`${LOG_PREFIX} HLTB querying for "${gameName}" (appid: ${appid})`);
-    const result = await globalThis.XCPW_HltbClient.queryByGameName(gameName, appid);
+    const result = await globalThis.SCPW_HltbClient.queryByGameName(gameName, appid);
     console.log(`${LOG_PREFIX} HLTB query result for ${appid}:`, JSON.stringify(result));
 
     if (result) {
       // Update cache with HLTB data
       if (cached) {
         cached.hltbData = result.data;
-        await globalThis.XCPW_Cache.saveToCache(cached);
+        await globalThis.SCPW_Cache.saveToCache(cached);
       }
       console.log(`${LOG_PREFIX} HLTB resolved for appid ${appid}: ${result.data.mainStory}h`);
       return { success: true, data: result.data };
@@ -263,7 +263,7 @@ async function getHltbData(message: GetHltbDataRequest): Promise<GetHltbDataResp
     // Save "not found" marker to cache to prevent repeated searches
     if (cached) {
       cached.hltbData = createHltbNotFoundMarker();
-      await globalThis.XCPW_Cache.saveToCache(cached);
+      await globalThis.SCPW_Cache.saveToCache(cached);
     }
     console.log(`${LOG_PREFIX} HLTB no match for appid ${appid} (cached as not found)`);
     return { success: true, data: null };
@@ -284,7 +284,7 @@ async function getBatchHltbData(message: GetHltbDataBatchRequest): Promise<Async
     return { success: false, hltbResults: {} };
   }
 
-  if (!globalThis.XCPW_HltbClient) {
+  if (!globalThis.SCPW_HltbClient) {
     return { success: false, hltbResults: {}, error: 'HLTB client not loaded' };
   }
 
@@ -296,7 +296,7 @@ async function getBatchHltbData(message: GetHltbDataBatchRequest): Promise<Async
   // Check cache first
   // Note: Treat HLTB data with all zeros or missing hltbId as uncached (likely from old broken API)
   for (const { appid, gameName } of games) {
-    const cached = await globalThis.XCPW_Cache.getFromCache(appid);
+    const cached = await globalThis.SCPW_Cache.getFromCache(appid);
     const hltb = cached?.hltbData;
 
     // Check for "not found" marker - don't re-search, return null
@@ -319,8 +319,8 @@ async function getBatchHltbData(message: GetHltbDataBatchRequest): Promise<Async
   if (uncached.length > 0) {
     console.log(`${LOG_PREFIX} HLTB querying games:`, uncached.map(g => `${g.appid}:${g.gameName}`).join(', '));
     try {
-      console.log(`${LOG_PREFIX} HLTB: XCPW_HltbClient available:`, !!globalThis.XCPW_HltbClient);
-      const batchResults = await globalThis.XCPW_HltbClient.batchQueryByGameNames(uncached);
+      console.log(`${LOG_PREFIX} HLTB: SCPW_HltbClient available:`, !!globalThis.SCPW_HltbClient);
+      const batchResults = await globalThis.SCPW_HltbClient.batchQueryByGameNames(uncached);
       console.log(`${LOG_PREFIX} HLTB batch returned ${batchResults.size} results`);
       // Debug: log first result details
       if (batchResults.size > 0) {
@@ -336,19 +336,19 @@ async function getBatchHltbData(message: GetHltbDataBatchRequest): Promise<Async
         console.log(`${LOG_PREFIX} HLTB result for ${appid}: ${hltbResult ? `mainStory=${hltbResult.data.mainStory}h, hltbId=${hltbResult.data.hltbId}, similarity=${hltbResult.similarity}` : 'null'}`);
 
         // Update cache
-        const cached = await globalThis.XCPW_Cache.getFromCache(appid);
+        const cached = await globalThis.SCPW_Cache.getFromCache(appid);
         if (hltbResult) {
           hltbResults[appid] = hltbResult.data;
           if (cached) {
             cached.hltbData = hltbResult.data;
-            await globalThis.XCPW_Cache.saveToCache(cached);
+            await globalThis.SCPW_Cache.saveToCache(cached);
           }
         } else {
           // Save "not found" marker to prevent repeated searches
           hltbResults[appid] = null;
           if (cached) {
             cached.hltbData = createHltbNotFoundMarker();
-            await globalThis.XCPW_Cache.saveToCache(cached);
+            await globalThis.SCPW_Cache.saveToCache(cached);
             console.log(`${LOG_PREFIX} HLTB cached as not found: ${appid}`);
           }
         }
