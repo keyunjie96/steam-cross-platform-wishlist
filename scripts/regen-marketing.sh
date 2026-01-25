@@ -3,6 +3,23 @@
 # Regenerate all marketing assets for Chrome Web Store
 # Usage: ./scripts/regen-marketing.sh
 #
+# ICON UPDATE INSTRUCTIONS:
+# =========================
+# 1. Replace assets/icons/icon.png with your new icon (1024x1024 recommended)
+# 2. Run this script: ./scripts/regen-marketing.sh
+# 3. Reload extension in chrome://extensions/
+#
+# This script will:
+# - Crop icon.png to remove padding (saves as icon-cropped.png)
+# - Generate icon16.png, icon48.png, icon128.png
+# - Capture screenshots for all promo tiles
+#
+# Files that use the icon:
+# - manifest.json (icon16, icon48, icon128)
+# - src/popup.html (icon128)
+# - src/options.html (icon128)
+# - assets/marketing/*.html (icon128)
+#
 
 set -e
 
@@ -16,19 +33,56 @@ echo "Marketing Assets Regeneration"
 echo "================================================"
 echo ""
 
-# Check for required tools
-if ! command -v rsvg-convert &> /dev/null; then
-    echo "ERROR: rsvg-convert not found. Install with: brew install librsvg"
-    exit 1
-fi
-
-# Step 1: Regenerate extension icons
-echo "[1/4] Regenerating extension icons..."
+# Step 1: Crop and regenerate extension icons from PNG source
+echo "[1/4] Regenerating extension icons from icon.png..."
 cd assets/icons
-rsvg-convert -w 16 -h 16 extension-icon.svg -o icon16.png
-rsvg-convert -w 48 -h 48 extension-icon.svg -o icon48.png
-rsvg-convert -w 128 -h 128 extension-icon.svg -o icon128.png
-echo "  ✓ icon16.png, icon48.png, icon128.png"
+python3 << 'PYTHON_SCRIPT'
+from PIL import Image
+
+# Open the source icon
+img = Image.open("icon.png")
+print(f"  Source: icon.png ({img.size[0]}x{img.size[1]})")
+
+# Convert to RGBA if needed
+if img.mode != 'RGBA':
+    img = img.convert('RGBA')
+
+# Get the bounding box of non-transparent pixels
+bbox = img.getbbox()
+if bbox:
+    # Add minimal padding (2% of content size)
+    content_size = max(bbox[2] - bbox[0], bbox[3] - bbox[1])
+    padding = int(content_size * 0.02)
+
+    crop_box = (
+        max(0, bbox[0] - padding),
+        max(0, bbox[1] - padding),
+        min(img.width, bbox[2] + padding),
+        min(img.height, bbox[3] + padding)
+    )
+
+    # Crop to content with minimal padding
+    cropped = img.crop(crop_box)
+
+    # Make it square
+    size = max(cropped.size)
+    square = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    offset = ((size - cropped.width) // 2, (size - cropped.height) // 2)
+    square.paste(cropped, offset)
+else:
+    square = img
+
+# Save the cropped source
+square.save('icon-cropped.png')
+print(f"  Cropped: icon-cropped.png ({square.size[0]}x{square.size[1]})")
+
+# Generate all required sizes with high-quality resampling
+for target_size in [128, 48, 16]:
+    resized = square.resize((target_size, target_size), Image.LANCZOS)
+    resized.save(f'icon{target_size}.png')
+
+print("  ✓ icon16.png, icon48.png, icon128.png")
+PYTHON_SCRIPT
 cd "$PROJECT_ROOT"
 
 # Step 2: Start HTTP server
@@ -66,6 +120,20 @@ if command -v npx &> /dev/null && npx playwright --version &> /dev/null 2>&1; th
         "http://localhost:8765/assets/marketing/promo-tile-920x680.html" \
         "assets/marketing/promo-tile-920x680.png" 2>/dev/null
     echo "  ✓ promo-tile-920x680.png"
+
+    # Large tile v2 (920x680)
+    npx playwright screenshot \
+        --viewport-size=920,680 \
+        "http://localhost:8765/assets/marketing/promo-tile-920x680-v2.html" \
+        "assets/marketing/promo-tile-920x680-v2.png" 2>/dev/null
+    echo "  ✓ promo-tile-920x680-v2.png"
+
+    # Large tile v3 (920x680)
+    npx playwright screenshot \
+        --viewport-size=920,680 \
+        "http://localhost:8765/assets/marketing/promo-tile-920x680-v3.html" \
+        "assets/marketing/promo-tile-920x680-v3.png" 2>/dev/null
+    echo "  ✓ promo-tile-920x680-v3.png"
 
     # Small tile (440x280)
     npx playwright screenshot \

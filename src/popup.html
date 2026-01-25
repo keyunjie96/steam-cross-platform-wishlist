@@ -26,7 +26,7 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
       width: 280px;
       margin: 0;
       padding: 16px;
@@ -44,11 +44,18 @@
       border-bottom: 1px solid var(--card-border);
     }
 
-    .header svg {
-      width: 24px;
-      height: 24px;
-      color: var(--accent);
+    .header-icon {
+      width: 28px;
+      height: 28px;
       flex-shrink: 0;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .header-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .header h1 {
@@ -283,9 +290,9 @@
 </head>
 <body class="is-loading">
   <div class="header">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-    </svg>
+    <div class="header-icon">
+      <img src="../assets/icons/icon128.png" alt="Extension icon">
+    </div>
     <h1>Steam Cross-Platform Wishlist</h1>
   </div>
 
