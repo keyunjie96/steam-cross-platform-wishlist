@@ -12,7 +12,7 @@ Shows which Steam wishlist games are also on Switch, PlayStation, Xbox, or Steam
 
 Steam's wishlist doesn't show platform availability. Checking manually means clicking through 4 storefronts per game. This extension does that lookup automatically using Wikidata (free, crowd-sourced) and shows icons inline.
 
-**Not Augmented Steam** — this focuses purely on cross-platform availability. No price history, no tracking, no telemetry. ~50KB, runs entirely client-side.
+No price history, no tracking, no telemetry. ~50KB, runs entirely client-side.
 
 Built because I got tired of checking 4 storefronts manually. Open source because cross-platform info shouldn't require a subscription.
 
@@ -38,31 +38,19 @@ No backend. Everything runs client-side with a 7-day cache.
 - **No backend** — Runs entirely client-side with 7-day cache
 - **No telemetry** — Wikidata queries only, nothing phoned home
 
-### vs. Augmented Steam
-
-| | This extension | Augmented Steam |
-|--|----------------|-----------------|
-| Platform availability | ✓ | ✗ |
-| HowLongToBeat times | ✓ | ✓ |
-| Price history | ✗ | ✓ |
-| Size | ~50KB | ~5MB |
-| Telemetry | None | None |
-
-Different tools for different needs. This one does one thing.
-
 ## How it works
 
 | Source | What | Catch |
 |--------|------|-------|
-| Wikidata SPARQL | Platform availability | ~50% coverage (volunteer-maintained) |
+| Wikidata SPARQL | Platform availability | Incomplete coverage (volunteer-maintained) |
 | HLTB API | Completion times | Undocumented, breaks monthly |
 | Steam SSR | Deck verified status | Requires page script injection¹ |
 
-¹ MV3 content scripts can't access page JS context, so we inject `steamDeckPageScript.ts` to read `g_rgAppData`.
+¹ MV3 content scripts can't access page JS context, so we inject `steamDeckPageScript.ts` to read Steam's SSR data.
 
 When HLTB breaks, times disappear but platform icons still work.
 
-**Why Wikidata?** Free, no API key, anyone can fix bad data. The ~50% coverage gap is a data problem, not a code problem.
+**Why Wikidata?** Free, no API key, anyone can fix bad data. Coverage gaps are a data problem, not a code problem.
 
 ## Architecture
 
@@ -75,7 +63,7 @@ When HLTB breaks, times disappear but platform icons still work.
        ▼                          ▼
   DOM injection            ┌──────┴──────┐
   + page script            │   resolver  │
-  (g_rgAppData)            └──────┬──────┘
+  (SSR data)               └──────┬──────┘
                                   │
                     ┌─────────────┼─────────────┐
                     ▼             ▼             ▼
@@ -86,9 +74,9 @@ See [CLAUDE.md](CLAUDE.md) for full architecture details and dev workflow.
 
 ## Limitations
 
-- **Wikidata**: ~50% of Steam games have platform data. You can [add missing games](https://www.wikidata.org/wiki/Wikidata:WikiProject_Video_games) yourself.
-- **HLTB**: Fuzzy name matching fails on ~15% of titles (usually indies with weird names). No official API exists.
-- **Rate limits**: 500ms delay between Wikidata queries to avoid getting throttled.
+- **Wikidata**: Many games missing platform data. You can [add them](https://www.wikidata.org/wiki/Wikidata:WikiProject_Video_games) yourself.
+- **HLTB**: Fuzzy name matching misses some titles (especially indies). No official API.
+- **Rate limits**: 500ms delay between Wikidata queries to avoid throttling.
 
 ## Troubleshooting
 
@@ -106,13 +94,7 @@ npm run test:integration  # Full E2E (slow)
 
 ## Contributing
 
-PRs welcome. A few ways to help:
-
-1. **Add missing games to Wikidata** — most coverage gaps are data gaps
-2. **Fix HLTB when it breaks** — reverse-engineer the new API format from network requests
-3. **Add new platforms** — update `icons.ts` and `resolver.ts`
-
-See [CLAUDE.md](CLAUDE.md) for architecture, test coverage requirements (80% minimum), and dev workflow.
+PRs welcome. See [CLAUDE.md](CLAUDE.md) for architecture and dev workflow.
 
 ## Acknowledgments
 
