@@ -95,7 +95,7 @@ Since we don't collect personal data, there's nothing to delete or export. You c
 
 This extension is open source. You can review the code to verify our privacy practices:
 
-[GitHub Repository](https://github.com/YOUR_USERNAME/cross-platform-steam-wishlist)
+[GitHub Repository](https://github.com/keyunjie96/steam-cross-platform-wishlist)
 
 ## Changes to This Policy
 

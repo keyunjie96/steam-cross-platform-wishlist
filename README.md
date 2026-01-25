@@ -1,7 +1,7 @@
 # Steam Cross-Platform Wishlist
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.6.2-blue.svg)](https://github.com/keyunjie96/cross-platform-steam-wishlist/releases)
+[![Version](https://img.shields.io/badge/version-0.6.2-blue.svg)](https://github.com/keyunjie96/steam-cross-platform-wishlist/releases)
 [![Chrome MV3](https://img.shields.io/badge/manifest-v3-green.svg)]()
 
 Shows which Steam wishlist games are also on Switch, PlayStation, Xbox, or Steam Deck. Plus HowLongToBeat times.

@@ -14,8 +14,8 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/cross-platform-steam-wishlist
-cd cross-platform-steam-wishlist
+git clone https://github.com/keyunjie96/steam-cross-platform-wishlist
+cd steam-cross-platform-wishlist
 
 # Install dependencies
 npm install
