@@ -108,47 +108,47 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Step 3: Capture promotional tiles
+# Step 3: Capture promotional tiles at 2x and downsample for crisp images
 echo ""
-echo "[3/4] Capturing promotional tiles..."
+echo "[3/4] Capturing promotional tiles at 2x resolution..."
 
 # Check if playwright is available
 if command -v npx &> /dev/null && npx playwright --version &> /dev/null 2>&1; then
-    # Large tile (920x680)
-    npx playwright screenshot \
-        --viewport-size=920,680 \
-        "http://localhost:8765/assets/marketing/promo-tile-920x680.html" \
-        "assets/marketing/promo-tile-920x680.png" 2>/dev/null
-    echo "  ✓ promo-tile-920x680.png"
+    # Capture at 2x using Node.js script
+    node "$SCRIPT_DIR/capture-2x.js"
 
-    # Large tile v2 (920x680)
-    npx playwright screenshot \
-        --viewport-size=920,680 \
-        "http://localhost:8765/assets/marketing/promo-tile-920x680-v2.html" \
-        "assets/marketing/promo-tile-920x680-v2.png" 2>/dev/null
-    echo "  ✓ promo-tile-920x680-v2.png"
+    # Downsample to 1x with LANCZOS for crisp results
+    echo ""
+    echo "  Downsampling to 1x with LANCZOS..."
+    cd assets/marketing
+    python3 << 'DOWNSAMPLE_SCRIPT'
+from PIL import Image
 
-    # Large tile v3 (920x680)
-    npx playwright screenshot \
-        --viewport-size=920,680 \
-        "http://localhost:8765/assets/marketing/promo-tile-920x680-v3.html" \
-        "assets/marketing/promo-tile-920x680-v3.png" 2>/dev/null
-    echo "  ✓ promo-tile-920x680-v3.png"
+tiles = [
+    ('promo-tile-920x680-2x.png', 'promo-tile-920x680.png', 920, 680),
+    ('promo-tile-920x680-v2-2x.png', 'promo-tile-920x680-v2.png', 920, 680),
+    ('promo-tile-920x680-v3-2x.png', 'promo-tile-920x680-v3.png', 920, 680),
+    ('promo-tile-440x280-2x.png', 'promo-tile-440x280.png', 440, 280),
+    ('options-page-full-2x.png', 'options-page-full.png', 640, None),
+]
 
-    # Small tile (440x280)
-    npx playwright screenshot \
-        --viewport-size=440,280 \
-        "http://localhost:8765/assets/marketing/promo-tile-440x280.html" \
-        "assets/marketing/promo-tile-440x280.png" 2>/dev/null
-    echo "  ✓ promo-tile-440x280.png"
+for src, dst, width, height in tiles:
+    try:
+        img = Image.open(src)
+        if height is None:
+            ratio = width / img.width
+            height = int(img.height * ratio)
+        resized = img.resize((width, height), Image.LANCZOS)
+        resized.save(dst, 'PNG')
+        print(f"  ✓ {dst} ({width}x{height})")
+    except FileNotFoundError:
+        print(f"  ⚠ {src} not found, skipping")
+DOWNSAMPLE_SCRIPT
+    cd "$PROJECT_ROOT"
 
-    # Options page
-    npx playwright screenshot \
-        --viewport-size=640,1200 \
-        --full-page \
-        "http://localhost:8765/src/options.html" \
-        "assets/marketing/options-page-full.png" 2>/dev/null
-    echo "  ✓ options-page-full.png"
+    # Clean up 2x intermediates (optional - uncomment to keep them)
+    rm -f assets/marketing/*-2x.png
+    echo "  ✓ Cleaned up 2x intermediates"
 else
     echo "  ⚠ Playwright not available. Skipping screenshot capture."
     echo "    Install with: npm install -g playwright"
