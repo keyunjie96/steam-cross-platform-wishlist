@@ -4,7 +4,7 @@
 
 **Steam Cross-Platform Wishlist** is a Chrome extension (Manifest V3) that displays platform availability icons (Nintendo Switch, PlayStation, Xbox, Steam Deck) on Steam wishlist pages using Wikidata and Steam's SSR data.
 
-**Version:** 0.5.0
+**Version:** 0.6.0
 **Status:** Production-ready
 **Tech Stack:** TypeScript, Chrome Extensions API (MV3), Jest
 
@@ -26,13 +26,13 @@
    │  Client.ts)       │                                   │                      │
    │                   │                                   └──────────┬───────────┘
    │ - Inject Page     │                                              │
-   │   Script          │                    ┌─────────────────────────┴─────────────────────────┐
-   │ - Read DOM        │                    │                                                   │
-   └───────┬───────────┘             ┌──────▼──────┐                                     ┌──────▼──────────┐
-           │                         │ Cache       │                                     │ WikidataClient  │
-   ┌───────▼────────────┐            │ (cache.ts)  │                                     │ (wikidata       │
-   │ SteamDeckPageScript│            │             │                                     │  Client.ts)     │
-   │ (Injected Script)  │            └─────────────┘                                     └─────────────────┘
+   │   Script          │                    ┌─────────────────────────┼─────────────────────────┐
+   │ - Read DOM        │                    │                         │                         │
+   └───────┬───────────┘             ┌──────▼──────┐           ┌──────▼──────────┐       ┌──────▼──────┐
+           │                         │ Cache       │           │ WikidataClient  │       │ HltbClient  │
+   ┌───────▼────────────┐            │ (cache.ts)  │           │ (wikidata       │       │ (hltb       │
+   │ SteamDeckPageScript│            │             │           │  Client.ts)     │       │  Client.ts) │
+   │ (Injected Script)  │            └─────────────┘           └─────────────────┘       └─────────────┘
    └────────────────────┘
 ```
 

@@ -113,7 +113,6 @@ function buildStoreUrl(store: string, id: string | null | undefined): string | n
  */
 function buildPlayStationUrl(id: string | null | undefined): string | null {
   if (!id) return null;
-  // Concept IDs are numeric, product IDs have regional format
   const template = isPsConceptId(id) ? 'playstationConcept' : 'playstationProduct';
   return STORE_URL_TEMPLATES[template].replace('{id}', id);
 }
@@ -237,7 +236,7 @@ async function executeSparqlQuery(query: string, retryCount = 0): Promise<Sparql
     const response = await fetch(url.toString(), {
       headers: {
         'Accept': 'application/sparql-results+json',
-        'User-Agent': 'SteamCrossPlatformWishlist/0.5.0 (Chrome Extension)'
+        'User-Agent': 'SteamCrossPlatformWishlist/0.6.0 (Chrome Extension)'
       }
     });
 

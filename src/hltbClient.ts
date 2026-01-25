@@ -12,7 +12,7 @@ import type { HltbSearchResult } from './types';
 
 const HLTB_BASE_URL = 'https://howlongtobeat.com';
 const HLTB_LOG_PREFIX = '[XCPW HLTB]';
-const HLTB_DEBUG = true;
+const HLTB_DEBUG = false;
 
 const REQUEST_DELAY_MS = 500;
 const RULE_ID_ORIGIN = 1;

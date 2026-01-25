@@ -13,7 +13,7 @@ import type { Platform, PlatformStatus, CacheEntry, DeckCategory, GetPlatformDat
 const PROCESSED_ATTR = 'data-xcpw-processed';
 const ICONS_INJECTED_ATTR = 'data-xcpw-icons';
 const LOG_PREFIX = '[Steam Cross-Platform Wishlist]';
-const DEBUG = true; // Set to true for verbose debugging
+const DEBUG = false; // Set to true for verbose debugging
 
 /** Set of appids that have been processed to avoid duplicate logging */
 const processedAppIds = new Set<string>();

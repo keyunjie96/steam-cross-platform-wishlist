@@ -1,6 +1,6 @@
 {
   "name": "cross-platform-steam-wishlist",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Chrome extension that adds platform availability icons to Steam wishlist",
   "private": true,
   "scripts": {
