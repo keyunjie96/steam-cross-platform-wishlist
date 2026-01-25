@@ -15,7 +15,7 @@ const LOG_PREFIX = '[SCPW Options]';
 const { DEFAULT_USER_SETTINGS, SETTING_CHECKBOX_IDS, USER_SETTING_KEYS } = globalThis.SCPW_UserSettings;
 
 // DOM Elements (initialized in DOMContentLoaded)
-let statusEl: HTMLElement;
+let cacheStatusEl: HTMLElement;
 let settingsStatusEl: HTMLElement | null;
 let cacheCountEl: HTMLElement;
 let cacheAgeEl: HTMLElement;
@@ -46,11 +46,11 @@ function formatAge(ms: number): string {
 }
 
 /**
- * Shows a status message
+ * Shows a status message for cache operations
  */
-function showStatus(message: string, type: 'success' | 'error'): void {
-  statusEl.textContent = message;
-  statusEl.className = `status ${type}`;
+function showCacheStatus(message: string, type: 'success' | 'error'): void {
+  cacheStatusEl.textContent = message;
+  cacheStatusEl.className = `status ${type}`;
 }
 
 /**
@@ -132,9 +132,7 @@ function getCurrentSettings(): UserSettings {
 function updateHltbRowVisibility(): void {
   const hltbCheckbox = checkboxes.get('showHltb');
   if (hltbStatRow && hltbCheckbox) {
-    // Support multiple CSS class conventions: .hidden, .visible, .nested-option.visible
-    hltbStatRow.classList.toggle('hidden', !hltbCheckbox.checked);
-    hltbStatRow.classList.toggle('visible', hltbCheckbox.checked);
+    hltbStatRow.hidden = !hltbCheckbox.checked;
   }
 }
 
@@ -221,17 +219,45 @@ async function clearCache(): Promise<void> {
     const response = await chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' }) as ClearCacheResponse;
 
     if (response?.success) {
-      showStatus('Cache cleared successfully.', 'success');
+      showCacheStatus('Cache cleared successfully.', 'success');
       await loadCacheStats();
     } else {
-      showStatus('Failed to clear cache.', 'error');
+      showCacheStatus('Failed to clear cache.', 'error');
     }
   } catch (error) {
     console.error(`${LOG_PREFIX} Error clearing cache:`, error);
-    showStatus('Failed to clear cache.', 'error');
+    showCacheStatus('Failed to clear cache.', 'error');
   } finally {
     setButtonLoading(clearCacheBtn, false);
   }
+}
+
+/**
+ * Initializes collapsible sections (CSP-compliant, no inline onclick)
+ */
+function initializeCollapsibleSections(): void {
+  document.querySelectorAll<HTMLElement>('section[data-collapsible] .collapse-btn').forEach((btn) => {
+    const bodyId = btn.getAttribute('aria-controls');
+    if (!bodyId) return;
+
+    const body = document.getElementById(bodyId);
+    const section = btn.closest('section');
+    if (!body || !section) return;
+
+    const setCollapsed = (collapsed: boolean): void => {
+      section.classList.toggle('collapsed', collapsed);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      body.hidden = collapsed;
+    };
+
+    // Set initial state from markup
+    setCollapsed(section.classList.contains('collapsed'));
+
+    btn.addEventListener('click', () => {
+      const isCollapsed = section.classList.contains('collapsed');
+      setCollapsed(!isCollapsed);
+    });
+  });
 }
 
 /**
@@ -239,7 +265,7 @@ async function clearCache(): Promise<void> {
  */
 function initializePage(): void {
   // Get DOM elements
-  statusEl = document.getElementById('status') as HTMLElement;
+  cacheStatusEl = document.getElementById('cache-status') as HTMLElement;
   settingsStatusEl = document.getElementById('settings-status') as HTMLElement | null;
   cacheCountEl = document.getElementById('cache-count') as HTMLElement;
   cacheAgeEl = document.getElementById('cache-age') as HTMLElement;
@@ -265,6 +291,9 @@ function initializePage(): void {
   if (hltbDisplayStatSelect) {
     hltbDisplayStatSelect.addEventListener('change', handlePlatformToggle);
   }
+
+  // Initialize collapsible sections (CSP-compliant)
+  initializeCollapsibleSections();
 
   // Event Listeners for buttons
   refreshStatsBtn.addEventListener('click', loadCacheStats);

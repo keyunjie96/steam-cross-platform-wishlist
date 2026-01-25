@@ -5,7 +5,7 @@
  */
 
 describe('options.js', () => {
-  let statusEl;
+  let cacheStatusEl;
   let settingsStatusEl;
   let cacheCountEl;
   let cacheAgeEl;
@@ -25,10 +25,10 @@ describe('options.js', () => {
     // Set up DOM elements that options.js expects using DOM API
     document.body.textContent = '';
 
-    statusEl = document.createElement('div');
-    statusEl.id = 'status';
-    statusEl.className = 'status';
-    document.body.appendChild(statusEl);
+    cacheStatusEl = document.createElement('div');
+    cacheStatusEl.id = 'cache-status';
+    cacheStatusEl.className = 'status';
+    document.body.appendChild(cacheStatusEl);
 
     settingsStatusEl = document.createElement('div');
     settingsStatusEl.id = 'settings-status';
@@ -137,7 +137,7 @@ describe('options.js', () => {
 
   describe('initialization', () => {
     it('should get all required DOM elements', () => {
-      expect(statusEl).toBeTruthy();
+      expect(cacheStatusEl).toBeTruthy();
       expect(cacheCountEl).toBeTruthy();
       expect(cacheAgeEl).toBeTruthy();
       expect(refreshStatsBtn).toBeTruthy();
@@ -340,8 +340,8 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('cleared successfully');
-      expect(statusEl.className).toContain('success');
+      expect(cacheStatusEl.textContent).toContain('cleared successfully');
+      expect(cacheStatusEl.className).toContain('success');
     });
 
     it('should show error status on failed clear', async () => {
@@ -351,8 +351,8 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('Failed');
-      expect(statusEl.className).toContain('error');
+      expect(cacheStatusEl.textContent).toContain('Failed');
+      expect(cacheStatusEl.className).toContain('error');
     });
 
     it('should show error status on exception', async () => {
@@ -362,8 +362,8 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent).toContain('Failed');
-      expect(statusEl.className).toContain('error');
+      expect(cacheStatusEl.textContent).toContain('Failed');
+      expect(cacheStatusEl.className).toContain('error');
     });
 
     it('should disable button while loading', async () => {
@@ -442,7 +442,7 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.textContent.length).toBeGreaterThan(0);
+      expect(cacheStatusEl.textContent.length).toBeGreaterThan(0);
     });
 
     it('should set success class for success type', async () => {
@@ -452,7 +452,7 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.classList.contains('success')).toBe(true);
+      expect(cacheStatusEl.classList.contains('success')).toBe(true);
     });
 
     it('should set error class for error type', async () => {
@@ -462,7 +462,7 @@ describe('options.js', () => {
 
       await jest.advanceTimersByTimeAsync(0);
 
-      expect(statusEl.classList.contains('error')).toBe(true);
+      expect(cacheStatusEl.classList.contains('error')).toBe(true);
     });
   });
 
@@ -761,8 +761,8 @@ describe('options.js', () => {
 
   describe('HLTB row visibility', () => {
     it('should show hltb-stat-row when HLTB checkbox is checked', async () => {
-      // Start with hidden
-      hltbStatRow.classList.add('hidden');
+      // Start with hidden attribute
+      hltbStatRow.hidden = true;
       showHltbCheckbox.checked = true;
 
       // Re-require to reinitialize with our DOM
@@ -772,13 +772,13 @@ describe('options.js', () => {
       document.dispatchEvent(new Event('DOMContentLoaded'));
       await jest.advanceTimersByTimeAsync(0);
 
-      // Row should be visible (hidden class removed)
-      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+      // Row should be visible (hidden attribute removed)
+      expect(hltbStatRow.hidden).toBe(false);
     });
 
     it('should hide hltb-stat-row when HLTB checkbox is unchecked', async () => {
       // Start visible
-      hltbStatRow.classList.remove('hidden');
+      hltbStatRow.hidden = false;
 
       // Mock storage to return showHltb: false so loadSettings sets checkbox to unchecked
       chrome.storage.sync.get.mockResolvedValueOnce({
@@ -793,7 +793,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Row should be hidden
-      expect(hltbStatRow.classList.contains('hidden')).toBe(true);
+      expect(hltbStatRow.hidden).toBe(true);
     });
 
     it('should toggle hltb-stat-row visibility when checkbox changes', async () => {
@@ -802,7 +802,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Initially checkbox is checked, row should be visible
-      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+      expect(hltbStatRow.hidden).toBe(false);
 
       // Uncheck the checkbox
       showHltbCheckbox.checked = false;
@@ -810,7 +810,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Row should now be hidden
-      expect(hltbStatRow.classList.contains('hidden')).toBe(true);
+      expect(hltbStatRow.hidden).toBe(true);
 
       // Check the checkbox again
       showHltbCheckbox.checked = true;
@@ -818,7 +818,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // Row should be visible again
-      expect(hltbStatRow.classList.contains('hidden')).toBe(false);
+      expect(hltbStatRow.hidden).toBe(false);
     });
   });
 });
