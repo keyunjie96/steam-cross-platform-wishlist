@@ -130,11 +130,7 @@ function getCurrentSettings(): UserSettings {
 function updateHltbRowVisibility(): void {
   const hltbCheckbox = checkboxes.get('showHltb');
   if (hltbStatRow && hltbCheckbox) {
-    if (hltbCheckbox.checked) {
-      hltbStatRow.classList.remove('hidden');
-    } else {
-      hltbStatRow.classList.add('hidden');
-    }
+    hltbStatRow.classList.toggle('hidden', !hltbCheckbox.checked);
   }
 }
 

@@ -61,26 +61,16 @@ function getPlatformStatus(available: boolean, foundInWikidata: boolean): Platfo
 
 /**
  * Validates a store URL by making a HEAD request.
- * Returns true if the URL is accessible (2xx or redirect status).
+ * Returns true if the URL is accessible (2xx) and not an error page.
  */
 async function validateStoreUrl(url: string): Promise<boolean> {
   try {
-    // Follow redirects to detect error pages (e.g., PlayStation redirects to /error when game unavailable in region)
-    const response = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow'
-    });
-
-    // Check if redirected to an error page (PlayStation pattern: /error?conceptId=...)
-    const finalUrl = response.url;
-    const isErrorPage = finalUrl.includes('/error?') || finalUrl.includes('/error/');
-
-    // Valid if 2xx response AND not an error page
-    const valid = response.ok && !isErrorPage;
-    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation: ${url} -> finalUrl=${finalUrl}, status=${response.status}, isError=${isErrorPage} (valid: ${valid})`);
-    return valid;
+    const response = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    const isErrorPage = response.url.includes('/error?') || response.url.includes('/error/');
+    const isValid = response.ok && !isErrorPage;
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation: ${url} -> ${response.url}, status=${response.status}, valid=${isValid}`);
+    return isValid;
   } catch (error) {
-    // Network error - URL doesn't exist or is unreachable
     if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation failed for ${url}:`, error);
     return false;
   }
