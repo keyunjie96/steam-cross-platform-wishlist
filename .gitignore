@@ -39,3 +39,9 @@ coverage/
 
 # Debug/test scripts
 test-*.mjs
+
+# Marketing assets (Chrome Web Store promo materials)
+assets/marketing/*
+# But track images needed for README
+!assets/marketing/promo-tile-920x680.png
+!assets/marketing/screenshot-1.png
