@@ -35,6 +35,10 @@
       --success: #5ba32b;
       --danger: #c03030;
 
+      /* Toggle grid dimensions */
+      --icon-size: 40px;
+      --col-gap: 12px;
+
       /* Gradients - Steam style */
       --gradient-button: linear-gradient(to right, #47bfff 0%, #1a9fff 100%);
       --gradient-button-hover: linear-gradient(to right, #5bc7ff 0%, #47bfff 100%);
@@ -166,10 +170,11 @@
     }
 
     .toggle-item {
-      display: flex;
+      display: grid;
+      grid-template-columns: var(--icon-size) 1fr auto;
       align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
+      column-gap: var(--col-gap);
+      padding: 12px 14px;
       border-radius: 4px;
       cursor: pointer;
       transition: background 0.15s;
@@ -185,22 +190,27 @@
 
     /* Platform icon */
     .toggle-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      width: var(--icon-size);
+      height: var(--icon-size);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
       background: var(--bg-input);
       transition: all 0.2s;
     }
 
     .toggle-icon svg {
-      width: 18px;
-      height: 18px;
+      width: 22px;
+      height: 22px;
       fill: currentColor;
-      opacity: 0.7;
+      display: block;
+      opacity: 0.8;
+    }
+
+    /* Steam Deck icon needs larger size to compensate for tall viewBox */
+    .steamdeck-icon svg {
+      width: 26px;
+      height: 26px;
     }
 
     .toggle-item[data-platform="nintendo"] .toggle-icon { color: var(--nintendo); }
@@ -219,7 +229,6 @@
     }
 
     .toggle-content {
-      flex: 1;
       min-width: 0;
     }
 
@@ -240,7 +249,6 @@
       position: relative;
       width: 40px;
       height: 20px;
-      flex-shrink: 0;
     }
 
     .toggle-switch input {
@@ -291,12 +299,17 @@
     .toggle-item[data-platform="steamdeck"] .toggle-switch input:checked + .slider { background: var(--steamdeck); }
     .toggle-item[data-platform="hltb"] .toggle-switch input:checked + .slider { background: var(--hltb); }
 
-    /* Sub-option (HLTB stat selector) - matches toggle-item layout */
+    /* Sub-option (HLTB stat selector) - aligned to content column */
     .sub-option {
       display: none;
-      padding: 10px 12px;
-      padding-left: 56px; /* Align with toggle-content (32px icon + 12px gap + 12px padding) */
-      border-radius: 4px;
+      /* Align with toggle-content: icon-size + col-gap + row padding */
+      margin-left: calc(var(--icon-size) + var(--col-gap) + 14px);
+      margin-right: 14px;
+      margin-top: 4px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       align-items: center;
       gap: 12px;
     }
@@ -309,10 +322,12 @@
       font-size: 13px;
       color: var(--text-secondary);
       white-space: nowrap;
+      min-width: 90px;
+      line-height: 1;
     }
 
     .sub-option select {
-      padding: 6px 10px;
+      padding: 8px 12px;
       background: var(--bg-input);
       border: 1px solid var(--border-color);
       border-radius: 4px;
@@ -321,7 +336,9 @@
       font-size: 13px;
       cursor: pointer;
       transition: border-color 0.15s;
-      min-width: 140px;
+      min-width: 160px;
+      height: 36px;
+      line-height: 1;
     }
 
     .sub-option select:hover {
@@ -543,14 +560,16 @@
       }
 
       .sub-option {
-        padding-left: 12px;
+        margin-left: 14px;
+        margin-right: 14px;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 8px;
       }
 
       .sub-option select {
         width: 100%;
+        min-width: unset;
       }
     }
   </style>
