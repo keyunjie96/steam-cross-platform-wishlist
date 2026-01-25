@@ -1,158 +1,125 @@
 # Steam Cross-Platform Wishlist
 
-> See which Steam wishlist games are available on Nintendo Switch, PlayStation, Xbox, and Steam Deck — plus completion times from How Long To Beat.
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](https://github.com/user/steam-cross-platform-wishlist/releases)
+[![Chrome MV3](https://img.shields.io/badge/manifest-v3-green.svg)]()
 
-![Promotional tile showing extension features](assets/marketing/promo-tile-920x680.png)
+Shows which Steam wishlist games are also on Switch, PlayStation, Xbox, or Steam Deck. Plus HowLongToBeat times.
 
-<!-- TODO: Add Chrome Web Store badge once published -->
-<!-- [![Available on Chrome Web Store](https://img.shields.io/chrome-web-store/v/EXTENSION_ID?label=Chrome%20Web%20Store)](https://chrome.google.com/webstore/detail/EXTENSION_ID) -->
+![Screenshot](assets/marketing/promo-tile-920x680.png)
 
-## The Problem
+## Why?
 
-You're browsing your Steam wishlist and wondering:
-- "Is this on Switch? I'd rather play it portable..."
-- "How long will this game take to finish?"
-- "Does this work on my Steam Deck?"
+Steam's wishlist doesn't show platform availability. Checking manually means clicking through 4 storefronts per game. This extension does that lookup automatically using Wikidata (free, crowd-sourced) and shows icons inline.
 
-**This extension answers those questions instantly.**
+**Not Augmented Steam** — this focuses purely on cross-platform availability. No price history, no tracking, no telemetry. ~50KB, runs entirely client-side.
+
+Built because I got tired of checking 4 storefronts manually. Open source because cross-platform info shouldn't require a subscription.
+
+**Philosophy:** One tool, one job. No feature creep, no cloud sync, no accounts. Your wishlist data stays in your browser.
+
+## Install
+
+```bash
+npm i && npm run build
+```
+
+Then `chrome://extensions` → Developer mode → Load unpacked → select this folder.
+
+No backend. Everything runs client-side with a 7-day cache.
+
+**Requirements:** Chrome 88+ (MV3). Firefox/Edge not supported yet.
 
 ## Features
 
-### Platform Availability Icons
+- **Cross-platform icons** — Nintendo Switch, PlayStation, Xbox, Steam Deck status at a glance
+- **Completion times** — HowLongToBeat data inline (when their API cooperates)
+- **Direct store links** — Click any icon to jump to that platform's store page
+- **No backend** — Runs entirely client-side with 7-day cache
+- **No telemetry** — Wikidata queries only, nothing phoned home
 
-Colored icons appear next to each game showing availability:
-- **Nintendo Switch** — Opens Nintendo eShop
-- **PlayStation** — Opens PlayStation Store
-- **Xbox** — Opens Xbox Store / Game Pass
+### vs. Augmented Steam
 
-Click any icon to go directly to that platform's store page.
+| | This extension | Augmented Steam |
+|--|----------------|-----------------|
+| Platform availability | ✓ | ✗ |
+| HowLongToBeat times | ✓ | ✓ |
+| Price history | ✗ | ✓ |
+| Size | ~50KB | ~5MB |
+| Telemetry | None | None |
 
-### Steam Deck Compatibility
+Different tools for different needs. This one does one thing.
 
-See Valve's official Steam Deck Verified status:
-- **Bright icon** — Verified (works great)
-- **Dimmed icon** — Playable (may need tweaks)
+## How it works
 
-### How Long To Beat Integration
+| Source | What | Catch |
+|--------|------|-------|
+| Wikidata SPARQL | Platform availability | ~50% coverage (volunteer-maintained) |
+| HLTB API | Completion times | Undocumented, breaks monthly |
+| Steam SSR | Deck verified status | Requires page script injection¹ |
 
-Completion time estimates from HowLongToBeat.com:
-- See main story, main + extras, or completionist times
-- Hover for full breakdown
-- Click to view on HLTB
+¹ MV3 content scripts can't access page JS context, so we inject `steamDeckPageScript.ts` to read `g_rgAppData`.
 
-### Customizable
+When HLTB breaks, times disappear but platform icons still work.
 
-![Options page](assets/marketing/options-page-full.png)
+**Why Wikidata?** Free, no API key, anyone can fix bad data. The ~50% coverage gap is a data problem, not a code problem.
 
-Toggle each feature on/off:
-- Enable/disable individual platforms
-- Choose which HLTB stat to display
-- Manage local cache
+## Architecture
 
-## Installation
-
-### Chrome Web Store (Recommended)
-
-*Coming soon — extension is pending review*
-
-### Manual Installation (Developers)
-
-```bash
-git clone https://github.com/YOUR_USERNAME/cross-platform-steam-wishlist
-cd cross-platform-steam-wishlist
-npm install && npm run build
+```
+┌─────────────┐  message   ┌─────────────┐
+│   content   │ ────────►  │  background │
+│   script    │ ◄──────── │   worker    │
+└──────┬──────┘  response  └──────┬──────┘
+       │                          │
+       ▼                          ▼
+  DOM injection            ┌──────┴──────┐
+  + page script            │   resolver  │
+  (g_rgAppData)            └──────┬──────┘
+                                  │
+                    ┌─────────────┼─────────────┐
+                    ▼             ▼             ▼
+                 cache       wikidata        hltb
 ```
 
-1. Open `chrome://extensions/`
-2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select the project folder
+See [CLAUDE.md](CLAUDE.md) for full architecture details and dev workflow.
 
-## How It Works
+## Limitations
 
-1. Extracts game info from your Steam wishlist page
-2. Queries [Wikidata](https://www.wikidata.org) for platform availability (community-maintained open data)
-3. Uses Steam's native data for Steam Deck verification status
-4. Queries [HowLongToBeat](https://howlongtobeat.com) for completion time estimates
-5. Caches results locally for 7 days (fast on repeat visits)
-6. Displays icons and badges next to each game
+- **Wikidata**: ~50% of Steam games have platform data. You can [add missing games](https://www.wikidata.org/wiki/Wikidata:WikiProject_Video_games) yourself.
+- **HLTB**: Fuzzy name matching fails on ~15% of titles (usually indies with weird names). No official API exists.
+- **Rate limits**: 500ms delay between Wikidata queries to avoid getting throttled.
 
-## Privacy
+## Troubleshooting
 
-**This extension respects your privacy:**
-
-| What we DON'T do | What we DO |
-|------------------|------------|
-| No accounts required | Cache data locally |
-| No analytics/tracking | Query Wikidata for platforms |
-| No telemetry | Query HLTB for game lengths |
-| No wishlist data transmitted | Validate store URLs work |
-
-**Host permissions explained:**
-
-| Domain | Purpose |
-|--------|---------|
-| `store.steampowered.com` | Read wishlist, inject icons |
-| `query.wikidata.org` | Platform availability data |
-| `howlongtobeat.com` | Completion time estimates |
-| `store.playstation.com` | Validate PS store links |
-| `www.nintendo.com` | Validate Nintendo links |
-| `www.xbox.com` | Validate Xbox links |
-
-All cached data stays in `chrome.storage.local` — never sent anywhere else.
-
-## FAQ
-
-**Q: Why doesn't [game] show a Nintendo icon?**
-Platform data comes from Wikidata, a community-edited database. Some games may not have complete platform information yet. You can [contribute to Wikidata](https://www.wikidata.org) to add missing data.
-
-**Q: The HLTB time seems wrong**
-HLTB matches by game name. Some games with common names may match incorrectly. Click the badge to verify on HLTB.
-
-**Q: Icons disappeared after a Steam update**
-Steam occasionally changes their page structure. The extension handles most changes automatically. If issues persist, try refreshing the page or clearing the extension cache in settings.
+- **Icons not showing?** Check DevTools console for `[XCPW` messages
+- **Times missing?** HLTB API probably changed again. Check network tab on howlongtobeat.com
+- **Wrong platform data?** Wikidata issue — anyone can fix it at [wikidata.org](https://www.wikidata.org/)
 
 ## Development
 
 ```bash
-npm install          # Install dependencies
-npm run build        # Compile TypeScript to dist/
-npm run test:unit    # Run unit tests
-npm run typecheck    # Type check without emitting
+npm run build          # TypeScript → dist/
+npm run test:unit      # Jest + coverage
+npm run test:integration  # Full E2E (slow)
 ```
-
-### Project Structure
-
-```
-src/
-├── content.ts       # DOM manipulation, icon injection
-├── background.ts    # Service worker, message routing
-├── resolver.ts      # Orchestrates cache/API lookups
-├── wikidataClient.ts    # Wikidata SPARQL queries
-├── hltbClient.ts    # How Long To Beat API
-├── steamDeckClient.ts   # Steam Deck SSR data
-├── cache.ts         # chrome.storage wrapper
-├── options.html/ts  # Settings page
-├── popup.html/ts    # Quick settings popup
-└── types.ts         # Type definitions
-```
-
-### Regenerating Marketing Assets
-
-```bash
-./scripts/regen-marketing.sh
-```
-
-See [assets/marketing/RUNBOOK.md](assets/marketing/RUNBOOK.md) for details.
 
 ## Contributing
 
-Issues and pull requests welcome. Please read the existing code style before contributing.
+PRs welcome. A few ways to help:
+
+1. **Add missing games to Wikidata** — most coverage gaps are data gaps
+2. **Fix HLTB when it breaks** — reverse-engineer the new API format from network requests
+3. **Add new platforms** — update `icons.ts` and `resolver.ts`
+
+See [CLAUDE.md](CLAUDE.md) for architecture, test coverage requirements (80% minimum), and dev workflow.
+
+## Acknowledgments
+
+- [Wikidata community](https://www.wikidata.org/wiki/Wikidata:WikiProject_Video_games) for maintaining game platform data
+- [HowLongToBeat](https://howlongtobeat.com/) for completion times (undocumented API, but it works)
+- Valve for SSR data we read via page script injection
 
 ## License
 
-[Apache 2.0](LICENSE)
-
----
-
-**Not affiliated with Valve, Nintendo, Sony, Microsoft, or HowLongToBeat.**
+Apache 2.0
