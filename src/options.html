@@ -325,11 +325,14 @@
 
     /* Sub-option (HLTB stat selector) - subordinate to parent toggle */
     .sub-option {
-      /* Align with toggle-content column */
-      margin-left: calc(var(--icon-size) + var(--col-gap) + 16px);
-      margin-right: 16px;
+      /* Align inner content with toggle text column:
+         margin-left positions container, but we subtract padding-x
+         so the label/select start exactly under toggle-label */
+      --sub-pad-x: 14px;
+      margin-left: calc(var(--icon-size) + var(--col-gap) + 16px - var(--sub-pad-x));
+      margin-right: calc(16px - var(--sub-pad-x));
       margin-top: 8px;
-      padding: 12px 14px;
+      padding: 12px var(--sub-pad-x);
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.06);
@@ -347,7 +350,7 @@
       color: var(--text-secondary);
       white-space: nowrap;
       min-width: 90px;
-      line-height: 1;
+      line-height: 1.2;
     }
 
     .sub-option select {
@@ -358,6 +361,7 @@
       color: var(--text-primary);
       font-family: inherit;
       font-size: 13px;
+      line-height: normal;
       cursor: pointer;
       transition: border-color 0.15s;
       min-width: 160px;
