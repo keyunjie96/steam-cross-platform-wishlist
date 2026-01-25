@@ -34,8 +34,8 @@
       --hltb: #4aa3ff;
 
       /* Steam Deck special colors */
-      --sd-tile: #3b4452;
-      --sd-arc: #0f172a;
+      --sd-tile-base: #343a43;
+      --sd-arc: #ffffff;
 
       --success: #5ba32b;
       --danger: #c03030;
@@ -258,20 +258,23 @@
       opacity: 1;
     }
 
-    /* Steam Deck icon tile: always premium grey */
+    /* Steam Deck icon tile: dark premium grey with subtle gradient */
     .toggle-item[data-platform="steamdeck"] .toggle-icon {
-      background: var(--sd-tile);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.07), rgba(0,0,0,.22)),
+        var(--sd-tile-base);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
-    /* Steam Deck SVG should NOT inherit fill: currentColor */
+    /* Don't let generic rules paint the whole SVG white */
     .toggle-item[data-platform="steamdeck"] .toggle-icon svg {
       fill: none;
       opacity: 1;
     }
 
-    /* Make the arc (2nd path) dark */
-    .toggle-item[data-platform="steamdeck"] .toggle-icon svg path:last-of-type {
+    /* SVG has 2 paths: 1) gradient circle 2) arc - make arc white */
+    .toggle-item[data-platform="steamdeck"] .toggle-icon svg path:nth-of-type(2) {
       fill: var(--sd-arc);
     }
 
