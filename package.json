@@ -2,7 +2,14 @@
   "name": "steam-cross-platform-wishlist",
   "version": "0.6.2",
   "description": "Chrome extension that adds platform availability icons to Steam wishlist",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/keyunjie96/steam-cross-platform-wishlist"
+  },
+  "homepage": "https://github.com/keyunjie96/steam-cross-platform-wishlist",
+  "bugs": {
+    "url": "https://github.com/keyunjie96/steam-cross-platform-wishlist/issues"
+  },
   "scripts": {
     "build": "node scripts/build.js",
     "clean": "rm -rf dist",

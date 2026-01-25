@@ -108,4 +108,4 @@ For privacy concerns or questions, please open an issue on our GitHub repository
 ---
 
 **Last updated:** January 2026
-**Extension version:** 0.6.1
+**Extension version:** 0.6.2
