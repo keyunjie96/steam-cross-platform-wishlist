@@ -4,7 +4,7 @@
 
 **Steam Cross-Platform Wishlist** is a Chrome extension (Manifest V3) that displays platform availability icons (Nintendo Switch, PlayStation, Xbox, Steam Deck) on Steam wishlist pages using Wikidata and Steam's SSR data.
 
-**Version:** 0.6.0
+**Version:** 0.6.1
 **Status:** Production-ready
 **Tech Stack:** TypeScript, Chrome Extensions API (MV3), Jest
 
@@ -48,6 +48,8 @@
 │   ├── resolver.ts         # Resolution orchestrator
 │   ├── wikidataClient.ts   # Wikidata SPARQL client
 │   ├── hltbClient.ts       # HLTB completion time client
+│   ├── hltbContent.ts      # HLTB content script (howlongtobeat.com)
+│   ├── hltbPageScript.ts   # HLTB page script (MAIN world)
 │   ├── steamDeckClient.ts  # Steam Deck data from page SSR
 │   ├── steamDeckPageScript.ts # Injected script for SSR access
 │   ├── icons.ts            # Icon definitions
@@ -71,6 +73,8 @@
 | `src/cache.ts` | Chrome storage operations | `getFromCache()`, `saveToCache()`, `getOrCreatePlatformData()` |
 | `src/wikidataClient.ts` | Wikidata SPARQL queries | `queryBySteamAppId()`, `executeSparqlQuery()` |
 | `src/hltbClient.ts` | HLTB completion time queries | `queryByGameName()`, `batchQueryByGameNames()` |
+| `src/hltbContent.ts` | HLTB content script bridge | `injectPageScript()`, message relay |
+| `src/hltbPageScript.ts` | HLTB page script (MAIN world) | `searchHltb()`, `calculateSimilarity()` |
 | `src/steamDeckClient.ts` | Steam Deck data extraction | `waitForDeckData()`, `getDeckStatus()` |
 | `src/steamDeckPageScript.ts` | Page script for SSR access | `extractDeckData()` (runs in MAIN world) |
 | `src/icons.ts` | SVG icons and platform info | `PLATFORM_ICONS`, `PLATFORM_INFO`, `STATUS_INFO` |
@@ -198,7 +202,7 @@ Eight games have manual overrides in `cache.ts` for development testing.
 
 ## Code Conventions
 
-- **Logging**: Use `[XCPW ...]` prefix for all console logs
+- **Logging**: Use `[SCPW ...]` prefix for all console logs
 - **Types**: TypeScript with strict mode enabled
 - **Error Handling**: Graceful fallbacks, never crash the page
 - **Privacy**: Wikidata queries for platform data, cache in local storage, no telemetry
@@ -221,6 +225,8 @@ const WIKIDATA_DEBUG = false;     // src/wikidataClient.ts
 const HLTB_DEBUG = false;         // src/hltbClient.ts
 const CACHE_DEBUG = false;        // src/cache.ts (enables manual test overrides)
 const STEAM_DECK_DEBUG = false;   // src/steamDeckClient.ts
+const DEBUG = false;              // src/hltbContent.ts
+const DEBUG = false;              // src/hltbPageScript.ts
 ```
 
 Set to `true` for verbose logging during development.
@@ -306,7 +312,7 @@ For full end-to-end testing, use Chrome DevTools:
 1. Load extension unpacked at `chrome://extensions/`
 2. Navigate to Steam wishlist
 3. Open DevTools → Console
-4. Filter by `[XCPW` to see extension logs
+4. Filter by `[SCPW` to see extension logs
 5. Check Network tab for API requests from service worker
 
 ## Roadmap Maintenance

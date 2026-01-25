@@ -1,7 +1,7 @@
 # Steam Cross-Platform Wishlist
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](https://github.com/user/steam-cross-platform-wishlist/releases)
+[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](https://github.com/user/steam-cross-platform-wishlist/releases)
 [![Chrome MV3](https://img.shields.io/badge/manifest-v3-green.svg)]()
 
 Shows which Steam wishlist games are also on Switch, PlayStation, Xbox, or Steam Deck. Plus HowLongToBeat times.
@@ -80,7 +80,7 @@ See [CLAUDE.md](CLAUDE.md) for full architecture details and dev workflow.
 
 ## Troubleshooting
 
-- **Icons not showing?** Check DevTools console for `[XCPW` messages
+- **Icons not showing?** Check DevTools console for `[SCPW` messages
 - **Times missing?** HLTB API probably changed again. Check network tab on howlongtobeat.com
 - **Wrong platform data?** Wikidata issue — anyone can fix it at [wikidata.org](https://www.wikidata.org/)
 

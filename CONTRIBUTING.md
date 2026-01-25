@@ -94,7 +94,7 @@ Note: We focus on platform availability and game metadata. Features covered by e
 
 Use the logging prefix convention:
 ```typescript
-const LOG_PREFIX = '[XCPW ModuleName]';
+const LOG_PREFIX = '[SCPW ModuleName]';
 console.log(`${LOG_PREFIX} message`);
 ```
 

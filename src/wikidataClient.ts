@@ -236,7 +236,7 @@ async function executeSparqlQuery(query: string, retryCount = 0): Promise<Sparql
     const response = await fetch(url.toString(), {
       headers: {
         'Accept': 'application/sparql-results+json',
-        'User-Agent': 'SteamCrossPlatformWishlist/0.6.0 (Chrome Extension)'
+        'User-Agent': 'SteamCrossPlatformWishlist/0.6.1 (Chrome Extension)'
       }
     });
 
