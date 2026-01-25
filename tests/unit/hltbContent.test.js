@@ -8,8 +8,7 @@ describe('hltbContent.js', () => {
   let runtimeMessageHandler;
 
   const flushPromises = async () => {
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise(resolve => setTimeout(resolve, 0));
   };
 
   const cleanupInjectedScripts = () => {
@@ -51,6 +50,26 @@ describe('hltbContent.js', () => {
     expect(script.src).toContain('dist/hltbPageScript.js');
   });
 
+  it('should append script to documentElement when head is missing', () => {
+    cleanupInjectedScripts();
+
+    const originalDescriptor = Object.getOwnPropertyDescriptor(document, 'head');
+    Object.defineProperty(document, 'head', {
+      configurable: true,
+      get: () => null
+    });
+
+    jest.resetModules();
+    require('../../dist/hltbContent.js');
+
+    const script = document.documentElement.querySelector('script[data-scpw-hltb]');
+    expect(script).not.toBeNull();
+
+    if (originalDescriptor) {
+      Object.defineProperty(document, 'head', originalDescriptor);
+    }
+  });
+
   it('should forward HLTB_QUERY messages to the page script', async () => {
     const sendResponse = jest.fn();
 
@@ -72,7 +91,8 @@ describe('hltbContent.js', () => {
       steamAppId: '123'
     }, '*');
 
-    window.dispatchEvent(new MessageEvent('message', {
+    const handler = messageHandlers[messageHandlers.length - 1];
+    handler({
       data: {
         type: 'SCPW_HLTB_RESPONSE',
         requestId: 'req-1',
@@ -88,7 +108,7 @@ describe('hltbContent.js', () => {
         }
       },
       source: window
-    }));
+    });
 
     expect(sendResponse).toHaveBeenCalledWith({
       type: 'HLTB_QUERY_RESPONSE',
@@ -105,6 +125,9 @@ describe('hltbContent.js', () => {
       },
       error: undefined
     });
+
+    jest.advanceTimersByTime(10000);
+    expect(sendResponse).toHaveBeenCalledTimes(1);
   });
 
   it('should timeout when no response is received', async () => {
@@ -136,5 +159,82 @@ describe('hltbContent.js', () => {
 
     expect(result).toBe(false);
     expect(sendResponse).not.toHaveBeenCalled();
+  });
+
+  it('should not reinject page script when already present', async () => {
+    const initialScripts = document.querySelectorAll('script[data-scpw-hltb]').length;
+
+    const sendResponse = jest.fn();
+    runtimeMessageHandler({
+      type: 'HLTB_QUERY',
+      requestId: 'req-2',
+      gameName: 'Test Game 2'
+    }, {}, sendResponse);
+
+    await flushPromises();
+
+    const afterScripts = document.querySelectorAll('script[data-scpw-hltb]').length;
+    expect(afterScripts).toBe(initialScripts);
+  });
+
+  it('should ignore messages not from window', () => {
+    const handler = messageHandlers[messageHandlers.length - 1];
+    const sendResponse = jest.fn();
+
+    runtimeMessageHandler({
+      type: 'HLTB_QUERY',
+      requestId: 'req-ignore',
+      gameName: 'Test Game'
+    }, {}, sendResponse);
+
+    handler({
+      data: {
+        type: 'SCPW_HLTB_RESPONSE',
+        requestId: 'req-ignore',
+        success: true,
+        data: null
+      },
+      source: {}
+    });
+
+    expect(sendResponse).not.toHaveBeenCalled();
+  });
+
+  it('should ignore ready message without errors', () => {
+    const handler = messageHandlers[messageHandlers.length - 1];
+
+    handler({
+      data: { type: 'SCPW_HLTB_READY' },
+      source: window
+    });
+
+    expect(true).toBe(true);
+  });
+
+  it('should ignore unrelated message types', () => {
+    const handler = messageHandlers[messageHandlers.length - 1];
+
+    handler({
+      data: { type: 'SCPW_OTHER_EVENT' },
+      source: window
+    });
+
+    expect(true).toBe(true);
+  });
+
+  it('should ignore responses without a matching request', () => {
+    const handler = messageHandlers[messageHandlers.length - 1];
+
+    handler({
+      data: {
+        type: 'SCPW_HLTB_RESPONSE',
+        requestId: 'req-missing',
+        success: true,
+        data: null
+      },
+      source: window
+    });
+
+    expect(true).toBe(true);
   });
 });

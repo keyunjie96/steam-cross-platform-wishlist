@@ -27,6 +27,7 @@ const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
 
 // Select elements (not checkboxes)
 let hltbDisplayStatSelect: HTMLSelectElement | null = null;
+let hltbRow: HTMLElement | null = null;
 
 /**
  * Formats a duration in milliseconds to a human-readable string
@@ -131,7 +132,11 @@ function getCurrentSettings(): UserSettings {
 function updateHltbSelectVisibility(): void {
   const hltbCheckbox = checkboxes.get('showHltb');
   if (hltbDisplayStatSelect && hltbCheckbox) {
-    hltbDisplayStatSelect.hidden = !hltbCheckbox.checked;
+    const shouldShow = hltbCheckbox.checked;
+    hltbDisplayStatSelect.hidden = !shouldShow;
+    if (hltbRow) {
+      hltbRow.classList.toggle('inline-select-hidden', !shouldShow);
+    }
   }
 }
 
@@ -166,10 +171,10 @@ async function handlePlatformToggle(): Promise<void> {
 function setButtonLoading(button: HTMLButtonElement, loading: boolean): void {
   button.disabled = loading;
   if (loading) {
-    button.dataset.originalText = button.textContent || '';
+    button.dataset.originalHtml = button.innerHTML;
     button.innerHTML = '<span class="loading"></span>Loading...';
-  } else if (button.dataset.originalText) {
-    button.textContent = button.dataset.originalText;
+  } else if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
   }
 }
 
@@ -286,6 +291,7 @@ function initializePage(): void {
 
   // HLTB display stat select (visibility controlled directly on the select)
   hltbDisplayStatSelect = document.getElementById('hltb-display-stat') as HTMLSelectElement | null;
+  hltbRow = document.querySelector('.toggle-item.has-inline-option[data-platform="hltb"]') as HTMLElement | null;
   if (hltbDisplayStatSelect) {
     hltbDisplayStatSelect.addEventListener('change', handlePlatformToggle);
   }

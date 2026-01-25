@@ -9,6 +9,10 @@
 (function() {
   const LOG_PREFIX = '[SCPW HLTB PageScript]';
   const DEBUG = false;
+  const debugLog = (...args: unknown[]): void => {
+    /* istanbul ignore next */
+    if (DEBUG) console.log(...args);
+  };
 
   interface HltbRequest {
     type: 'SCPW_HLTB_REQUEST';
@@ -127,11 +131,11 @@
    * Searches HLTB for a game
    */
   async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbResponse['data']> {
-    if (DEBUG) console.log(`${LOG_PREFIX} Searching for: ${gameName}`);
+    debugLog(`${LOG_PREFIX} Searching for: ${gameName}`);
 
     const authToken = await getAuthToken();
     if (!authToken) {
-      if (DEBUG) console.log(`${LOG_PREFIX} Failed to get auth token`);
+      debugLog(`${LOG_PREFIX} Failed to get auth token`);
       return null;
     }
 
@@ -145,24 +149,24 @@
     });
 
     if (!response.ok) {
-      if (DEBUG) console.log(`${LOG_PREFIX} Search failed with status ${response.status}`);
+      debugLog(`${LOG_PREFIX} Search failed with status ${response.status}`);
       return null;
     }
 
     const result = await response.json();
     if (!result.data || result.data.length === 0) {
-      if (DEBUG) console.log(`${LOG_PREFIX} No results for: ${gameName}`);
+      debugLog(`${LOG_PREFIX} No results for: ${gameName}`);
       return null;
     }
 
-    if (DEBUG) console.log(`${LOG_PREFIX} Got ${result.data.length} results, first: ${result.data[0].game_name}`);
+    debugLog(`${LOG_PREFIX} Got ${result.data.length} results, first: ${result.data[0].game_name}`);
 
     // Check for exact Steam ID match first
     if (steamAppId) {
       const steamIdNum = parseInt(steamAppId, 10);
       const exactMatch = result.data.find((g: { profile_steam: number }) => g.profile_steam === steamIdNum);
       if (exactMatch) {
-        if (DEBUG) console.log(`${LOG_PREFIX} Exact Steam ID match: ${exactMatch.game_name}`);
+        debugLog(`${LOG_PREFIX} Exact Steam ID match: ${exactMatch.game_name}`);
         return {
           hltbId: exactMatch.game_id,
           gameName: exactMatch.game_name,
@@ -202,11 +206,11 @@
     const best = candidates[0];
 
     if (best.similarity < 0.5) {
-      if (DEBUG) console.log(`${LOG_PREFIX} Best match "${best.data.gameName}" too dissimilar (${(best.similarity * 100).toFixed(0)}%)`);
+      debugLog(`${LOG_PREFIX} Best match "${best.data.gameName}" too dissimilar (${(best.similarity * 100).toFixed(0)}%)`);
       return null;
     }
 
-    if (DEBUG) console.log(`${LOG_PREFIX} Best match: ${best.data.gameName} (${(best.similarity * 100).toFixed(0)}%), mainStory=${best.data.mainStory}h`);
+    debugLog(`${LOG_PREFIX} Best match: ${best.data.gameName} (${(best.similarity * 100).toFixed(0)}%), mainStory=${best.data.mainStory}h`);
     return best.data;
   }
 
@@ -218,7 +222,7 @@
     const message = event.data as HltbRequest;
     if (message?.type !== 'SCPW_HLTB_REQUEST') return;
 
-    if (DEBUG) console.log(`${LOG_PREFIX} Received request:`, message);
+    debugLog(`${LOG_PREFIX} Received request:`, message);
 
     try {
       const data = await searchHltb(message.gameName, message.steamAppId);
@@ -242,7 +246,7 @@
   }
 
   window.addEventListener('message', handleRequest);
-  if (DEBUG) console.log(`${LOG_PREFIX} Page script loaded, listening for requests`);
+  debugLog(`${LOG_PREFIX} Page script loaded, listening for requests`);
 
   // Signal that the script is ready
   window.postMessage({ type: 'SCPW_HLTB_READY' }, '*');

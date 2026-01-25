@@ -487,8 +487,8 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
     });
 
-    it('should save original text to dataset', async () => {
-      const originalText = clearCacheBtn.textContent;
+    it('should save original html to dataset', async () => {
+      const originalHtml = clearCacheBtn.innerHTML;
 
       let resolveMessage;
       chrome.runtime.sendMessage.mockReturnValueOnce(new Promise(resolve => {
@@ -497,14 +497,14 @@ describe('options.js', () => {
 
       clearCacheBtn.click();
 
-      expect(clearCacheBtn.dataset.originalText).toBe(originalText);
+      expect(clearCacheBtn.dataset.originalHtml).toBe(originalHtml);
 
       resolveMessage({ success: true });
       await jest.advanceTimersByTimeAsync(0);
     });
 
-    it('should restore original text when loading completes', async () => {
-      const originalText = clearCacheBtn.textContent;
+    it('should restore original html when loading completes', async () => {
+      const originalHtml = clearCacheBtn.innerHTML;
 
       // Mock both CLEAR_CACHE and the subsequent GET_CACHE_STATS call
       chrome.runtime.sendMessage
@@ -518,7 +518,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       // After completion, original text should be restored
-      expect(clearCacheBtn.textContent).toBe(originalText);
+      expect(clearCacheBtn.innerHTML).toBe(originalHtml);
       expect(clearCacheBtn.disabled).toBe(false);
     });
   });
@@ -748,9 +748,9 @@ describe('options.js', () => {
       expect(chrome.storage.sync.get).toHaveBeenCalled();
     });
 
-    it('should handle setButtonLoading without originalText', async () => {
-      // Delete the originalText dataset before it can be set
-      delete clearCacheBtn.dataset.originalText;
+    it('should handle setButtonLoading without originalHtml', async () => {
+      // Delete the originalHtml dataset before it can be set
+      delete clearCacheBtn.dataset.originalHtml;
       clearCacheBtn.textContent = 'Test';
 
       // Set loading
@@ -759,7 +759,7 @@ describe('options.js', () => {
 
       // Set not loading without originalText
       clearCacheBtn.disabled = false;
-      // The else-if branch: button.dataset.originalText is undefined
+      // The else-if branch: button.dataset.originalHtml is undefined
 
       expect(clearCacheBtn.disabled).toBe(false);
     });

@@ -187,7 +187,15 @@ function getCurrentSettings(): UserSettings {
  */
 async function saveSettings(): Promise<void> {
   try {
-    const settings = getCurrentSettings();
+    const stored = await chrome.storage.sync.get('scpwSettings');
+    const settings: UserSettings = { ...DEFAULT_USER_SETTINGS, ...stored.scpwSettings };
+    for (const key of USER_SETTING_KEYS) {
+      const checkbox = checkboxes.get(key);
+      const defaultValue = DEFAULT_USER_SETTINGS[key];
+      if (checkbox && typeof defaultValue === 'boolean') {
+        (settings as Record<string, unknown>)[key] = checkbox.checked;
+      }
+    }
     await chrome.storage.sync.set({ scpwSettings: settings });
     showStatus('Settings saved', 'success');
   } catch (error) {

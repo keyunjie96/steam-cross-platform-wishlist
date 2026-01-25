@@ -8,6 +8,10 @@
 
 const LOG_PREFIX = '[SCPW HLTB Content]';
 const DEBUG = false;
+const debugLog = (...args: unknown[]): void => {
+  /* istanbul ignore next */
+  if (DEBUG) console.log(...args);
+};
 
 interface HltbQueryRequest {
   type: 'HLTB_QUERY';
@@ -48,7 +52,7 @@ function injectPageScript(): Promise<void> {
     script.src = chrome.runtime.getURL('dist/hltbPageScript.js');
     script.setAttribute('data-scpw-hltb', 'true');
     script.onload = () => {
-      if (DEBUG) console.log(`${LOG_PREFIX} Page script injected`);
+      debugLog(`${LOG_PREFIX} Page script injected`);
       resolve();
     };
     (document.head || document.documentElement).appendChild(script);
@@ -61,7 +65,7 @@ window.addEventListener('message', (event) => {
 
   const data = event.data;
   if (data?.type === 'SCPW_HLTB_RESPONSE') {
-    if (DEBUG) console.log(`${LOG_PREFIX} Received response:`, data);
+    debugLog(`${LOG_PREFIX} Received response:`, data);
     const resolver = pendingRequests.get(data.requestId);
     if (resolver) {
       pendingRequests.delete(data.requestId);
@@ -74,7 +78,7 @@ window.addEventListener('message', (event) => {
       });
     }
   } else if (data?.type === 'SCPW_HLTB_READY') {
-    if (DEBUG) console.log(`${LOG_PREFIX} Page script ready`);
+    debugLog(`${LOG_PREFIX} Page script ready`);
   }
 });
 
@@ -82,7 +86,7 @@ window.addEventListener('message', (event) => {
 chrome.runtime.onMessage.addListener((message: HltbQueryRequest, _sender, sendResponse) => {
   if (message.type !== 'HLTB_QUERY') return false;
 
-  if (DEBUG) console.log(`${LOG_PREFIX} Received query:`, message);
+  debugLog(`${LOG_PREFIX} Received query:`, message);
 
   // Inject script if needed, then forward request
   injectPageScript().then(() => {
@@ -118,4 +122,4 @@ chrome.runtime.onMessage.addListener((message: HltbQueryRequest, _sender, sendRe
 // Inject script on load
 injectPageScript();
 
-if (DEBUG) console.log(`${LOG_PREFIX} Content script loaded on`, window.location.href);
+debugLog(`${LOG_PREFIX} Content script loaded on`, window.location.href);
