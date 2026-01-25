@@ -65,13 +65,16 @@ assets/icons/
 - `store.steampowered.com` - to inject icons on your wishlist page
 - `query.wikidata.org` - to fetch platform availability data
 - `howlongtobeat.com` - to fetch game completion time estimates
+- `store.playstation.com` - to validate PlayStation store links
+- `www.nintendo.com` - to validate Nintendo store links
+- `www.xbox.com` - to validate Xbox store links
 
 **Data handling:**
 - Makes external API requests to Wikidata's SPARQL endpoint for platform lookups
 - Makes external API requests to HowLongToBeat for completion time data
+- Validates store links to ensure they work in your region (falls back to US search if unavailable)
 - All cached data stays in chrome.storage.local (never sent anywhere)
 - No analytics, tracking, or telemetry
-- Store links are region-agnostic (auto-redirects to your local store)
 
 ## License
 
