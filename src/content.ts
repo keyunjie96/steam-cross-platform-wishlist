@@ -552,22 +552,15 @@ function parseSvg(svgString: string): SVGElement | null {
 // ============================================================================
 
 /**
- * Creates the platform icons container with a subtle loading indicator.
+ * Creates the platform icons container (empty, no loader).
+ * Loader is only added when we need to make a network call (cold start).
  * Icons are added dynamically in updateIconsWithData() once data is resolved.
- * This prevents visual noise from showing 4 pulsing icons that then disappear.
  */
 function createIconsContainer(appid: string, gameName: string): HTMLElement {
   const container = document.createElement('span');
   container.className = 'scpw-platforms';
   container.setAttribute('data-appid', appid);
   container.setAttribute('data-game-name', gameName);
-
-  // Single subtle loader instead of 4 platform icons
-  const loader = document.createElement('span');
-  loader.className = 'scpw-loader';
-  loader.setAttribute('aria-hidden', 'true');
-  container.appendChild(loader);
-
   return container;
 }
 
@@ -1400,8 +1393,32 @@ async function processItem(item: Element): Promise<void> {
   processingAppIds.delete(appId);
 
   // Check if we already have cached data for this game
-  // This happens when React re-renders and destroys/recreates DOM elements
-  const cachedEntry = cachedEntriesByAppId.get(appId);
+  // First check in-memory cache (fast), then persistent storage
+  let cachedEntry = cachedEntriesByAppId.get(appId);
+
+  // If not in memory, check chrome.storage.local before showing loader
+  if (!cachedEntry) {
+    const storageKey = `xcpw_cache_${appId}`;
+    const storageResult = await chrome.storage.local.get(storageKey);
+    const persistentEntry = storageResult[storageKey] as CacheEntry | undefined;
+
+    if (persistentEntry?.resolvedAt && persistentEntry?.ttlDays) {
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
+      const expiresAt = persistentEntry.resolvedAt + persistentEntry.ttlDays * MS_PER_DAY;
+      const isValid = Date.now() < expiresAt && persistentEntry.cacheVersion === 1;
+
+      if (isValid) {
+        cachedEntry = persistentEntry;
+        cachedEntriesByAppId.set(appId, persistentEntry);
+
+        if (persistentEntry.hltbData && !hltbDataByAppId.has(appId)) {
+          const hltbValue = persistentEntry.hltbData.hltbId === -1 ? null : persistentEntry.hltbData;
+          hltbDataByAppId.set(appId, hltbValue);
+        }
+      }
+    }
+  }
+
   if (cachedEntry) {
     if (DEBUG) console.log(`${LOG_PREFIX} Using cached data for appid ${appId}`);
     updateIconsWithData(iconsContainer, cachedEntry);
@@ -1409,7 +1426,6 @@ async function processItem(item: Element): Promise<void> {
     console.log(`${LOG_PREFIX} Rendered (cache-reuse): ${appId} - ${gameName} [icons: ${iconSummary}]`);
 
     // Queue HLTB request even for cache-reuse (HLTB data fetched separately)
-    // Use English name from cache for better HLTB matching
     if (userSettings.showHltb && !hltbDataByAppId.has(appId)) {
       const englishName = cachedEntry.gameName || gameName;
       queueForHltbResolution(appId, englishName, iconsContainer);
@@ -1417,8 +1433,13 @@ async function processItem(item: Element): Promise<void> {
     return;
   }
 
+  // No cached data - need network call (cold start), so add loader now
+  const loader = document.createElement('span');
+  loader.className = 'scpw-loader';
+  loader.setAttribute('aria-hidden', 'true');
+  iconsContainer.appendChild(loader);
+
   // Queue for batch resolution instead of individual request
-  // This dramatically reduces Wikidata API calls by batching multiple games together
   if (DEBUG) console.log(`${LOG_PREFIX} Queuing appid ${appId} for batch resolution`);
   queueForBatchResolution(appId, gameName, iconsContainer);
 }

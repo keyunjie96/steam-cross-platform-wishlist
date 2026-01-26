@@ -1045,6 +1045,11 @@ describe('content.js', () => {
       const { removeLoadingState, createIconsContainer } = globalThis.SCPW_ContentTestExports;
       const container = createIconsContainer('12345', 'Test Game');
 
+      // Manually add loader (simulating cold start)
+      const loader = document.createElement('span');
+      loader.className = 'scpw-loader';
+      container.appendChild(loader);
+
       // Verify loader exists
       expect(container.querySelector('.scpw-loader')).toBeTruthy();
 
@@ -1075,9 +1080,13 @@ describe('content.js', () => {
     it('should dynamically add available icons (UX-1 refactor)', () => {
       const { updateIconsWithData, createIconsContainer } = globalThis.SCPW_ContentTestExports;
       const container = createIconsContainer('12345', 'Test Game');
+      // Manually add loader (simulating cold start)
+      const loader = document.createElement('span');
+      loader.className = 'scpw-loader';
+      container.appendChild(loader);
       document.body.appendChild(container);
 
-      // Initially only has loader, no icons
+      // Initially has loader, no icons
       expect(container.querySelector('.scpw-loader')).toBeTruthy();
       expect(container.querySelectorAll('[data-platform]').length).toBe(0);
 
@@ -1561,7 +1570,7 @@ describe('content.js', () => {
   });
 
   describe('createIconsContainer (exported function)', () => {
-    it('should create container with loader instead of platform icons (UX-1 fix)', () => {
+    it('should create empty container without loader (loader added only on cold start)', () => {
       const { createIconsContainer } = globalThis.SCPW_ContentTestExports;
 
       const container = createIconsContainer('12345', 'Test Game');
@@ -1569,21 +1578,27 @@ describe('content.js', () => {
       expect(container.classList.contains('scpw-platforms')).toBe(true);
       expect(container.getAttribute('data-appid')).toBe('12345');
       expect(container.getAttribute('data-game-name')).toBe('Test Game');
-      // Should have loader instead of 4 platform icons
-      expect(container.querySelector('.scpw-loader')).toBeTruthy();
+      // Should NOT have loader (added only when network call needed)
+      expect(container.querySelector('.scpw-loader')).toBeNull();
       // Should NOT have platform icons initially
       expect(container.querySelectorAll('[data-platform]').length).toBe(0);
       // Should NOT have separator initially (added when icons are populated)
       expect(container.querySelector('.scpw-separator')).toBeNull();
     });
 
-    it('should have aria-hidden on loader for accessibility', () => {
+    it('should allow loader to be added manually for cold start', () => {
       const { createIconsContainer } = globalThis.SCPW_ContentTestExports;
 
       const container = createIconsContainer('12345', 'Test Game');
-      const loader = container.querySelector('.scpw-loader');
 
-      expect(loader.getAttribute('aria-hidden')).toBe('true');
+      // Manually add loader (simulating cold start behavior)
+      const loader = document.createElement('span');
+      loader.className = 'scpw-loader';
+      loader.setAttribute('aria-hidden', 'true');
+      container.appendChild(loader);
+
+      expect(container.querySelector('.scpw-loader')).toBeTruthy();
+      expect(container.querySelector('.scpw-loader').getAttribute('aria-hidden')).toBe('true');
     });
   });
 
@@ -1754,7 +1769,12 @@ describe('content.js', () => {
       const { createIconsContainer, updateIconsWithData } = globalThis.SCPW_ContentTestExports;
       const container = createIconsContainer('12345', 'Test Game');
 
-      // Verify loader exists initially
+      // Manually add loader (simulating cold start)
+      const loader = document.createElement('span');
+      loader.className = 'scpw-loader';
+      container.appendChild(loader);
+
+      // Verify loader exists
       expect(container.querySelector('.scpw-loader')).toBeTruthy();
 
       const data = {
@@ -2981,6 +3001,11 @@ describe('content.js', () => {
       // Create a container but don't add to DOM
       const container = createIconsContainer('12345', 'Test Game');
 
+      // Manually add loader (simulating cold start)
+      const loader = document.createElement('span');
+      loader.className = 'scpw-loader';
+      container.appendChild(loader);
+
       // Add entry to cache
       const cacheEntry = {
         appid: '12345',
@@ -2997,7 +3022,7 @@ describe('content.js', () => {
       // Should not throw
       refreshIconsFromCache('test');
 
-      // Container should still just have loader
+      // Container should still have loader (not in DOM, so not updated)
       expect(container.querySelector('.scpw-loader')).toBeTruthy();
     });
   });
@@ -3104,8 +3129,11 @@ describe('content.js', () => {
         setUserSettings
       } = globalThis.SCPW_ContentTestExports;
 
-      // Create a container with loader
+      // Create a container and add loader (simulating cold start)
       const container = createIconsContainer('12345', 'Test Game');
+      const loader = document.createElement('span');
+      loader.className = 'scpw-loader';
+      container.appendChild(loader);
       document.body.appendChild(container);
 
       // Verify loader exists
@@ -3616,6 +3644,10 @@ describe('content.js', () => {
       const { queueForBatchResolution, pendingItems, createIconsContainer } = globalThis.SCPW_ContentTestExports;
 
       const container = createIconsContainer('77777', 'No Data Game');
+      // Manually add loader (simulating cold start)
+      const loader = document.createElement('span');
+      loader.className = 'scpw-loader';
+      container.appendChild(loader);
       document.body.appendChild(container);
 
       // Verify loader exists
