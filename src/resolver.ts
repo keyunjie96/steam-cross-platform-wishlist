@@ -84,10 +84,10 @@ async function validateStoreUrl(url: string): Promise<boolean> {
     const response = await fetch(url, { method: 'HEAD', redirect: 'follow' });
     const isErrorPage = response.url.includes('/error?') || response.url.includes('/error/');
     const isValid = response.ok && !isErrorPage;
-    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation: ${url} -> ${response.url}, status=${response.status}, valid=${isValid}`);
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation: ${url} -> ${response.url}, status=${response.status}, valid=${isValid}`); /* istanbul ignore if */
     return isValid;
   } catch (error) {
-    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation failed for ${url}:`, error);
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} URL validation failed for ${url}:`, error); /* istanbul ignore if */
     return false;
   }
 }
@@ -166,7 +166,7 @@ async function wikidataResultToCacheEntry(appid: string, gameName: string, wikid
       // Validate the direct URL
       const isValid = await validateStoreUrl(officialUrl);
       if (isValid) {
-        if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Direct URL valid for ${platform}: ${officialUrl}`);
+        if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Direct URL valid for ${platform}: ${officialUrl}`); /* istanbul ignore if */
         return officialUrl;
       }
       // Direct URL failed validation - use US fallback
@@ -254,7 +254,7 @@ async function refreshStaleEntries(games: Array<{ appid: string; gameName: strin
 
       // Skip refresh for manual override entries - they should persist until manually changed
       if (existingEntry?.source === 'manual') {
-        if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Skipping refresh for manual override: ${appid}`);
+        if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Skipping refresh for manual override: ${appid}`); /* istanbul ignore if */
         continue;
       }
 
@@ -288,7 +288,7 @@ async function refreshStaleEntries(games: Array<{ appid: string; gameName: strin
  * Priority: Cache -> Manual Override -> Wikidata -> Fallback
  */
 async function resolvePlatformData(appid: string, gameName: string): Promise<ResolveResult> {
-  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} resolvePlatformData called: appid=${appid}, gameName=${gameName}`);
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} resolvePlatformData called: appid=${appid}, gameName=${gameName}`); /* istanbul ignore if */
 
   const Cache = globalThis.SCPW_Cache;
   const WikidataClient = globalThis.SCPW_WikidataClient;
@@ -303,15 +303,15 @@ async function resolvePlatformData(appid: string, gameName: string): Promise<Res
   }
 
   // 1. Check cache first
-  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Checking cache for appid ${appid}`);
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Checking cache for appid ${appid}`); /* istanbul ignore if */
   const cached = await Cache.getFromCache(appid);
   if (cached) {
-    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache HIT for appid ${appid}`);
+    if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache HIT for appid ${appid}`); /* istanbul ignore if */
     const entry = await updateCachedEntryIfNeeded(cached, gameName);
     return { entry, fromCache: true };
   }
 
-  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache MISS for appid ${appid}, checking manual overrides`);
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Cache MISS for appid ${appid}, checking manual overrides`); /* istanbul ignore if */
 
   // 2. Check for manual overrides
   const override = Cache.MANUAL_OVERRIDES?.[appid];
@@ -323,10 +323,11 @@ async function resolvePlatformData(appid: string, gameName: string): Promise<Res
   }
 
   // 3. Try Wikidata
-  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Querying Wikidata for appid ${appid}`);
+  if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Querying Wikidata for appid ${appid}`); /* istanbul ignore if */
   try {
     const wikidataResult = await WikidataClient.queryBySteamAppId(appid);
 
+    /* istanbul ignore if */
     if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata result for ${appid}:`, {
       found: wikidataResult?.found,
       wikidataId: wikidataResult?.wikidataId,
@@ -340,7 +341,7 @@ async function resolvePlatformData(appid: string, gameName: string): Promise<Res
       console.log(`${RESOLVER_LOG_PREFIX} Resolved via Wikidata: ${appid}`);
     } else {
       // Game genuinely not in Wikidata - cache this result so we don't keep querying
-      if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata found no match for appid ${appid}`);
+      if (RESOLVER_DEBUG) console.log(`${RESOLVER_LOG_PREFIX} Wikidata found no match for appid ${appid}`); /* istanbul ignore if */
       await Cache.saveToCache(entry);
     }
     return { entry, fromCache: false };

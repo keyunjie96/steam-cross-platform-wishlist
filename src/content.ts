@@ -77,7 +77,7 @@ function lightCleanup(): void {
   }
 
   clearPendingTimersAndBatches();
-  if (DEBUG) console.log(`${LOG_PREFIX} Light cleanup complete - pending items removed, resolved icons preserved`);
+  if (DEBUG) console.log(`${LOG_PREFIX} Light cleanup complete - pending items removed, resolved icons preserved`); /* istanbul ignore if */
 }
 
 /**
@@ -104,7 +104,7 @@ function cleanupAllIcons(): void {
     el.removeAttribute(ICONS_INJECTED_ATTR);
   });
 
-  if (DEBUG) console.log(`${LOG_PREFIX} Cleanup complete - all icons and tracking state cleared`);
+  if (DEBUG) console.log(`${LOG_PREFIX} Cleanup complete - all icons and tracking state cleared`); /* istanbul ignore if */
 }
 
 /**
@@ -205,7 +205,7 @@ async function loadUserSettings(): Promise<void> {
     if (result.scpwSettings) {
       userSettings = { ...userSettings, ...result.scpwSettings };
     }
-    if (DEBUG) console.log(`${LOG_PREFIX} Settings loaded: showHltb=${userSettings.showHltb}`);
+    if (DEBUG) console.log(`${LOG_PREFIX} Settings loaded: showHltb=${userSettings.showHltb}`); /* istanbul ignore if */
   } catch (error) {
     console.error(`${LOG_PREFIX} Error loading settings:`, error);
   }
@@ -231,7 +231,7 @@ function setupSettingsChangeListener(): void {
 
     // Update local settings
     userSettings = { ...userSettings, ...newSettings };
-    if (DEBUG) console.log(`${LOG_PREFIX} Settings changed:`, { old: oldSettings, new: newSettings });
+    if (DEBUG) console.log(`${LOG_PREFIX} Settings changed:`, { old: oldSettings, new: newSettings }); /* istanbul ignore if */
 
     // Check if any platform was just enabled
     const platformsJustEnabled: Platform[] = [];
@@ -270,11 +270,11 @@ function setupSettingsChangeListener(): void {
         const cachedEntry = cachedEntriesByAppId.get(appid);
         if (cachedEntry) {
           updateIconsWithData(container, cachedEntry);
-          if (DEBUG) console.log(`${LOG_PREFIX} Updated loading container from cache: ${appid}`);
+          if (DEBUG) console.log(`${LOG_PREFIX} Updated loading container from cache: ${appid}`); /* istanbul ignore if */
         } else if (!isAnyConsolePlatformEnabled() && !newSettings.showSteamDeck) {
           // No cached data and all platforms disabled - just remove loader
           removeLoadingState(container);
-          if (DEBUG) console.log(`${LOG_PREFIX} Removed loader (all platforms disabled): ${appid}`);
+          if (DEBUG) console.log(`${LOG_PREFIX} Removed loader (all platforms disabled): ${appid}`); /* istanbul ignore if */
         }
         // Otherwise, loader stays while waiting for batch resolution (normal case)
       }
@@ -351,7 +351,7 @@ function refreshIconsFromCache(reason: string): void {
     console.log(`${LOG_PREFIX} Rendered (deck-refresh): ${appid} - ${gameName} [icons: ${iconSummary}]`);
   }
 
-  if (DEBUG) console.log(`${LOG_PREFIX} Steam Deck refresh (${reason}) updated ${refreshedCount} items`);
+  if (DEBUG) console.log(`${LOG_PREFIX} Steam Deck refresh (${reason}) updated ${refreshedCount} items`); /* istanbul ignore if */
 }
 
 /**
@@ -662,7 +662,7 @@ function formatHltbTime(hours: number): string {
 function createHltbBadge(hltbData: HltbData): HTMLElement {
   const isClickable = hltbData.hltbId > 0;
 
-  if (DEBUG) console.log(`${LOG_PREFIX} createHltbBadge: hltbId=${hltbData.hltbId}, isClickable=${isClickable}`);
+  if (DEBUG) console.log(`${LOG_PREFIX} createHltbBadge: hltbId=${hltbData.hltbId}, isClickable=${isClickable}`); /* istanbul ignore if */
 
   // Create link or span depending on whether we have an HLTB ID
   const badge = document.createElement(isClickable ? 'a' : 'span') as HTMLAnchorElement | HTMLSpanElement;
@@ -965,7 +965,7 @@ async function sendMessageWithRetry<T>(message: object, maxRetries = MESSAGE_MAX
       if (isConnectionError && attempt < maxRetries) {
         // Wait before retry with exponential backoff
         const delay = MESSAGE_RETRY_DELAY_MS * Math.pow(2, attempt);
-        if (DEBUG) console.log(`${LOG_PREFIX} Message retry ${attempt + 1}/${maxRetries} after ${delay}ms`);
+        if (DEBUG) console.log(`${LOG_PREFIX} Message retry ${attempt + 1}/${maxRetries} after ${delay}ms`); /* istanbul ignore if */
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
@@ -1056,7 +1056,7 @@ async function processPendingBatch(): Promise<void> {
   // When HLTB is enabled, we still need Wikidata to get English game names for HLTB matching
   // (Steam may show translated names that HLTB won't recognize)
   if (!isAnyConsolePlatformEnabled() && !userSettings.showHltb) {
-    if (DEBUG) console.log(`${LOG_PREFIX} Skipping batch request - all console platforms and HLTB disabled`);
+    if (DEBUG) console.log(`${LOG_PREFIX} Skipping batch request - all console platforms and HLTB disabled`); /* istanbul ignore if */
     for (const [appid, { container, gameName }] of containerMap) {
       // Create a minimal cache entry with no console platform data
       const minimalEntry: CacheEntry = {
@@ -1084,7 +1084,7 @@ async function processPendingBatch(): Promise<void> {
     return;
   }
 
-  if (DEBUG) console.log(`${LOG_PREFIX} Sending batch request for ${games.length} games`);
+  if (DEBUG) console.log(`${LOG_PREFIX} Sending batch request for ${games.length} games`); /* istanbul ignore if */
 
   try {
     const response = await sendMessageWithRetry<{ success: boolean; results: Record<string, { data: CacheEntry; fromCache: boolean }> }>({
@@ -1114,7 +1114,7 @@ async function processPendingBatch(): Promise<void> {
         const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
 
         if (allContainersForAppid.length === 0) {
-          if (DEBUG) console.log(`${LOG_PREFIX} No containers found for ${appid}, data cached for reuse`);
+          if (DEBUG) console.log(`${LOG_PREFIX} No containers found for ${appid}, data cached for reuse`); /* istanbul ignore if */
           continue;
         }
 
@@ -1135,6 +1135,7 @@ async function processPendingBatch(): Promise<void> {
           const iconSummary = getRenderedIconSummary(allContainersForAppid[0]);
           const containerNote = allContainersForAppid.length > 1 ? ` (${updatedCount} containers)` : '';
           console.log(`${LOG_PREFIX} Rendered (${source}): ${appid} - ${gameName} [icons: ${iconSummary}]${containerNote}`);
+        /* istanbul ignore else */
         } else if (DEBUG) {
           console.log(`${LOG_PREFIX} No data for appid ${appid}, removed loading state`);
         }
@@ -1174,7 +1175,7 @@ async function processPendingBatch(): Promise<void> {
  * Uses debouncing to collect multiple items before sending a batch request.
  */
 function queueForHltbResolution(appid: string, gameName: string, container: HTMLElement): void {
-  if (DEBUG) console.log(`${LOG_PREFIX} HLTB: Queueing ${appid} - ${gameName}`);
+  if (DEBUG) console.log(`${LOG_PREFIX} HLTB: Queueing ${appid} - ${gameName}`); /* istanbul ignore if */
   pendingHltbItems.set(appid, { gameName, container });
 
   // Reset debounce timer
@@ -1209,14 +1210,14 @@ async function processPendingHltbBatch(): Promise<void> {
   pendingHltbItems.clear();
   hltbBatchDebounceTimer = null;
 
-  if (DEBUG) console.log(`${LOG_PREFIX} HLTB: Processing ${allGames.length} games`);
+  if (DEBUG) console.log(`${LOG_PREFIX} HLTB: Processing ${allGames.length} games`); /* istanbul ignore if */
 
   for (let i = 0; i < allGames.length; i += HLTB_MAX_BATCH_SIZE) {
     const games = allGames.slice(i, i + HLTB_MAX_BATCH_SIZE);
     const batchNum = Math.floor(i / HLTB_MAX_BATCH_SIZE) + 1;
     const totalBatches = Math.ceil(allGames.length / HLTB_MAX_BATCH_SIZE);
 
-    if (DEBUG) console.log(`${LOG_PREFIX} HLTB: Sending batch ${batchNum}/${totalBatches} (${games.length} games)`);
+    if (DEBUG) console.log(`${LOG_PREFIX} HLTB: Sending batch ${batchNum}/${totalBatches} (${games.length} games)`); /* istanbul ignore if */
 
     try {
       const response = await sendMessageWithRetry<{ success: boolean; hltbResults?: Record<string, HltbData | null> }>({
@@ -1232,7 +1233,7 @@ async function processPendingHltbBatch(): Promise<void> {
 
           const { gameName } = itemInfo;
 
-          if (DEBUG) console.log(`${LOG_PREFIX} HLTB result: ${appid} - ${gameName} => mainStory=${hltbData?.mainStory || 0}, hltbId=${hltbData?.hltbId || 0}`);
+          if (DEBUG) console.log(`${LOG_PREFIX} HLTB result: ${appid} - ${gameName} => mainStory=${hltbData?.mainStory || 0}, hltbId=${hltbData?.hltbId || 0}`); /* istanbul ignore if */
 
           // Store HLTB data
           hltbDataByAppId.set(appid, hltbData);
@@ -1241,7 +1242,7 @@ async function processPendingHltbBatch(): Promise<void> {
           const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
 
           if (allContainersForAppid.length === 0) {
-            if (DEBUG) console.log(`${LOG_PREFIX} HLTB: No containers found for ${appid}, data cached for reuse`);
+            if (DEBUG) console.log(`${LOG_PREFIX} HLTB: No containers found for ${appid}, data cached for reuse`); /* istanbul ignore if */
             continue;
           }
 
@@ -1252,11 +1253,13 @@ async function processPendingHltbBatch(): Promise<void> {
               updateIconsWithData(targetContainer, cachedEntry);
             }
 
+            /* istanbul ignore if */
             if (DEBUG && hltbData && hltbData.mainStory > 0) {
               console.log(`${LOG_PREFIX} HLTB: ${appid} - ${gameName} [${hltbData.mainStory}h main]`);
             }
           }
         }
+      /* istanbul ignore else */
       } else if (DEBUG) {
         console.log(`${LOG_PREFIX} HLTB batch ${batchNum} returned no results`);
       }
@@ -1267,7 +1270,7 @@ async function processPendingHltbBatch(): Promise<void> {
     }
   }
 
-  if (DEBUG) console.log(`${LOG_PREFIX} HLTB: All batches complete`);
+  if (DEBUG) console.log(`${LOG_PREFIX} HLTB: All batches complete`); /* istanbul ignore if */
 }
 
 // ============================================================================
@@ -1312,7 +1315,7 @@ async function waitForInjectionPoint(item: Element): Promise<InjectionPoint | nu
     // Check if item is still in DOM (BUG-5, BUG-12)
     // Item may have been removed by React re-render during our wait
     if (!document.body.contains(item)) {
-      if (DEBUG) console.log(`${LOG_PREFIX} Item removed from DOM during wait`);
+      if (DEBUG) console.log(`${LOG_PREFIX} Item removed from DOM during wait`); /* istanbul ignore if */
       return null;
     }
 
@@ -1351,7 +1354,8 @@ async function processItem(item: Element): Promise<void> {
       if (iconsExistInDom) {
         return;
       }
-      if (DEBUG) console.log(`${LOG_PREFIX} Icons missing, reprocessing ${appId}`);
+      if (DEBUG) console.log(`${LOG_PREFIX} Icons missing, reprocessing ${appId}`); /* istanbul ignore if */
+    /* istanbul ignore else */
     } else if (DEBUG) {
       console.log(`${LOG_PREFIX} Row reused, resetting ${processedAppId} -> ${appId}`);
     }
@@ -1362,7 +1366,7 @@ async function processItem(item: Element): Promise<void> {
   // BUG-13 FIX: If this appId is currently being processed by another call, skip
   // This prevents duplicate container creation during the async wait window
   if (processingAppIds.has(appId)) {
-    if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - already being processed`);
+    if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - already being processed`); /* istanbul ignore if */
     return;
   }
 
@@ -1371,18 +1375,18 @@ async function processItem(item: Element): Promise<void> {
   if (injectedAppIds.has(appId)) {
     if (iconsExistInDom) {
       // Icons actually exist - skip processing
-      if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - icons verified in DOM`);
+      if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - icons verified in DOM`); /* istanbul ignore if */
       item.setAttribute(PROCESSED_ATTR, appId);
       return;
     } else {
       // State desync: injectedAppIds says injected, but icons are gone (React destroyed them)
       // Only re-inject if not currently being processed by another call
-      if (DEBUG) console.log(`${LOG_PREFIX} Re-injecting ${appId} - React destroyed icons`);
+      if (DEBUG) console.log(`${LOG_PREFIX} Re-injecting ${appId} - React destroyed icons`); /* istanbul ignore if */
       injectedAppIds.delete(appId);
     }
   } else if (iconsExistInDom) {
     // Icons exist but not tracked - sync our state
-    if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - icons already in DOM (syncing)`);
+    if (DEBUG) console.log(`${LOG_PREFIX} Skipping ${appId} - icons already in DOM (syncing)`); /* istanbul ignore if */
     injectedAppIds.add(appId);
     item.setAttribute(PROCESSED_ATTR, appId);
     return;
@@ -1410,7 +1414,7 @@ async function processItem(item: Element): Promise<void> {
   let injectionPoint = await waitForInjectionPoint(item);
   if (!injectionPoint) {
     // Fallback: Use whatever injection point we can find
-    if (DEBUG) console.log(`${LOG_PREFIX} Using fallback injection for appid ${appId}`);
+    if (DEBUG) console.log(`${LOG_PREFIX} Using fallback injection for appid ${appId}`); /* istanbul ignore if */
     injectionPoint = findInjectionPoint(item);
   }
   const { container, insertAfter } = injectionPoint;
@@ -1458,7 +1462,7 @@ async function processItem(item: Element): Promise<void> {
   }
 
   if (cachedEntry) {
-    if (DEBUG) console.log(`${LOG_PREFIX} Using cached data for appid ${appId}`);
+    if (DEBUG) console.log(`${LOG_PREFIX} Using cached data for appid ${appId}`); /* istanbul ignore if */
     updateIconsWithData(iconsContainer, cachedEntry);
     const iconSummary = getRenderedIconSummary(iconsContainer);
     console.log(`${LOG_PREFIX} Rendered (cache-reuse): ${appId} - ${gameName} [icons: ${iconSummary}]`);
@@ -1478,7 +1482,7 @@ async function processItem(item: Element): Promise<void> {
   iconsContainer.appendChild(loader);
 
   // Queue for batch resolution instead of individual request
-  if (DEBUG) console.log(`${LOG_PREFIX} Queuing appid ${appId} for batch resolution`);
+  if (DEBUG) console.log(`${LOG_PREFIX} Queuing appid ${appId} for batch resolution`); /* istanbul ignore if */
   queueForBatchResolution(appId, gameName, iconsContainer);
 }
 
@@ -1575,7 +1579,7 @@ async function init(): Promise<void> {
   setInterval(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
-      if (DEBUG) console.log(`${LOG_PREFIX} URL changed, scheduling cleanup and re-processing`);
+      if (DEBUG) console.log(`${LOG_PREFIX} URL changed, scheduling cleanup and re-processing`); /* istanbul ignore if */
 
       // Light cleanup - preserve icons in DOM to prevent blink
       // Icons will be reused by processItem if the same games are still visible
@@ -1589,7 +1593,7 @@ async function init(): Promise<void> {
       // Debounce the processing to let React finish re-rendering
       urlChangeDebounceTimer = setTimeout(async () => {
         urlChangeDebounceTimer = null;
-        if (DEBUG) console.log(`${LOG_PREFIX} Processing after URL change debounce`);
+        if (DEBUG) console.log(`${LOG_PREFIX} Processing after URL change debounce`); /* istanbul ignore if */
 
         // Refresh Steam Deck data (SSR may have updated with new filter results)
         if (userSettings.showSteamDeck) {

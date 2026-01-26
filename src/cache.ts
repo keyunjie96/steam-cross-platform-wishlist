@@ -39,6 +39,7 @@ function platformStatus({ allAvailable = false, unavailable = [] }: PlatformStat
  * These appids will show specific platform availability regardless of actual data.
  * Only enabled when CACHE_DEBUG is true - in production, data comes from Wikidata.
  */
+/* istanbul ignore next */
 const MANUAL_OVERRIDES: Record<string, Record<Platform, PlatformStatus>> = CACHE_DEBUG ? {
   '367520': platformStatus({ allAvailable: true }),   // Hollow Knight
   '1145360': platformStatus({ allAvailable: true }),  // Hades

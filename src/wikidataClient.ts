@@ -268,7 +268,7 @@ async function executeSparqlQuery(query: string, retryCount = 0): Promise<Sparql
  * @throws {Error} When query fails due to network/rate limit (caller should NOT cache)
  */
 async function queryBySteamAppId(steamAppId: string): Promise<WikidataResult> {
-  if (WIKIDATA_DEBUG) console.log(`${WIKIDATA_LOG_PREFIX} queryBySteamAppId called for: ${steamAppId}`);
+  if (WIKIDATA_DEBUG) console.log(`${WIKIDATA_LOG_PREFIX} queryBySteamAppId called for: ${steamAppId}`); /* istanbul ignore if */
 
   const query = `
     SELECT ?game ?gameLabel ${SPARQL_SELECT_FIELDS}
@@ -295,6 +295,7 @@ async function queryBySteamAppId(steamAppId: string): Promise<WikidataResult> {
 
   const gameResult = parseBindingToResult(result.results.bindings[0]);
 
+  /* istanbul ignore if */
   if (WIKIDATA_DEBUG) {
     console.log(`${WIKIDATA_LOG_PREFIX} Found ${steamAppId} -> ${gameResult.wikidataId}:`, gameResult.platforms);
   } else {

@@ -4772,18 +4772,6 @@ describe('content.js', () => {
     });
   });
 
-  describe('DEBUG log branches', () => {
-    it('should skip debug logs when DEBUG is false', () => {
-      const DEBUG = false;
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      if (DEBUG) console.log('This should not be called');
-
-      expect(consoleSpy).not.toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
-  });
-
   describe('processItem early returns', () => {
     beforeEach(() => {
       const { injectedAppIds, processedAppIds, setUserSettings } = globalThis.SCPW_ContentTestExports;

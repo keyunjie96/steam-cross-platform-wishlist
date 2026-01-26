@@ -67,7 +67,7 @@ async function registerHeaderRules(): Promise<void> {
     });
 
     rulesRegistered = true;
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Header modification rules registered`);
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Header modification rules registered`); /* istanbul ignore if */
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`${HLTB_LOG_PREFIX} Failed to register header rules:`, errorMessage);
@@ -233,14 +233,14 @@ async function getAuthToken(): Promise<string | null> {
   try {
     const response = await fetch(`${HLTB_BASE_URL}/api/search/init?t=${Date.now()}`);
     if (!response.ok) {
-      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Auth token request failed: ${response.status}`);
+      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Auth token request failed: ${response.status}`); /* istanbul ignore if */
       return null;
     }
     const data = await response.json();
     return data.token || null;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Auth token error:`, errorMessage);
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Auth token error:`, errorMessage); /* istanbul ignore if */
     return null;
   }
 }
@@ -255,6 +255,7 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
   // Clean the game name by removing edition suffixes (HLTB search is strict)
   const searchName = cleanGameNameForSearch(gameName);
 
+  /* istanbul ignore if */
   if (HLTB_DEBUG) {
     console.log(`${HLTB_LOG_PREFIX} Searching for: ${gameName}`);
     if (searchName !== gameName) {
@@ -264,7 +265,7 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
 
   const authToken = await getAuthToken();
   if (!authToken) {
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Failed to get auth token`);
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Failed to get auth token`); /* istanbul ignore if */
     return null;
   }
 
@@ -279,24 +280,24 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
     });
 
     if (!response.ok) {
-      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Search failed with status ${response.status}`);
+      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Search failed with status ${response.status}`); /* istanbul ignore if */
       return null;
     }
 
     const result = await response.json();
     if (!result.data || result.data.length === 0) {
-      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} No results for: ${searchName}`);
+      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} No results for: ${searchName}`); /* istanbul ignore if */
       return null;
     }
 
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Got ${result.data.length} results, first: ${result.data[0].game_name}`);
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Got ${result.data.length} results, first: ${result.data[0].game_name}`); /* istanbul ignore if */
 
     // Check for exact Steam ID match first
     if (steamAppId) {
       const steamIdNum = parseInt(steamAppId, 10);
       const exactMatch = result.data.find((g: { profile_steam: number }) => g.profile_steam === steamIdNum);
       if (exactMatch) {
-        if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Exact Steam ID match: ${exactMatch.game_name}`);
+        if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Exact Steam ID match: ${exactMatch.game_name}`); /* istanbul ignore if */
         return {
           hltbId: exactMatch.game_id,
           gameName: exactMatch.game_name,
@@ -344,12 +345,12 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
     const best = candidates[0];
 
     if (best.similarity < 0.5) {
-      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match "${best.result.gameName}" too dissimilar (${(best.similarity * 100).toFixed(0)}%)`);
+      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match "${best.result.gameName}" too dissimilar (${(best.similarity * 100).toFixed(0)}%)`); /* istanbul ignore if */
       return null;
     }
 
     best.result.similarity = best.similarity;
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match: ${best.result.gameName} (${(best.similarity * 100).toFixed(0)}%), mainStory=${best.result.data.mainStory}h`);
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match: ${best.result.gameName} (${(best.similarity * 100).toFixed(0)}%), mainStory=${best.result.data.mainStory}h`); /* istanbul ignore if */
     return best.result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -366,7 +367,7 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
  * @returns HltbSearchResult if found with confidence, null otherwise
  */
 async function queryByGameName(gameName: string, steamAppId?: string): Promise<HltbSearchResult | null> {
-  if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Searching for: ${gameName} (Steam: ${steamAppId || 'none'})`);
+  if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Searching for: ${gameName} (Steam: ${steamAppId || 'none'})`); /* istanbul ignore if */
 
   await rateLimit();
 

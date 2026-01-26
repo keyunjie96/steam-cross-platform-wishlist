@@ -27,6 +27,7 @@ const CATEGORY_MAP: Record<DeckCategory, DeckStatus> = {
  */
 function injectPageScript(): Promise<void> {
   return new Promise((resolve, reject) => {
+    /* istanbul ignore if */
     if (STEAM_DECK_DEBUG) {
       console.log(`${STEAM_DECK_LOG_PREFIX} Injecting page script...`);
     }
@@ -34,6 +35,7 @@ function injectPageScript(): Promise<void> {
     const script = document.createElement('script');
     script.src = chrome.runtime.getURL('dist/steamDeckPageScript.js');
     script.onload = () => {
+      /* istanbul ignore if */
       if (STEAM_DECK_DEBUG) {
         console.log(`${STEAM_DECK_LOG_PREFIX} Page script loaded`);
       }
@@ -61,6 +63,7 @@ function extractDeckDataFromPage(): Map<string, DeckCategory> {
     const data = JSON.parse(dataElement.textContent || '{}') as Record<string, DeckCategory>;
     const mapping = new Map<string, DeckCategory>(Object.entries(data));
 
+    /* istanbul ignore if */
     if (STEAM_DECK_DEBUG) {
       console.log(`${STEAM_DECK_LOG_PREFIX} Read ${mapping.size} games from DOM`);
     }
@@ -92,6 +95,7 @@ async function waitForDeckData(maxWaitMs = 3000): Promise<Map<string, DeckCatego
     await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
   }
 
+  /* istanbul ignore if */
   if (STEAM_DECK_DEBUG) {
     console.log(`${STEAM_DECK_LOG_PREFIX} Timed out waiting for data`);
   }

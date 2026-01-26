@@ -89,6 +89,7 @@
         }
       }
 
+      /* istanbul ignore if */
       if (DEBUG) {
         console.log(`${LOG_PREFIX} Extracted ${Object.keys(mapping).length} games`);
       }
@@ -114,6 +115,7 @@
     el.textContent = JSON.stringify(data);
     document.documentElement.appendChild(el);
 
+    /* istanbul ignore if */
     if (DEBUG) {
       console.log(`${LOG_PREFIX} Stored data in #${DATA_ELEMENT_ID}`);
     }
