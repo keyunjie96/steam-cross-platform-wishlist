@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steam Cross-Platform Wishlist",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Shows cross-platform availability (Switch/PlayStation/Xbox/Steam Deck) on Steam wishlist pages using Wikidata and Steam",
   "icons": {
     "16": "assets/icons/icon16.png",

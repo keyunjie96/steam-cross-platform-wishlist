@@ -103,7 +103,8 @@ function createFallbackEntry(appid: string, gameName: string): CacheEntry {
     source: 'fallback',
     wikidataId: null,
     resolvedAt: Date.now(),
-    ttlDays: 7
+    ttlDays: 7,
+    cacheVersion: 1
   };
 }
 
@@ -122,7 +123,8 @@ function createManualOverrideEntry(appid: string, gameName: string, override: Re
     source: 'manual',
     wikidataId: null,
     resolvedAt: Date.now(),
-    ttlDays: 7
+    ttlDays: 7,
+    cacheVersion: 1
   };
 }
 
@@ -181,7 +183,8 @@ async function wikidataResultToCacheEntry(appid: string, gameName: string, wikid
     source: wikidataResult.found ? 'wikidata' : 'fallback',
     wikidataId: wikidataResult.wikidataId,
     resolvedAt: Date.now(),
-    ttlDays: 7
+    ttlDays: 7,
+    cacheVersion: 1
   };
 }
 
@@ -216,6 +219,7 @@ interface ResolveResult {
 /**
  * Background refresh for stale cache entries (fire-and-forget).
  * Fetches fresh data from Wikidata and updates cache for next page load.
+ * Preserves existing hltbData since it's still valid (HLTB data rarely changes).
  */
 async function refreshStaleEntries(games: Array<{ appid: string; gameName: string }>): Promise<void> {
   const Cache = globalThis.SCPW_Cache;
@@ -231,6 +235,9 @@ async function refreshStaleEntries(games: Array<{ appid: string; gameName: strin
     for (const { appid, gameName } of games) {
       const wikidataResult = wikidataResults.get(appid);
 
+      // Get existing entry to preserve hltbData
+      const { entry: existingEntry } = await Cache.getFromCacheWithStale(appid);
+
       const entry = wikidataResult?.found
         ? await wikidataResultToCacheEntry(appid, gameName, wikidataResult)
         : await wikidataResultToCacheEntry(appid, gameName, {
@@ -240,6 +247,11 @@ async function refreshStaleEntries(games: Array<{ appid: string; gameName: strin
           wikidataId: null,
           gameName: gameName
         });
+
+      // Preserve existing hltbData - it's still valid and shouldn't be lost on refresh
+      if (existingEntry?.hltbData) {
+        entry.hltbData = existingEntry.hltbData;
+      }
 
       await Cache.saveToCache(entry);
       refreshedCount++;
