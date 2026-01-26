@@ -14,10 +14,15 @@ const MARKETING_DIR = path.join(__dirname, '..', 'assets', 'marketing');
 const BASE_URL = 'http://localhost:8765/assets/marketing';
 
 const TILES = [
-  { name: 'promo-tile-920x680', width: 920, height: 680 },
-  { name: 'promo-tile-920x680-v2', width: 920, height: 680 },
-  { name: 'promo-tile-920x680-v3', width: 920, height: 680 },
+  // Chrome Web Store small promo (440x280)
   { name: 'promo-tile-440x280', width: 440, height: 280 },
+  // Chrome Web Store screenshot (1280x800)
+  { name: 'promo-tile-1280x800', width: 1280, height: 800 },
+  { name: 'promo-tile-1280x800-v2', width: 1280, height: 800 },
+  { name: 'promo-tile-1280x800-v3', width: 1280, height: 800 },
+  // Chrome Web Store marquee (1400x560)
+  { name: 'promo-tile-1400x560-v2', width: 1400, height: 560 },
+  { name: 'promo-tile-1400x560-v3', width: 1400, height: 560 },
 ];
 
 async function captureAt2x() {

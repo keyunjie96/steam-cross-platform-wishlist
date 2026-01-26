@@ -6,7 +6,7 @@
 
 Shows which Steam wishlist games are also on Switch, PlayStation, Xbox, or Steam Deck. Plus HowLongToBeat times.
 
-![Screenshot](assets/marketing/promo-tile-920x680.png)
+![Screenshot](assets/marketing/promo-tile-1280x800.png)
 
 ## Why?
 

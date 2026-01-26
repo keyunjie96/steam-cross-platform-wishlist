@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=920, height=680">
-  <title>Steam Cross-Platform Wishlist - Promotional Tile</title>
+  <meta name="viewport" content="width=1400, height=560">
+  <title>Steam Cross-Platform Wishlist - Marquee v3 1400x560</title>
   <style>
     * {
       margin: 0;
@@ -16,187 +16,159 @@
       --steam-darker: #171a21;
       --steam-blue: #66c0f4;
       --steam-text: #c7d5e0;
+      --nintendo-red: #e60012;
+      --playstation-blue: #006fcd;
+      --xbox-green: #107c10;
     }
 
     body {
-      width: 920px;
-      height: 680px;
-      background: linear-gradient(135deg, var(--steam-darker) 0%, #1e2837 100%);
+      width: 1400px;
+      height: 560px;
+      background: var(--steam-darker);
       font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
       overflow: hidden;
       position: relative;
-      display: flex;
     }
 
-    /* Left content area */
-    .left-panel {
-      width: 380px;
+    /* Screenshot as subtle background */
+    .screenshot-bg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .screenshot-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+      filter: brightness(0.2) blur(6px);
+      transform: scale(1.1);
+    }
+
+    /* Strong dark overlay for readability */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 120% 100% at 50% 100%,
+        rgba(23, 26, 33, 0.75) 0%,
+        rgba(23, 26, 33, 0.92) 100%
+      );
+    }
+
+    /* Centered content - everything stacked vertically */
+    .content {
+      position: relative;
+      z-index: 1;
       height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 48px 40px;
-      gap: 32px;
-      position: relative;
-      z-index: 2;
+      align-items: center;
+      text-align: center;
+      padding: 48px 80px;
+      gap: 36px;
     }
 
-    /* Extension icon and name */
+    /* Top section: icon + text */
     .header {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 24px;
     }
 
     .extension-icon {
-      width: 80px;
-      height: 80px;
-      min-width: 80px;
-      min-height: 80px;
-      flex-shrink: 0;
-      aspect-ratio: 1;
-      border-radius: 20px;
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
       overflow: hidden;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
       border: 2px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
     }
 
     .extension-icon img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
     }
 
-    .header-text {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .extension-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: white;
-    }
-
-    .extension-type {
-      font-size: 11px;
-      color: var(--steam-text);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      opacity: 0.8;
-    }
-
-    /* Main tagline */
     .tagline {
-      font-size: 28px;
-      font-weight: 700;
+      font-size: 44px;
+      font-weight: 800;
       color: white;
-      line-height: 1.25;
-      letter-spacing: -0.5px;
+      line-height: 1.1;
+      letter-spacing: -1px;
     }
 
-    .tagline .highlight {
+    .tagline span {
       background: linear-gradient(90deg, var(--steam-blue), #a8dbff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    /* Subtitle */
-    .subtitle {
-      font-size: 15px;
-      color: var(--steam-text);
-      line-height: 1.5;
-    }
-
-    /* Platform icons row */
+    /* Platform icons - single horizontal row, large and prominent */
     .platform-row {
       display: flex;
-      gap: 16px;
+      gap: 24px;
     }
 
     .platform-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
+      width: 88px;
+      height: 88px;
+      border-radius: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s;
     }
 
     .platform-icon svg {
-      width: 24px;
-      height: 24px;
+      width: 48px;
+      height: 48px;
       fill: white;
     }
 
-    /* Platform-specific colored backgrounds (matches options page "on" state) */
-    .platform-icon.nintendo { background: #e60012; }
-    .platform-icon.playstation { background: #006fcd; }
-    .platform-icon.xbox { background: #107c10; }
+    /* Platform-specific colored backgrounds */
+    .platform-icon.nintendo { background: var(--nintendo-red); }
+    .platform-icon.playstation { background: var(--playstation-blue); }
+    .platform-icon.xbox { background: var(--xbox-green); }
     .platform-icon.steamdeck {
       background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(0,0,0,.22)), #343a43;
-      border: 1px solid rgba(255, 255, 255, 0.10);
     }
     .platform-icon.steamdeck svg { fill: none; }
     .platform-icon.steamdeck svg path:first-of-type { fill: url(#sd-gradient); }
     .platform-icon.steamdeck svg path:last-of-type { fill: #ffffff; }
 
-    /* Screenshot container */
-    .screenshot-container {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 600px;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .screenshot {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: left top;
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
-    }
-
-    /* Gradient overlay from left to blend with branding */
-    .screenshot-fade {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 200px;
-      height: 100%;
-      background: linear-gradient(90deg, #1a1f2e 0%, transparent 100%);
-      z-index: 1;
+    /* Subtitle below icons */
+    .subtitle {
+      font-size: 18px;
+      color: var(--steam-text);
+      opacity: 0.9;
     }
   </style>
 </head>
 <body>
-  <!-- Left content -->
-  <div class="left-panel">
+  <!-- Subtle screenshot background -->
+  <div class="screenshot-bg">
+    <img src="screenshot-1.png" alt="Background">
+  </div>
+  <div class="overlay"></div>
+
+  <!-- Centered content -->
+  <div class="content">
     <div class="header">
       <div class="extension-icon">
         <img src="../icons/icon128.png" alt="Extension icon">
       </div>
-      <div class="header-text">
-        <div class="extension-name">Steam Cross-Platform Wishlist</div>
-        <div class="extension-type">Chrome Extension</div>
-      </div>
+      <h1 class="tagline">
+        <span>Console availability</span> on your Steam wishlist
+      </h1>
     </div>
-
-    <h1 class="tagline">
-      See <span class="highlight">console availability</span> on your Steam wishlist
-    </h1>
-
-    <p class="subtitle">
-      Switch, PlayStation, Xbox, Steam Deck compatibility and HowLongToBeat times at a glance.
-    </p>
 
     <div class="platform-row">
       <div class="platform-icon nintendo">
@@ -221,12 +193,10 @@
         </svg>
       </div>
     </div>
-  </div>
 
-  <!-- Screenshot on right side -->
-  <div class="screenshot-container">
-    <img class="screenshot" src="screenshot-1.png" alt="Extension in action">
-    <div class="screenshot-fade"></div>
+    <p class="subtitle">
+      Switch &bull; PlayStation &bull; Xbox &bull; Steam Deck — all at a glance
+    </p>
   </div>
 </body>
 </html>

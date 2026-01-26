@@ -125,10 +125,16 @@ if command -v npx &> /dev/null && npx playwright --version &> /dev/null 2>&1; th
 from PIL import Image
 
 tiles = [
-    ('promo-tile-920x680-2x.png', 'promo-tile-920x680.png', 920, 680),
-    ('promo-tile-920x680-v2-2x.png', 'promo-tile-920x680-v2.png', 920, 680),
-    ('promo-tile-920x680-v3-2x.png', 'promo-tile-920x680-v3.png', 920, 680),
+    # Chrome Web Store small promo (440x280)
     ('promo-tile-440x280-2x.png', 'promo-tile-440x280.png', 440, 280),
+    # Chrome Web Store screenshot (1280x800)
+    ('promo-tile-1280x800-2x.png', 'promo-tile-1280x800.png', 1280, 800),
+    ('promo-tile-1280x800-v2-2x.png', 'promo-tile-1280x800-v2.png', 1280, 800),
+    ('promo-tile-1280x800-v3-2x.png', 'promo-tile-1280x800-v3.png', 1280, 800),
+    # Chrome Web Store marquee (1400x560)
+    ('promo-tile-1400x560-v2-2x.png', 'promo-tile-1400x560-v2.png', 1400, 560),
+    ('promo-tile-1400x560-v3-2x.png', 'promo-tile-1400x560-v3.png', 1400, 560),
+    # Options page
     ('options-page-full-2x.png', 'options-page-full.png', 640, None),
 ]
 

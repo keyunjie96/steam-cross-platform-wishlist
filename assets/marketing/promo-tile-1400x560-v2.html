@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=920, height=680">
-  <title>Steam Cross-Platform Wishlist - Promo Tile v2</title>
+  <meta name="viewport" content="width=1400, height=560">
+  <title>Steam Cross-Platform Wishlist - Marquee v2 1400x560</title>
   <style>
     * {
       margin: 0;
@@ -23,8 +23,8 @@
     }
 
     body {
-      width: 920px;
-      height: 680px;
+      width: 1400px;
+      height: 560px;
       background: var(--steam-darker);
       font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
       overflow: hidden;
@@ -68,7 +68,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      padding: 32px 48px;
+      padding: 36px 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -77,7 +77,7 @@
     .left-content {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 24px;
     }
 
     .extension-icon {
@@ -85,7 +85,7 @@
       height: 80px;
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
       border: 2px solid rgba(255, 255, 255, 0.1);
       flex-shrink: 0;
     }
@@ -105,13 +105,13 @@
     }
 
     .extension-name {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
       color: white;
     }
 
     .tagline {
-      font-size: 14px;
+      font-size: 16px;
       color: var(--steam-text);
     }
 
@@ -122,13 +122,13 @@
     /* Platform icons on right */
     .platform-row {
       display: flex;
-      gap: 12px;
+      gap: 14px;
     }
 
     .platform-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -137,12 +137,12 @@
     }
 
     .platform-icon svg {
-      width: 24px;
-      height: 24px;
+      width: 30px;
+      height: 30px;
       fill: white;
     }
 
-    /* Platform-specific colored backgrounds (matches options page "on" state) */
+    /* Platform-specific colored backgrounds */
     .platform-icon.nintendo { background: var(--nintendo-red); }
     .platform-icon.playstation { background: var(--playstation-blue); }
     .platform-icon.xbox { background: var(--xbox-green); }
