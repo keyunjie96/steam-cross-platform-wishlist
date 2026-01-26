@@ -110,32 +110,19 @@ describe('hltbClient.js', () => {
   });
 
   describe('formatHours', () => {
-    it('should return empty string for 0', () => {
-      expect(HltbClient.formatHours(0)).toBe('');
-    });
-
-    it('should return empty string for negative values', () => {
-      expect(HltbClient.formatHours(-5)).toBe('');
-    });
-
-    it('should return empty string for null/undefined', () => {
-      expect(HltbClient.formatHours(null)).toBe('');
-      expect(HltbClient.formatHours(undefined)).toBe('');
-    });
-
-    it('should format hours under 10 with one decimal', () => {
-      expect(HltbClient.formatHours(5.5)).toBe('5.5h');
-      expect(HltbClient.formatHours(9.9)).toBe('9.9h');
-    });
-
-    it('should round hours 10-99 to whole numbers', () => {
-      expect(HltbClient.formatHours(12.5)).toBe('13h');
-      expect(HltbClient.formatHours(50.3)).toBe('50h');
-    });
-
-    it('should round hours >= 100 to whole numbers', () => {
-      expect(HltbClient.formatHours(150.7)).toBe('151h');
-      expect(HltbClient.formatHours(200)).toBe('200h');
+    it.each([
+      [0, ''],
+      [-5, ''],
+      [null, ''],
+      [undefined, ''],
+      [5.5, '5.5h'],
+      [9.9, '9.9h'],
+      [12.5, '13h'],
+      [50.3, '50h'],
+      [150.7, '151h'],
+      [200, '200h']
+    ])('formatHours(%s) should return %s', (input, expected) => {
+      expect(HltbClient.formatHours(input)).toBe(expected);
     });
   });
 
@@ -228,55 +215,19 @@ describe('hltbClient.js', () => {
       expect(HltbClient.cleanGameNameForSearch).toBeInstanceOf(Function);
     });
 
-    it('should strip "- Definitive Edition" suffix', () => {
-      expect(HltbClient.cleanGameNameForSearch('Divinity: Original Sin 2 - Definitive Edition'))
-        .toBe('Divinity: Original Sin 2');
-    });
-
-    it('should strip "Definitive Edition" suffix (without dash)', () => {
-      expect(HltbClient.cleanGameNameForSearch('Gamedec Definitive Edition'))
-        .toBe('Gamedec');
-    });
-
-    it('should strip "- Game of the Year Edition" suffix', () => {
-      expect(HltbClient.cleanGameNameForSearch('The Witcher 3 - Game of the Year Edition'))
-        .toBe('The Witcher 3');
-    });
-
-    it('should strip "- Enhanced Edition" suffix', () => {
-      expect(HltbClient.cleanGameNameForSearch('Baldurs Gate - Enhanced Edition'))
-        .toBe('Baldurs Gate');
-    });
-
-    it('should strip "- Remastered" suffix', () => {
-      expect(HltbClient.cleanGameNameForSearch('Dark Souls - Remastered'))
-        .toBe('Dark Souls');
-    });
-
-    it('should strip "Remastered" suffix (without dash)', () => {
-      expect(HltbClient.cleanGameNameForSearch('Command & Conquer Remastered'))
-        .toBe('Command & Conquer');
-    });
-
-    it('should strip "- Director\'s Cut" suffix', () => {
-      expect(HltbClient.cleanGameNameForSearch('Death Stranding - Director\'s Cut'))
-        .toBe('Death Stranding');
-    });
-
-    it('should be case-insensitive when matching suffixes', () => {
-      expect(HltbClient.cleanGameNameForSearch('Game - DEFINITIVE EDITION'))
-        .toBe('Game');
-    });
-
-    it('should return unchanged name if no edition suffix', () => {
-      expect(HltbClient.cleanGameNameForSearch('Hollow Knight'))
-        .toBe('Hollow Knight');
-    });
-
-    it('should only strip one suffix (not multiple)', () => {
-      // Edge case: if a game had multiple edition markers (unlikely)
-      expect(HltbClient.cleanGameNameForSearch('Game - Remastered Definitive Edition'))
-        .toBe('Game - Remastered'); // Only strips the last matching suffix
+    it.each([
+      ['Divinity: Original Sin 2 - Definitive Edition', 'Divinity: Original Sin 2'],
+      ['Gamedec Definitive Edition', 'Gamedec'],
+      ['The Witcher 3 - Game of the Year Edition', 'The Witcher 3'],
+      ['Baldurs Gate - Enhanced Edition', 'Baldurs Gate'],
+      ['Dark Souls - Remastered', 'Dark Souls'],
+      ['Command & Conquer Remastered', 'Command & Conquer'],
+      ["Death Stranding - Director's Cut", 'Death Stranding'],
+      ['Game - DEFINITIVE EDITION', 'Game'],
+      ['Hollow Knight', 'Hollow Knight'],
+      ['Game - Remastered Definitive Edition', 'Game - Remastered']
+    ])('cleanGameNameForSearch(%s) should return %s', (input, expected) => {
+      expect(HltbClient.cleanGameNameForSearch(input)).toBe(expected);
     });
   });
 

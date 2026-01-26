@@ -3216,49 +3216,18 @@ describe('content.js', () => {
   });
 
   describe('isSameDeckData function', () => {
-    it('should return false when left is null', () => {
+    it.each([
+      [null, new Map([['12345', 3]]), false, 'left is null'],
+      [new Map([['12345', 3]]), null, false, 'right is null'],
+      [null, null, false, 'both are null'],
+      [new Map([['12345', 3]]), new Map([['12345', 3], ['67890', 2]]), false, 'sizes differ'],
+      [new Map([['12345', 3]]), new Map([['12345', 2]]), false, 'categories differ'],
+      [new Map([['12345', 3]]), new Map([['67890', 3]]), false, 'keys differ'],
+      [new Map([['12345', 3], ['67890', 2]]), new Map([['12345', 3], ['67890', 2]]), true, 'maps are equal'],
+      [new Map(), new Map(), true, 'empty maps']
+    ])('should return %s when %s', (left, right, expected, _description) => {
       const { isSameDeckData } = globalThis.SCPW_ContentTestExports;
-      const right = new Map([['12345', 3]]);
-      expect(isSameDeckData(null, right)).toBe(false);
-    });
-
-    it('should return false when right is null', () => {
-      const { isSameDeckData } = globalThis.SCPW_ContentTestExports;
-      const left = new Map([['12345', 3]]);
-      expect(isSameDeckData(left, null)).toBe(false);
-    });
-
-    it('should return false when both are null', () => {
-      const { isSameDeckData } = globalThis.SCPW_ContentTestExports;
-      expect(isSameDeckData(null, null)).toBe(false);
-    });
-
-    it('should return false when sizes differ', () => {
-      const { isSameDeckData } = globalThis.SCPW_ContentTestExports;
-      const left = new Map([['12345', 3]]);
-      const right = new Map([['12345', 3], ['67890', 2]]);
-      expect(isSameDeckData(left, right)).toBe(false);
-    });
-
-    it('should return false when categories differ', () => {
-      const { isSameDeckData } = globalThis.SCPW_ContentTestExports;
-      const left = new Map([['12345', 3]]);
-      const right = new Map([['12345', 2]]);
-      expect(isSameDeckData(left, right)).toBe(false);
-    });
-
-    it('should return true when maps are equal', () => {
-      const { isSameDeckData } = globalThis.SCPW_ContentTestExports;
-      const left = new Map([['12345', 3], ['67890', 2]]);
-      const right = new Map([['12345', 3], ['67890', 2]]);
-      expect(isSameDeckData(left, right)).toBe(true);
-    });
-
-    it('should return true for empty maps', () => {
-      const { isSameDeckData } = globalThis.SCPW_ContentTestExports;
-      const left = new Map();
-      const right = new Map();
-      expect(isSameDeckData(left, right)).toBe(true);
+      expect(isSameDeckData(left, right)).toBe(expected);
     });
   });
 
