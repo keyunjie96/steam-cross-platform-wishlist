@@ -16,6 +16,13 @@ const DEFAULT_TTL_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const PLATFORMS: Platform[] = ['nintendo', 'playstation', 'xbox', 'steamdeck'];
 
+/**
+ * Cache schema version - increment when cache format changes.
+ * When version mismatches, cached entries are treated as stale (triggers background refresh).
+ * This ensures users get fresh data after extension updates that change data handling.
+ */
+const CACHE_VERSION = 1;
+
 interface PlatformStatusOptions {
   allAvailable?: boolean;
   unavailable?: Platform[];
@@ -57,10 +64,15 @@ function getCacheKey(appid: string): string {
 }
 
 /**
- * Checks if a cache entry is still valid based on TTL
+ * Checks if a cache entry is still valid based on TTL and cache version.
+ * Entries with mismatched cache version are treated as stale (triggers background refresh).
  */
 function isCacheValid(entry: CacheEntry | null | undefined): boolean {
   if (!entry?.resolvedAt || !entry?.ttlDays) {
+    return false;
+  }
+  // Version mismatch means entry is stale (needs refresh after extension update)
+  if (entry.cacheVersion !== CACHE_VERSION) {
     return false;
   }
   const expiresAt = entry.resolvedAt + entry.ttlDays * MS_PER_DAY;
@@ -89,7 +101,8 @@ function createCacheEntry(appid: string, gameName: string): CacheEntry {
     source: override ? 'manual' : 'none',
     wikidataId: null,
     resolvedAt: Date.now(),
-    ttlDays: DEFAULT_TTL_DAYS
+    ttlDays: DEFAULT_TTL_DAYS,
+    cacheVersion: CACHE_VERSION
   };
 }
 
@@ -227,7 +240,8 @@ export {
   MANUAL_OVERRIDES,
   PLATFORMS,
   CACHE_KEY_PREFIX,
-  DEFAULT_TTL_DAYS
+  DEFAULT_TTL_DAYS,
+  CACHE_VERSION
 };
 
 export type { CacheResult };

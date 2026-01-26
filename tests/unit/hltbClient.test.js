@@ -179,6 +179,63 @@ describe('hltbClient.js', () => {
     });
   });
 
+  describe('cleanGameNameForSearch', () => {
+    it('should export cleanGameNameForSearch', () => {
+      expect(HltbClient.cleanGameNameForSearch).toBeInstanceOf(Function);
+    });
+
+    it('should strip "- Definitive Edition" suffix', () => {
+      expect(HltbClient.cleanGameNameForSearch('Divinity: Original Sin 2 - Definitive Edition'))
+        .toBe('Divinity: Original Sin 2');
+    });
+
+    it('should strip "Definitive Edition" suffix (without dash)', () => {
+      expect(HltbClient.cleanGameNameForSearch('Gamedec Definitive Edition'))
+        .toBe('Gamedec');
+    });
+
+    it('should strip "- Game of the Year Edition" suffix', () => {
+      expect(HltbClient.cleanGameNameForSearch('The Witcher 3 - Game of the Year Edition'))
+        .toBe('The Witcher 3');
+    });
+
+    it('should strip "- Enhanced Edition" suffix', () => {
+      expect(HltbClient.cleanGameNameForSearch('Baldurs Gate - Enhanced Edition'))
+        .toBe('Baldurs Gate');
+    });
+
+    it('should strip "- Remastered" suffix', () => {
+      expect(HltbClient.cleanGameNameForSearch('Dark Souls - Remastered'))
+        .toBe('Dark Souls');
+    });
+
+    it('should strip "Remastered" suffix (without dash)', () => {
+      expect(HltbClient.cleanGameNameForSearch('Command & Conquer Remastered'))
+        .toBe('Command & Conquer');
+    });
+
+    it('should strip "- Director\'s Cut" suffix', () => {
+      expect(HltbClient.cleanGameNameForSearch('Death Stranding - Director\'s Cut'))
+        .toBe('Death Stranding');
+    });
+
+    it('should be case-insensitive when matching suffixes', () => {
+      expect(HltbClient.cleanGameNameForSearch('Game - DEFINITIVE EDITION'))
+        .toBe('Game');
+    });
+
+    it('should return unchanged name if no edition suffix', () => {
+      expect(HltbClient.cleanGameNameForSearch('Hollow Knight'))
+        .toBe('Hollow Knight');
+    });
+
+    it('should only strip one suffix (not multiple)', () => {
+      // Edge case: if a game had multiple edition markers (unlikely)
+      expect(HltbClient.cleanGameNameForSearch('Game - Remastered Definitive Edition'))
+        .toBe('Game - Remastered'); // Only strips the last matching suffix
+    });
+  });
+
   describe('queryByGameName', () => {
     // Mock fetch for API calls
     let originalFetch;

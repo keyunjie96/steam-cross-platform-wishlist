@@ -84,6 +84,7 @@ export interface CacheEntry {
   hltbData?: HltbData | null;  // Optional HLTB completion time data
   resolvedAt: number;
   ttlDays: number;
+  cacheVersion?: number;  // Cache schema version for invalidation on updates
 }
 
 export type CacheStorage = Record<string, CacheEntry>;

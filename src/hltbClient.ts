@@ -94,6 +94,50 @@ function normalizeGameName(name: string): string {
 }
 
 /**
+ * Common edition suffixes that should be stripped for HLTB search.
+ * HLTB often doesn't include these in their game names.
+ */
+const EDITION_SUFFIXES = [
+  ' - Definitive Edition',
+  ' - Game of the Year Edition',
+  ' - GOTY Edition',
+  ' - Enhanced Edition',
+  ' - Complete Edition',
+  ' - Ultimate Edition',
+  ' - Special Edition',
+  ' - Deluxe Edition',
+  ' - Anniversary Edition',
+  ' - Remastered',
+  ' - Director\'s Cut',
+  ' Definitive Edition',
+  ' Game of the Year Edition',
+  ' GOTY Edition',
+  ' Enhanced Edition',
+  ' Complete Edition',
+  ' Ultimate Edition',
+  ' Special Edition',
+  ' Deluxe Edition',
+  ' Anniversary Edition',
+  ' Remastered',
+  ' Director\'s Cut'
+];
+
+/**
+ * Cleans up a game name for HLTB search by removing common edition suffixes.
+ * HLTB's search is very strict and often fails when edition suffixes are included.
+ */
+function cleanGameNameForSearch(name: string): string {
+  let cleaned = name;
+  for (const suffix of EDITION_SUFFIXES) {
+    if (cleaned.toLowerCase().endsWith(suffix.toLowerCase())) {
+      cleaned = cleaned.slice(0, -suffix.length).trim();
+      break; // Only remove one suffix
+    }
+  }
+  return cleaned;
+}
+
+/**
  * Calculates similarity between two strings (0-1)
  * Uses Jaccard similarity on character n-grams
  */
@@ -208,7 +252,16 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
   // Ensure header rules are registered
   await registerHeaderRules();
 
-  if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Searching for: ${gameName}`);
+  // Clean the game name by removing edition suffixes (HLTB search is strict)
+  const cleanedName = cleanGameNameForSearch(gameName);
+  const searchName = cleanedName !== gameName ? cleanedName : gameName;
+
+  if (HLTB_DEBUG) {
+    console.log(`${HLTB_LOG_PREFIX} Searching for: ${gameName}`);
+    if (cleanedName !== gameName) {
+      console.log(`${HLTB_LOG_PREFIX} Cleaned name: ${cleanedName}`);
+    }
+  }
 
   const authToken = await getAuthToken();
   if (!authToken) {
@@ -223,7 +276,7 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
         'Content-Type': 'application/json',
         'X-Auth-Token': authToken
       },
-      body: JSON.stringify(createSearchPayload(gameName))
+      body: JSON.stringify(createSearchPayload(searchName))
     });
 
     if (!response.ok) {
@@ -233,7 +286,7 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
 
     const result = await response.json();
     if (!result.data || result.data.length === 0) {
-      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} No results for: ${gameName}`);
+      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} No results for: ${searchName}`);
       return null;
     }
 
@@ -349,6 +402,7 @@ globalThis.SCPW_HltbClient = {
   formatHours,
   normalizeGameName,
   calculateSimilarity,
+  cleanGameNameForSearch,
   registerHeaderRules
 };
 
@@ -359,5 +413,6 @@ export {
   formatHours,
   normalizeGameName,
   calculateSimilarity,
+  cleanGameNameForSearch,
   registerHeaderRules
 };
