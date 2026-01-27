@@ -4060,7 +4060,7 @@ describe('content.js', () => {
       expect(pendingItems.size).toBe(0);
     });
 
-    it('should skip batch request when all console platforms AND HLTB disabled', async () => {
+    it('should skip batch request when all console platforms, HLTB, and review scores disabled', async () => {
       const {
         processPendingBatch,
         pendingItems,
@@ -4068,14 +4068,15 @@ describe('content.js', () => {
         setUserSettings
       } = globalThis.SCPW_ContentTestExports;
 
-      // Disable all console platforms AND HLTB
-      // (We still query Wikidata when HLTB is enabled to get English game names)
+      // Disable all console platforms, HLTB, AND review scores
+      // (We still query Wikidata when HLTB or review scores are enabled)
       setUserSettings({
         showNintendo: false,
         showPlaystation: false,
         showXbox: false,
         showSteamDeck: false,
-        showHltb: false
+        showHltb: false,
+        showReviewScores: false
       });
 
       const container = createIconsContainer('77777', 'Test Game');

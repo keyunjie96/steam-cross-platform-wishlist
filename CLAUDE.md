@@ -50,6 +50,7 @@
 │   ├── hltbClient.ts       # HLTB completion time client
 │   ├── hltbContent.ts      # HLTB content script (howlongtobeat.com)
 │   ├── hltbPageScript.ts   # HLTB page script (MAIN world)
+│   ├── reviewScoresClient.ts # OpenCritic review scores client
 │   ├── steamDeckClient.ts  # Steam Deck data from page SSR
 │   ├── steamDeckPageScript.ts # Injected script for SSR access
 │   ├── icons.ts            # Icon definitions
@@ -75,6 +76,7 @@
 | `src/hltbClient.ts` | HLTB completion time queries | `queryByGameName()`, `batchQueryByGameNames()` |
 | `src/hltbContent.ts` | HLTB content script bridge | `injectPageScript()`, message relay |
 | `src/hltbPageScript.ts` | HLTB page script (MAIN world) | `searchHltb()`, `calculateSimilarity()` |
+| `src/reviewScoresClient.ts` | OpenCritic review scores queries | `queryByGameName()`, `batchQueryByGameNames()`, `buildOpenCriticUrl()` |
 | `src/steamDeckClient.ts` | Steam Deck data extraction | `waitForDeckData()`, `getDeckStatus()` |
 | `src/steamDeckPageScript.ts` | Page script for SSR access | `extractDeckData()` (runs in MAIN world) |
 | `src/icons.ts` | SVG icons and platform info | `PLATFORM_ICONS`, `PLATFORM_INFO`, `STATUS_INFO` |
@@ -227,6 +229,7 @@ const CACHE_DEBUG = false;        // src/cache.ts (enables manual test overrides
 const STEAM_DECK_DEBUG = false;   // src/steamDeckClient.ts
 const DEBUG = false;              // src/hltbContent.ts
 const DEBUG = false;              // src/hltbPageScript.ts
+const DEBUG = false;              // src/reviewScoresClient.ts
 ```
 
 Set to `true` for verbose logging during development.

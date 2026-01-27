@@ -13,7 +13,7 @@ import type { ReviewScoreData, ReviewScoreTier, ReviewScoreSearchResult, OutletS
 
 const OPENCRITIC_API_BASE = 'https://api.opencritic.com/api';
 const LOG_PREFIX = '[SCPW ReviewScores]';
-const DEBUG = true;
+const DEBUG = false;
 
 const REQUEST_DELAY_MS = 300;
 

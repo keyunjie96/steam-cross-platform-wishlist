@@ -16,7 +16,7 @@ const CACHE_VERSION = globalThis.SCPW_CacheVersion;
 const PROCESSED_ATTR = 'data-scpw-processed';
 const ICONS_INJECTED_ATTR = 'data-scpw-icons';
 const LOG_PREFIX = '[Steam Cross-Platform Wishlist]';
-const DEBUG = true; // Set to true for verbose debugging
+const DEBUG = false; // Set to true for verbose debugging
 
 /** Set of appids that have been processed to avoid duplicate logging */
 const processedAppIds = new Set<string>();
@@ -1283,10 +1283,11 @@ async function processPendingBatch(): Promise<void> {
   pendingItems.clear();
   batchDebounceTimer = null;
 
-  // Skip Wikidata fetch ONLY if all console platforms are disabled AND HLTB is disabled
+  // Skip Wikidata fetch ONLY if all console platforms, HLTB, and review scores are disabled
   // When HLTB is enabled, we still need Wikidata to get English game names for HLTB matching
-  // (Steam may show translated names that HLTB won't recognize)
-  if (!isAnyConsolePlatformEnabled() && !userSettings.showHltb) {
+  // When review scores are enabled, we need Wikidata to get OpenCritic IDs
+  // (Steam may show translated names that HLTB/OpenCritic won't recognize)
+  if (!isAnyConsolePlatformEnabled() && !userSettings.showHltb && !userSettings.showReviewScores) {
     if (DEBUG) console.log(`${LOG_PREFIX} Skipping batch request - all console platforms and HLTB disabled`); /* istanbul ignore if */
     for (const [appid, { container, gameName }] of containerMap) {
       // Create a minimal cache entry with no console platform data
