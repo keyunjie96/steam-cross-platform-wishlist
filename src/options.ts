@@ -4,7 +4,7 @@
  * Handles the options UI for managing the cache.
  */
 
-import type { UserSettings, HltbDisplayStat } from './types';
+import type { UserSettings, HltbDisplayStat, ReviewScoreSource } from './types';
 
 // Constants
 const MS_PER_HOUR = 1000 * 60 * 60;
@@ -28,6 +28,8 @@ const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
 // Select elements (not checkboxes)
 let hltbDisplayStatSelect: HTMLSelectElement | null = null;
 let hltbRow: HTMLElement | null = null;
+let reviewScoreSourceSelect: HTMLSelectElement | null = null;
+let reviewScoresRow: HTMLElement | null = null;
 
 /**
  * Formats a duration in milliseconds to a human-readable string
@@ -89,6 +91,9 @@ async function loadSettings(): Promise<void> {
     if (hltbDisplayStatSelect) {
       hltbDisplayStatSelect.value = settings.hltbDisplayStat;
     }
+    if (reviewScoreSourceSelect) {
+      reviewScoreSourceSelect.value = settings.reviewScoreSource;
+    }
   } catch (error) {
     console.error(`${LOG_PREFIX} Error loading settings:`, error);
   }
@@ -123,6 +128,9 @@ function getCurrentSettings(): UserSettings {
   if (hltbDisplayStatSelect) {
     settings.hltbDisplayStat = hltbDisplayStatSelect.value as HltbDisplayStat;
   }
+  if (reviewScoreSourceSelect) {
+    settings.reviewScoreSource = reviewScoreSourceSelect.value as ReviewScoreSource;
+  }
   return settings;
 }
 
@@ -136,6 +144,20 @@ function updateHltbSelectVisibility(): void {
     hltbDisplayStatSelect.hidden = !shouldShow;
     if (hltbRow) {
       hltbRow.classList.toggle('inline-select-hidden', !shouldShow);
+    }
+  }
+}
+
+/**
+ * Updates review score source select visibility based on checkbox state
+ */
+function updateReviewScoreSourceVisibility(): void {
+  const reviewScoresCheckbox = checkboxes.get('showReviewScores');
+  if (reviewScoreSourceSelect && reviewScoresCheckbox) {
+    const shouldShow = reviewScoresCheckbox.checked;
+    reviewScoreSourceSelect.hidden = !shouldShow;
+    if (reviewScoresRow) {
+      reviewScoresRow.classList.toggle('inline-select-hidden', !shouldShow);
     }
   }
 }
@@ -161,6 +183,7 @@ function updateToggleActiveStates(): void {
 async function handlePlatformToggle(): Promise<void> {
   updateToggleActiveStates();
   updateHltbSelectVisibility();
+  updateReviewScoreSourceVisibility();
   const settings = getCurrentSettings();
   await saveSettings(settings);
 }
@@ -296,6 +319,13 @@ function initializePage(): void {
     hltbDisplayStatSelect.addEventListener('change', handlePlatformToggle);
   }
 
+  // Review score source select (visibility controlled directly on the select)
+  reviewScoreSourceSelect = document.getElementById('review-score-source') as HTMLSelectElement | null;
+  reviewScoresRow = document.querySelector('.toggle-item.has-inline-option[data-platform="review-scores"]') as HTMLElement | null;
+  if (reviewScoreSourceSelect) {
+    reviewScoreSourceSelect.addEventListener('change', handlePlatformToggle);
+  }
+
   // Initialize collapsible sections (CSP-compliant)
   initializeCollapsibleSections();
 
@@ -305,9 +335,10 @@ function initializePage(): void {
 
   // Load initial data, then reveal UI
   Promise.all([loadCacheStats(), loadSettings()]).then(() => {
-    // Update toggle active states and HLTB row visibility based on loaded settings
+    // Update toggle active states and select visibility based on loaded settings
     updateToggleActiveStates();
     updateHltbSelectVisibility();
+    updateReviewScoreSourceVisibility();
     // Remove loading class to reveal content with smooth transition
     document.body.classList.remove('is-loading');
   });

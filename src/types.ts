@@ -12,6 +12,9 @@ export type PlatformStatus = 'available' | 'unavailable' | 'unknown';
 // HLTB display stat options
 export type HltbDisplayStat = 'mainStory' | 'mainExtra' | 'completionist';
 
+// Review score source options
+export type ReviewScoreSource = 'opencritic' | 'ign' | 'gamespot' | 'metacritic';
+
 // ============================================================================
 // Cache Constants - SINGLE SOURCE OF TRUTH
 // ============================================================================
@@ -46,6 +49,7 @@ export interface UserSettings {
   showHltb: boolean;
   hltbDisplayStat: HltbDisplayStat;
   showReviewScores: boolean;
+  reviewScoreSource: ReviewScoreSource;
 }
 
 /**
@@ -59,7 +63,8 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   showSteamDeck: true,
   showHltb: true,
   hltbDisplayStat: 'mainStory',
-  showReviewScores: true
+  showReviewScores: true,
+  reviewScoreSource: 'opencritic'
 };
 
 /**
@@ -343,6 +348,7 @@ declare global {
       getRenderedIconSummary: (container: HTMLElement) => string;
       // Review scores exports for coverage testing
       getTierColor: (tier: ReviewScoreTier) => string;
+      getDisplayScoreInfo: (reviewScoreData: ReviewScoreData) => { score: number; sourceName: string; sourceKey: string };
       createReviewScoreBadge: (reviewScoreData: ReviewScoreData) => HTMLElement;
       createReviewScoreLoader: () => HTMLElement;
       queueForReviewScoreResolution: (appid: string, gameName: string, container: HTMLElement) => void;
@@ -439,6 +445,13 @@ export interface HltbSearchResult {
   data: HltbData;
 }
 
+// Individual outlet score (IGN, GameSpot, etc.)
+export interface OutletScore {
+  outletName: string;       // Display name of the outlet
+  score: number;            // Outlet's score (normalized 0-100)
+  originalScore?: string;   // Original score format (e.g., "8.5/10", "4/5")
+}
+
 // Review Scores types (OpenCritic)
 export interface ReviewScoreData {
   openCriticId: number;     // OpenCritic game ID for linking
@@ -446,6 +459,12 @@ export interface ReviewScoreData {
   tier: ReviewScoreTier;    // Mighty, Strong, Fair, Weak
   numReviews: number;       // Number of critic reviews
   percentRecommended: number; // Percentage of critics recommending (0-100)
+  // Individual outlet scores (from OpenCritic's review endpoint)
+  outletScores?: {
+    ign?: OutletScore;
+    gamespot?: OutletScore;
+    metacritic?: OutletScore;
+  };
 }
 
 export type ReviewScoreTier = 'Mighty' | 'Strong' | 'Fair' | 'Weak' | 'Unknown';

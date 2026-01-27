@@ -65,16 +65,20 @@ describe('content.js', () => {
         showPlaystation: true,
         showXbox: true,
         showSteamDeck: true,
-        showHltb: true
+        showHltb: true,
+        hltbDisplayStat: 'mainStory',
+        showReviewScores: true,
+        reviewScoreSource: 'opencritic'
       },
       SETTING_CHECKBOX_IDS: {
         showNintendo: 'show-nintendo',
         showPlaystation: 'show-playstation',
         showXbox: 'show-xbox',
         showSteamDeck: 'show-steamdeck',
-        showHltb: 'show-hltb'
+        showHltb: 'show-hltb',
+        showReviewScores: 'show-review-scores'
       },
-      USER_SETTING_KEYS: ['showNintendo', 'showPlaystation', 'showXbox', 'showSteamDeck', 'showHltb']
+      USER_SETTING_KEYS: ['showNintendo', 'showPlaystation', 'showXbox', 'showSteamDeck', 'showHltb', 'hltbDisplayStat', 'showReviewScores', 'reviewScoreSource']
     };
 
     // Mock chrome.storage.sync for user settings
@@ -1168,8 +1172,8 @@ describe('content.js', () => {
 
     it('should not add separator when no icons are available', () => {
       const { updateIconsWithData, createIconsContainer, setUserSettings, getHltbDataByAppId } = globalThis.SCPW_ContentTestExports;
-      // Disable HLTB to test pure platform icon behavior
-      setUserSettings({ showHltb: false });
+      // Disable HLTB and review scores to test pure platform icon behavior
+      setUserSettings({ showHltb: false, showReviewScores: false });
       const container = createIconsContainer('12345', 'Test Game');
 
       const data = {
@@ -1186,8 +1190,8 @@ describe('content.js', () => {
       expect(container.querySelector('.scpw-separator')).toBeNull();
       expect(container.querySelectorAll('[data-platform]').length).toBe(0);
 
-      // Restore HLTB setting
-      setUserSettings({ showHltb: true });
+      // Restore settings
+      setUserSettings({ showHltb: true, showReviewScores: true });
     });
 
     it('should add separator when at least one icon is available', () => {
@@ -1973,7 +1977,7 @@ describe('content.js', () => {
     it('should not add separator when no icons available', () => {
       const { createIconsContainer, updateIconsWithData, setUserSettings } = globalThis.SCPW_ContentTestExports;
       // Disable HLTB to test pure platform icon behavior
-      setUserSettings({ showHltb: false });
+      setUserSettings({ showHltb: false, showReviewScores: false });
       const container = createIconsContainer('12345', 'Test Game');
 
       const data = {
@@ -1987,12 +1991,12 @@ describe('content.js', () => {
 
       updateIconsWithData(container, data);
 
-      // No separator when no visible icons (and HLTB disabled)
+      // No separator when no visible icons (and HLTB/review scores disabled)
       expect(container.querySelector('.scpw-separator')).toBeNull();
       expect(container.querySelectorAll('[data-platform]').length).toBe(0);
 
-      // Restore HLTB setting
-      setUserSettings({ showHltb: true });
+      // Restore settings
+      setUserSettings({ showHltb: true, showReviewScores: true });
     });
 
     it('should use data-game-name attribute as fallback', () => {
@@ -8288,6 +8292,397 @@ describe('content.js', () => {
 
       // Should be cleared
       expect(getHltbDataByAppId().size).toBe(0);
+    });
+  });
+
+  describe('getDisplayScoreInfo', () => {
+    it('should return OpenCritic score when source is opencritic', () => {
+      const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ reviewScoreSource: 'opencritic' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 80 },
+          gamespot: { outletName: 'GameSpot', score: 75 }
+        }
+      };
+
+      const result = getDisplayScoreInfo(reviewScoreData);
+      expect(result.score).toBe(85);
+      expect(result.sourceName).toBe('OpenCritic');
+      expect(result.sourceKey).toBe('opencritic');
+    });
+
+    it('should return IGN score when source is ign and available', () => {
+      const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ reviewScoreSource: 'ign' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 80 }
+        }
+      };
+
+      const result = getDisplayScoreInfo(reviewScoreData);
+      expect(result.score).toBe(80);
+      expect(result.sourceName).toBe('IGN');
+      expect(result.sourceKey).toBe('ign');
+    });
+
+    it('should fall back to OpenCritic when selected outlet is not available', () => {
+      const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ reviewScoreSource: 'metacritic' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 80 }
+        }
+      };
+
+      const result = getDisplayScoreInfo(reviewScoreData);
+      expect(result.score).toBe(85);
+      expect(result.sourceName).toBe('OpenCritic');
+      expect(result.sourceKey).toBe('opencritic');
+    });
+
+    it('should fall back to OpenCritic when outletScores is undefined', () => {
+      const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ reviewScoreSource: 'ign' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90
+      };
+
+      const result = getDisplayScoreInfo(reviewScoreData);
+      expect(result.score).toBe(85);
+      expect(result.sourceName).toBe('OpenCritic');
+      expect(result.sourceKey).toBe('opencritic');
+    });
+
+    it('should fall back to OpenCritic when outlet score is 0', () => {
+      const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ reviewScoreSource: 'ign' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 0 }
+        }
+      };
+
+      const result = getDisplayScoreInfo(reviewScoreData);
+      expect(result.score).toBe(85);
+      expect(result.sourceName).toBe('OpenCritic');
+      expect(result.sourceKey).toBe('opencritic');
+    });
+
+    it('should use default reviewScoreSource when not set', () => {
+      const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({}); // No reviewScoreSource set
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90
+      };
+
+      const result = getDisplayScoreInfo(reviewScoreData);
+      expect(result.score).toBe(85);
+      expect(result.sourceName).toBe('OpenCritic');
+      expect(result.sourceKey).toBe('opencritic');
+    });
+  });
+
+  describe('createReviewScoreBadge with outlet scores', () => {
+    beforeEach(() => {
+      const { setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: true, reviewScoreSource: 'opencritic' });
+    });
+
+    it('should create badge with OpenCritic score by default', () => {
+      const { createReviewScoreBadge } = globalThis.SCPW_ContentTestExports;
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      expect(badge.textContent).toBe('85');
+      expect(badge.getAttribute('title')).toContain('OpenCritic: 85');
+    });
+
+    it('should create clickable badge when openCriticId is valid', () => {
+      const { createReviewScoreBadge } = globalThis.SCPW_ContentTestExports;
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      expect(badge.tagName.toLowerCase()).toBe('a');
+      expect(badge.getAttribute('href')).toBe('https://opencritic.com/game/123');
+    });
+
+    it('should create non-clickable badge when openCriticId is 0', () => {
+      const { createReviewScoreBadge } = globalThis.SCPW_ContentTestExports;
+
+      const reviewScoreData = {
+        openCriticId: 0,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      expect(badge.tagName.toLowerCase()).toBe('span');
+    });
+
+    it('should show IGN score when selected', () => {
+      const { createReviewScoreBadge, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: true, reviewScoreSource: 'ign' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 80, originalScore: '8/10' }
+        }
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      expect(badge.textContent).toBe('80');
+      expect(badge.getAttribute('title')).toContain('IGN: 80');
+      expect(badge.getAttribute('title')).toContain('OpenCritic: 85');
+    });
+
+    it('should show all available outlet scores in tooltip', () => {
+      const { createReviewScoreBadge, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: true, reviewScoreSource: 'opencritic' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 80 },
+          gamespot: { outletName: 'GameSpot', score: 75 },
+          metacritic: { outletName: 'Metacritic', score: 82 }
+        }
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      const tooltip = badge.getAttribute('title');
+      expect(tooltip).toContain('OpenCritic: 85');
+      expect(tooltip).toContain('IGN: 80');
+      expect(tooltip).toContain('GameSpot: 75');
+      expect(tooltip).toContain('Metacritic: 82');
+    });
+
+    it('should skip outlet scores with 0 value in tooltip', () => {
+      const { createReviewScoreBadge, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: true, reviewScoreSource: 'opencritic' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 0 },
+          gamespot: { outletName: 'GameSpot', score: 75 }
+        }
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      const tooltip = badge.getAttribute('title');
+      expect(tooltip).not.toContain('IGN');
+      expect(tooltip).toContain('GameSpot: 75');
+    });
+
+    it('should include tier and review count in tooltip', () => {
+      const { createReviewScoreBadge, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: true, reviewScoreSource: 'opencritic' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 0
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      const tooltip = badge.getAttribute('title');
+      expect(tooltip).toContain('Tier: Strong');
+      expect(tooltip).toContain('Based on 50 critic reviews');
+      expect(tooltip).not.toContain('recommend');
+    });
+  });
+
+  describe('updateIconsWithData review score branches', () => {
+    beforeEach(() => {
+      const { setUserSettings, getReviewScoreDataByAppId, setSteamDeckData } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false, showHltb: false, showReviewScores: true, reviewScoreSource: 'opencritic' });
+      getReviewScoreDataByAppId().clear();
+      setSteamDeckData(null);
+    });
+
+    afterEach(() => {
+      const { setUserSettings, getReviewScoreDataByAppId } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true, showReviewScores: true });
+      getReviewScoreDataByAppId().clear();
+    });
+
+    it('should show review score loader when data not yet known', () => {
+      const { createIconsContainer, updateIconsWithData, getReviewScoreDataByAppId, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showSteamDeck: false, showHltb: false, showReviewScores: true });
+
+      const container = createIconsContainer('66666', 'Review Score Test Game');
+      document.body.appendChild(container);
+
+      // Ensure review score data is NOT known for this appid
+      getReviewScoreDataByAppId().delete('66666');
+
+      const data = {
+        gameName: 'Review Score Test Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      // Should have review score loader since data is not known
+      expect(container.querySelector('.scpw-review-score-loader')).not.toBeNull();
+
+      container.remove();
+    });
+
+    it('should show review score badge when data has score', () => {
+      const { createIconsContainer, updateIconsWithData, getReviewScoreDataByAppId, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showSteamDeck: false, showHltb: false, showReviewScores: true });
+
+      const container = createIconsContainer('66667', 'Review Score Badge Game');
+      document.body.appendChild(container);
+
+      // Set review score data
+      getReviewScoreDataByAppId().set('66667', {
+        openCriticId: 999,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90
+      });
+
+      const data = {
+        gameName: 'Review Score Badge Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      // Should have review score badge, not loader
+      expect(container.querySelector('.scpw-review-score-badge')).not.toBeNull();
+      expect(container.querySelector('.scpw-review-score-loader')).toBeNull();
+
+      container.remove();
+    });
+
+    it('should not show review score when showReviewScores is disabled', () => {
+      const { createIconsContainer, updateIconsWithData, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showSteamDeck: false, showHltb: false, showReviewScores: false });
+
+      const container = createIconsContainer('66668', 'No Review Score Game');
+      document.body.appendChild(container);
+
+      const data = {
+        gameName: 'No Review Score Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      // Should have neither badge nor loader
+      expect(container.querySelector('.scpw-review-score-badge')).toBeNull();
+      expect(container.querySelector('.scpw-review-score-loader')).toBeNull();
+
+      container.remove();
+    });
+
+    it('should not show review score badge when score is 0', () => {
+      const { createIconsContainer, updateIconsWithData, getReviewScoreDataByAppId, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showNintendo: true, showSteamDeck: false, showHltb: false, showReviewScores: true });
+
+      const container = createIconsContainer('66669', 'Zero Score Game');
+      document.body.appendChild(container);
+
+      // Set review score data with zero score
+      getReviewScoreDataByAppId().set('66669', {
+        openCriticId: 888,
+        score: 0,
+        tier: 'Unknown',
+        numReviews: 0,
+        percentRecommended: 0
+      });
+
+      const data = {
+        gameName: 'Zero Score Game',
+        platforms: {
+          nintendo: { status: 'available', storeUrl: 'https://ns.example.com' }
+        }
+      };
+
+      updateIconsWithData(container, data);
+
+      // Should not show badge (no score) and not show loader (data is known)
+      expect(container.querySelector('.scpw-review-score-badge')).toBeNull();
+      expect(container.querySelector('.scpw-review-score-loader')).toBeNull();
+
+      container.remove();
     });
   });
 

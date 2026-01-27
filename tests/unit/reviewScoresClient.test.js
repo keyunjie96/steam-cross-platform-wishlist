@@ -13,8 +13,10 @@ function createOpenCriticFetchMock(options = {}) {
   const {
     searchResults = [],
     gameDetails = null,
+    gameReviews = [],
     searchStatus = 200,
-    detailsStatus = 200
+    detailsStatus = 200,
+    reviewsStatus = 200
   } = options;
 
   // Mock headers object
@@ -33,6 +35,18 @@ function createOpenCriticFetchMock(options = {}) {
         status: 200,
         headers: mockHeaders,
         json: () => Promise.resolve(searchResults)
+      });
+    }
+    // Game reviews endpoint (must come before game details to match correctly)
+    if (url.match(/\/api\/review\/game\/\d+$/)) {
+      if (reviewsStatus !== 200) {
+        return Promise.resolve({ ok: false, status: reviewsStatus, headers: mockHeaders });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: mockHeaders,
+        json: () => Promise.resolve(gameReviews)
       });
     }
     // Game details endpoint
@@ -415,5 +429,224 @@ describe('reviewScoresClient.js', () => {
       // Both queries should have been made (rate limiting doesn't prevent, just delays)
       expect(fetchSpy).toHaveBeenCalled();
     }, 30000);
+  });
+
+  describe('outlet scores', () => {
+    it('should include outlet scores when reviews are available', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        },
+        gameReviews: [
+          { id: 1, score: 85, npScore: 85, Outlet: { id: 1, name: 'IGN' }, scoreFormat: { displayScore: '8.5/10' } },
+          { id: 2, score: 80, npScore: 80, Outlet: { id: 2, name: 'GameSpot' } },
+          { id: 3, score: 82, npScore: 82, Outlet: { id: 3, name: 'Metacritic' } }
+        ]
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores).toBeDefined();
+      expect(result.data.outletScores.ign).toBeDefined();
+      expect(result.data.outletScores.ign.score).toBe(85);
+      expect(result.data.outletScores.ign.originalScore).toBe('8.5/10');
+      expect(result.data.outletScores.gamespot).toBeDefined();
+      expect(result.data.outletScores.gamespot.score).toBe(80);
+      expect(result.data.outletScores.metacritic).toBeDefined();
+      expect(result.data.outletScores.metacritic.score).toBe(82);
+    }, 15000);
+
+    it('should handle reviews with no Outlet', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        },
+        gameReviews: [
+          { id: 1, score: 85, npScore: 85 }, // No Outlet
+          { id: 2, score: 80, Outlet: { id: 2 } } // No name
+        ]
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores).toBeUndefined();
+    }, 15000);
+
+    it('should handle reviews fetch error gracefully', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        },
+        reviewsStatus: 500
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores).toBeUndefined();
+    }, 15000);
+
+    it('should skip reviews with invalid scores', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        },
+        gameReviews: [
+          { id: 1, score: 0, npScore: 0, Outlet: { id: 1, name: 'IGN' } }, // Zero score
+          { id: 2, score: -5, Outlet: { id: 2, name: 'GameSpot' } } // Negative score
+        ]
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores).toBeUndefined();
+    }, 15000);
+
+    it('should skip unknown outlet names', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        },
+        gameReviews: [
+          { id: 1, score: 85, npScore: 85, Outlet: { id: 1, name: 'PC Gamer' } },
+          { id: 2, score: 80, npScore: 80, Outlet: { id: 2, name: 'Polygon' } }
+        ]
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores).toBeUndefined();
+    }, 15000);
+
+    it('should use first review when outlet has multiple reviews', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        },
+        gameReviews: [
+          { id: 1, score: 85, npScore: 85, Outlet: { id: 1, name: 'IGN' } },
+          { id: 2, score: 90, npScore: 90, Outlet: { id: 1, name: 'IGN' } } // Second IGN review
+        ]
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores.ign.score).toBe(85); // First one wins
+    }, 15000);
+
+    it('should use raw score when npScore is not available', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        },
+        gameReviews: [
+          { id: 1, score: 85, Outlet: { id: 1, name: 'IGN' } } // No npScore
+        ]
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores.ign.score).toBe(85);
+    }, 15000);
+
+    it('should handle non-array reviews response', async () => {
+      globalThis.fetch = jest.fn().mockImplementation((url) => {
+        if (url.includes('/api/game/search')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{ id: 123, name: 'Test Game' }])
+          });
+        }
+        if (url.match(/\/api\/review\/game\/\d+$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ error: 'not an array' }) // Non-array
+          });
+        }
+        if (url.match(/\/api\/game\/\d+$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              id: 123,
+              name: 'Test Game',
+              topCriticScore: 85,
+              tier: 'Strong',
+              numTopCriticReviews: 50
+            })
+          });
+        }
+        return Promise.resolve({ ok: false, status: 404 });
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores).toBeUndefined();
+    }, 15000);
+
+    it('should handle reviews fetch throwing error', async () => {
+      let callCount = 0;
+      globalThis.fetch = jest.fn().mockImplementation((url) => {
+        if (url.includes('/api/game/search')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{ id: 123, name: 'Test Game' }])
+          });
+        }
+        if (url.match(/\/api\/review\/game\/\d+$/)) {
+          return Promise.reject(new Error('Network error'));
+        }
+        if (url.match(/\/api\/game\/\d+$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              id: 123,
+              name: 'Test Game',
+              topCriticScore: 85,
+              tier: 'Strong',
+              numTopCriticReviews: 50
+            })
+          });
+        }
+        return Promise.resolve({ ok: false, status: 404 });
+      });
+
+      const result = await ReviewScoresClient.queryByGameName('Test Game');
+      expect(result).not.toBeNull();
+      expect(result.data.outletScores).toBeUndefined();
+    }, 15000);
   });
 });

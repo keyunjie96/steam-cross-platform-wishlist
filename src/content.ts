@@ -799,11 +799,40 @@ function getTierColor(tier: ReviewScoreTier): string {
 }
 
 /**
+ * Gets the display score and source name based on user settings.
+ * Falls back to OpenCritic if the selected outlet score is not available.
+ */
+function getDisplayScoreInfo(reviewScoreData: ReviewScoreData): { score: number; sourceName: string; sourceKey: string } {
+  const source = userSettings.reviewScoreSource || 'opencritic';
+
+  // Try to get the selected outlet score
+  if (source !== 'opencritic' && reviewScoreData.outletScores) {
+    const outletScore = reviewScoreData.outletScores[source as 'ign' | 'gamespot' | 'metacritic'];
+    if (outletScore && outletScore.score > 0) {
+      return {
+        score: outletScore.score,
+        sourceName: outletScore.outletName,
+        sourceKey: source
+      };
+    }
+  }
+
+  // Fall back to OpenCritic
+  return {
+    score: reviewScoreData.score,
+    sourceName: 'OpenCritic',
+    sourceKey: 'opencritic'
+  };
+}
+
+/**
  * Creates a review score badge element.
- * Shows the OpenCritic score and tier.
+ * Shows the score from the user's selected source (OpenCritic, IGN, GameSpot, or Metacritic).
+ * Falls back to OpenCritic if the selected source is not available.
  */
 function createReviewScoreBadge(reviewScoreData: ReviewScoreData): HTMLElement {
   const isClickable = reviewScoreData.openCriticId > 0;
+  const displayInfo = getDisplayScoreInfo(reviewScoreData);
 
   const badge = document.createElement(isClickable ? 'a' : 'span') as HTMLAnchorElement | HTMLSpanElement;
   badge.className = 'scpw-review-score-badge';
@@ -814,23 +843,36 @@ function createReviewScoreBadge(reviewScoreData: ReviewScoreData): HTMLElement {
     badge.rel = 'noopener noreferrer';
   }
 
-  // Display the score
-  const score = Math.round(reviewScoreData.score);
+  // Display the score from selected source
+  const score = Math.round(displayInfo.score);
   badge.textContent = score.toString();
 
-  // Color based on tier
+  // Color based on tier (always use OpenCritic tier for consistency)
   const tierColor = getTierColor(reviewScoreData.tier);
   badge.style.setProperty('--tier-color', tierColor);
 
   // Build tooltip
   const tooltipParts: string[] = [];
-  tooltipParts.push(`OpenCritic Score: ${score}`);
+  tooltipParts.push(`${displayInfo.sourceName}: ${score}`);
+
+  // Show other available scores in tooltip
+  if (displayInfo.sourceKey !== 'opencritic') {
+    tooltipParts.push(`OpenCritic: ${Math.round(reviewScoreData.score)}`);
+  }
+  if (reviewScoreData.outletScores) {
+    const outlets = ['ign', 'gamespot', 'metacritic'] as const;
+    for (const outlet of outlets) {
+      if (outlet === displayInfo.sourceKey) continue;
+      const outletScore = reviewScoreData.outletScores[outlet];
+      if (outletScore && outletScore.score > 0) {
+        tooltipParts.push(`${outletScore.outletName}: ${Math.round(outletScore.score)}`);
+      }
+    }
+  }
+
   tooltipParts.push(`Tier: ${reviewScoreData.tier}`);
   if (reviewScoreData.numReviews > 0) {
     tooltipParts.push(`Based on ${reviewScoreData.numReviews} critic reviews`);
-  }
-  if (reviewScoreData.percentRecommended > 0) {
-    tooltipParts.push(`${Math.round(reviewScoreData.percentRecommended)}% critics recommend`);
   }
   if (isClickable) {
     tooltipParts.push('Click to view on OpenCritic');
@@ -1931,6 +1973,7 @@ if (typeof globalThis !== 'undefined') {
     getRenderedIconSummary,
     // Review score exports for coverage testing
     getTierColor,
+    getDisplayScoreInfo,
     createReviewScoreBadge,
     createReviewScoreLoader,
     queueForReviewScoreResolution,

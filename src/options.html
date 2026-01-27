@@ -752,19 +752,25 @@
             </label>
           </div>
 
-          <label class="toggle-item" data-platform="review-scores">
-            <div class="toggle-icon review-scores-icon">
+          <div class="toggle-item has-inline-option" data-platform="review-scores">
+            <label class="toggle-icon review-scores-icon" for="show-review-scores">
               <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-            </div>
-            <div class="toggle-content">
+            </label>
+            <label class="toggle-content" for="show-review-scores">
               <div class="toggle-label">Review Scores</div>
-              <div class="toggle-desc">Show OpenCritic ratings</div>
-            </div>
-            <div class="toggle-switch">
+              <div class="toggle-desc">Show game ratings from critics</div>
+            </label>
+            <select class="inline-select" id="review-score-source" hidden>
+              <option value="opencritic">OpenCritic</option>
+              <option value="ign">IGN</option>
+              <option value="gamespot">GameSpot</option>
+              <option value="metacritic">Metacritic</option>
+            </select>
+            <label class="toggle-switch">
               <input type="checkbox" id="show-review-scores">
               <span class="slider"></span>
-            </div>
-          </label>
+            </label>
+          </div>
         </div>
         <div id="settings-status" class="status"></div>
       </div>

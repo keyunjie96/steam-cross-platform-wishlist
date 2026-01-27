@@ -9,7 +9,7 @@
  * - Game details: GET https://api.opencritic.com/api/game/<id>
  */
 
-import type { ReviewScoreData, ReviewScoreTier, ReviewScoreSearchResult } from './types';
+import type { ReviewScoreData, ReviewScoreTier, ReviewScoreSearchResult, OutletScore } from './types';
 
 const OPENCRITIC_API_BASE = 'https://api.opencritic.com/api';
 const LOG_PREFIX = '[SCPW ReviewScores]';
@@ -141,6 +141,31 @@ interface OpenCriticGameDetails {
 }
 
 /**
+ * OpenCritic review item (from /api/review/game/<id>)
+ */
+interface OpenCriticReviewItem {
+  id: number;
+  score: number;           // Outlet's score
+  npScore?: number;        // Normalized score (0-100)
+  scoreFormat?: {
+    displayScore?: string; // Original score format (e.g., "8.5/10")
+  };
+  Outlet?: {
+    id: number;
+    name: string;
+  };
+}
+
+/**
+ * Outlet name mappings (OpenCritic uses specific names)
+ */
+const OUTLET_MAPPINGS: Record<string, 'ign' | 'gamespot' | 'metacritic'> = {
+  'IGN': 'ign',
+  'GameSpot': 'gamespot',
+  'Metacritic': 'metacritic',
+};
+
+/**
  * Searches OpenCritic for a game by name
  */
 async function searchOpenCritic(gameName: string): Promise<OpenCriticSearchItem[]> {
@@ -199,6 +224,74 @@ async function getGameDetails(gameId: number): Promise<OpenCriticGameDetails | n
 }
 
 /**
+ * Gets individual outlet reviews from OpenCritic
+ */
+async function getGameReviews(gameId: number): Promise<OpenCriticReviewItem[]> {
+  try {
+    const url = `${OPENCRITIC_API_BASE}/review/game/${gameId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (DEBUG) console.log(`${LOG_PREFIX} Game reviews failed with status ${response.status}`); /* istanbul ignore if */
+      return [];
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data as OpenCriticReviewItem[];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (DEBUG) console.log(`${LOG_PREFIX} Game reviews error:`, errorMessage); /* istanbul ignore if */
+    return [];
+  }
+}
+
+/**
+ * Extracts individual outlet scores from OpenCritic reviews
+ */
+function extractOutletScores(reviews: OpenCriticReviewItem[]): ReviewScoreData['outletScores'] {
+  const outletScores: ReviewScoreData['outletScores'] = {};
+
+  for (const review of reviews) {
+    if (!review.Outlet?.name) continue;
+
+    const outletKey = OUTLET_MAPPINGS[review.Outlet.name];
+    if (!outletKey) continue;
+
+    // Skip if we already have a score for this outlet (take first/most recent)
+    if (outletScores[outletKey]) continue;
+
+    // Use normalized score (npScore) if available, otherwise use raw score
+    const score = review.npScore ?? review.score;
+    if (!score || score <= 0) continue;
+
+    const outletScore: OutletScore = {
+      outletName: review.Outlet.name,
+      score: score,
+    };
+
+    // Include original score format if available
+    if (review.scoreFormat?.displayScore) {
+      outletScore.originalScore = review.scoreFormat.displayScore;
+    }
+
+    outletScores[outletKey] = outletScore;
+
+    if (DEBUG) console.log(`${LOG_PREFIX} Found ${review.Outlet.name} score: ${score}`); /* istanbul ignore if */
+  }
+
+  return Object.keys(outletScores).length > 0 ? outletScores : undefined;
+}
+
+/**
  * Queries OpenCritic for review scores by game name.
  *
  * @param gameName - The game name to search for (from Steam)
@@ -240,6 +333,11 @@ async function queryByGameName(gameName: string): Promise<ReviewScoreSearchResul
     return null;
   }
 
+  // Get individual outlet reviews
+  await rateLimit();
+  const reviews = await getGameReviews(best.item.id);
+  const outletScores = extractOutletScores(reviews);
+
   const result: ReviewScoreSearchResult = {
     openCriticId: details.id,
     gameName: details.name,
@@ -249,11 +347,12 @@ async function queryByGameName(gameName: string): Promise<ReviewScoreSearchResul
       score: details.topCriticScore,
       tier: parseTier(details.tier),
       numReviews: details.numTopCriticReviews || 0,
-      percentRecommended: details.percentRecommended || 0
+      percentRecommended: details.percentRecommended || 0,
+      outletScores
     }
   };
 
-  if (DEBUG) console.log(`${LOG_PREFIX} Best match: ${result.gameName} (${(best.similarity * 100).toFixed(0)}%), score=${result.data.score}`); /* istanbul ignore if */
+  if (DEBUG) console.log(`${LOG_PREFIX} Best match: ${result.gameName} (${(best.similarity * 100).toFixed(0)}%), score=${result.data.score}, outlets: ${outletScores ? Object.keys(outletScores).join(', ') : 'none'}`); /* istanbul ignore if */
   return result;
 }
 
@@ -296,5 +395,7 @@ export {
   calculateSimilarity,
   formatScore,
   getTierColor,
-  parseTier
+  parseTier,
+  getGameReviews,
+  extractOutletScores
 };
