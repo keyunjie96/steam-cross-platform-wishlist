@@ -64,7 +64,7 @@ describe('cache.js', () => {
       const entry = {
         resolvedAt: Date.now(),
         ttlDays: 7,
-        cacheVersion: 1  // Must match CACHE_VERSION
+        cacheVersion: globalThis.SCPW_CacheVersion  // Must match CACHE_VERSION
       };
       expect(Cache.isCacheValid(entry)).toBe(true);
     });
@@ -74,7 +74,7 @@ describe('cache.js', () => {
       const entry = {
         resolvedAt: Date.now() - (8 * 24 * 60 * 60 * 1000), // 8 days ago
         ttlDays: 7,
-        cacheVersion: 1
+        cacheVersion: globalThis.SCPW_CacheVersion
       };
       expect(Cache.isCacheValid(entry)).toBe(false);
     });
@@ -84,7 +84,7 @@ describe('cache.js', () => {
       const entry = {
         resolvedAt: Date.now() - (6 * 24 * 60 * 60 * 1000), // 6 days ago
         ttlDays: 7,
-        cacheVersion: 1
+        cacheVersion: globalThis.SCPW_CacheVersion
       };
       expect(Cache.isCacheValid(entry)).toBe(true);
     });
@@ -124,7 +124,7 @@ describe('cache.js', () => {
         gameName: 'Test Game',
         resolvedAt: Date.now(),
         ttlDays: 7,
-        cacheVersion: 1,
+        cacheVersion: globalThis.SCPW_CacheVersion,
         platforms: {
           nintendo: { status: 'available', storeUrl: 'https://example.com' },
           playstation: { status: 'unavailable', storeUrl: 'https://example.com' },
@@ -170,7 +170,7 @@ describe('cache.js', () => {
         gameName: 'Test Game',
         resolvedAt: Date.now(),
         ttlDays: 7,
-        cacheVersion: 1,
+        cacheVersion: globalThis.SCPW_CacheVersion,
         platforms: {}
       };
 
@@ -188,7 +188,7 @@ describe('cache.js', () => {
         gameName: 'Test Game',
         resolvedAt: Date.now() - (10 * 24 * 60 * 60 * 1000), // 10 days ago
         ttlDays: 7,
-        cacheVersion: 1,
+        cacheVersion: globalThis.SCPW_CacheVersion,
         platforms: {}
       };
 
@@ -251,7 +251,7 @@ describe('cache.js', () => {
         gameName: 'Another Game',
         resolvedAt: Date.now(),
         ttlDays: 7,
-        cacheVersion: 1,
+        cacheVersion: globalThis.SCPW_CacheVersion,
         platforms: {
           nintendo: { status: 'available', storeUrl: 'url' },
           playstation: { status: 'available', storeUrl: 'url' },
@@ -274,7 +274,7 @@ describe('cache.js', () => {
         gameName: 'Cached Game',
         resolvedAt: Date.now(),
         ttlDays: 7,
-        cacheVersion: 1,
+        cacheVersion: globalThis.SCPW_CacheVersion,
         platforms: {
           nintendo: { status: 'available', storeUrl: 'url' },
           playstation: { status: 'available', storeUrl: 'url' },
@@ -331,7 +331,7 @@ describe('cache.js', () => {
         gameName: 'Old Name',
         resolvedAt: Date.now(),
         ttlDays: 7,
-        cacheVersion: 1,
+        cacheVersion: globalThis.SCPW_CacheVersion,
         platforms: {
           nintendo: { status: 'available', storeUrl: 'old-url' },
           playstation: { status: 'available', storeUrl: 'old-url' },

@@ -16,7 +16,7 @@ const CACHE_VERSION = globalThis.SCPW_CacheVersion;
 const PROCESSED_ATTR = 'data-scpw-processed';
 const ICONS_INJECTED_ATTR = 'data-scpw-icons';
 const LOG_PREFIX = '[Steam Cross-Platform Wishlist]';
-const DEBUG = false; // Set to true for verbose debugging
+const DEBUG = true; // Set to true for verbose debugging
 
 /** Set of appids that have been processed to avoid duplicate logging */
 const processedAppIds = new Set<string>();
@@ -149,21 +149,40 @@ const hltbDataByAppId = new Map<string, HltbData | null>();
 /**
  * Restores HLTB data from a cache entry if not already present.
  * Handles the special case where hltbId === -1 means "searched but not found".
+ * NOTE: We intentionally DON'T store "not found" markers in the map - this allows
+ * games to be re-queried, which helps when HLTB adds new games or our search improves.
  */
 function restoreHltbDataFromEntry(appid: string, entry: CacheEntry): void {
   if (!entry.hltbData || hltbDataByAppId.has(appid)) return;
-  const hltbValue = entry.hltbData.hltbId === -1 ? null : entry.hltbData;
-  hltbDataByAppId.set(appid, hltbValue);
+
+  // Skip "not found" markers - don't store them in the map
+  // This allows games to be re-queried for fresh HLTB data
+  if (entry.hltbData.hltbId === -1) {
+    return;
+  }
+
+  hltbDataByAppId.set(appid, entry.hltbData);
 }
 
 /**
  * Restores review score data from a cache entry if not already present.
  * Handles the special case where openCriticId === -1 means "searched but not found".
+ * NOTE: We intentionally DON'T store "not found" markers in the map - this allows
+ * games to be re-queried, which helps when OpenCritic adds new games or our search improves.
  */
 function restoreReviewScoreDataFromEntry(appid: string, entry: CacheEntry): void {
+  if (DEBUG) console.log(`${LOG_PREFIX} restoreReviewScore(${appid}): hasData=${!!entry.reviewScoreData}, alreadyInMap=${reviewScoreDataByAppId.has(appid)}`); /* istanbul ignore if */
   if (!entry.reviewScoreData || reviewScoreDataByAppId.has(appid)) return;
-  const reviewScoreValue = entry.reviewScoreData.openCriticId === -1 ? null : entry.reviewScoreData;
-  reviewScoreDataByAppId.set(appid, reviewScoreValue);
+
+  // Skip "not found" markers - don't store them in the map
+  // This allows games to be re-queried for fresh OpenCritic data
+  if (entry.reviewScoreData.openCriticId === -1) {
+    if (DEBUG) console.log(`${LOG_PREFIX} restoreReviewScore(${appid}): skipping "not found" marker (openCriticId=-1)`); /* istanbul ignore if */
+    return;
+  }
+
+  if (DEBUG) console.log(`${LOG_PREFIX} restoreReviewScore(${appid}): storing valid data, openCriticId=${entry.reviewScoreData.openCriticId}`); /* istanbul ignore if */
+  reviewScoreDataByAppId.set(appid, entry.reviewScoreData);
 }
 
 /** Pending items waiting for HLTB data resolution */
@@ -242,7 +261,7 @@ async function loadUserSettings(): Promise<void> {
     if (result.scpwSettings) {
       userSettings = { ...userSettings, ...result.scpwSettings };
     }
-    if (DEBUG) console.log(`${LOG_PREFIX} Settings loaded: showHltb=${userSettings.showHltb}`); /* istanbul ignore if */
+    if (DEBUG) console.log(`${LOG_PREFIX} Settings loaded: showHltb=${userSettings.showHltb}, showReviewScores=${userSettings.showReviewScores}`); /* istanbul ignore if */
   } catch (error) {
     console.error(`${LOG_PREFIX} Error loading settings:`, error);
   }
@@ -306,7 +325,7 @@ function setupSettingsChangeListener(): void {
         // If we have cached data, use it to update the container
         const cachedEntry = cachedEntriesByAppId.get(appid);
         if (cachedEntry) {
-          updateIconsWithData(container, cachedEntry);
+          updateIconsWithData(container, cachedEntry, false);  // No loaders for cache hit
           if (DEBUG) console.log(`${LOG_PREFIX} Updated loading container from cache: ${appid}`); /* istanbul ignore if */
         } else if (!isAnyConsolePlatformEnabled() && !newSettings.showSteamDeck) {
           // No cached data and all platforms disabled - just remove loader
@@ -380,7 +399,7 @@ function refreshIconsFromCache(reason: string): void {
     const container = document.querySelector<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
     if (!container || !document.body.contains(container)) continue;
 
-    updateIconsWithData(container, data);
+    updateIconsWithData(container, data, false);  // No loaders for cache refresh
     refreshedCount++;
 
     const gameName = data.gameName || container.getAttribute('data-game-name') || 'Unknown Game';
@@ -800,72 +819,106 @@ function getTierColor(tier: ReviewScoreTier): string {
 
 /**
  * Gets the display score and source name based on user settings.
- * Falls back to OpenCritic if the selected outlet score is not available.
+ * Returns null if the selected outlet score is not available (no fallback).
  */
-function getDisplayScoreInfo(reviewScoreData: ReviewScoreData): { score: number; sourceName: string; sourceKey: string } {
+function getDisplayScoreInfo(reviewScoreData: ReviewScoreData): {
+  score: number;
+  displayScore: string;  // Original format for display (e.g., "9.5" for IGN)
+  sourceName: string;
+  sourceKey: string;
+  reviewUrl?: string;
+} | null {
   const source = userSettings.reviewScoreSource || 'opencritic';
 
-  // Try to get the selected outlet score
-  if (source !== 'opencritic' && reviewScoreData.outletScores) {
-    const outletScore = reviewScoreData.outletScores[source as 'ign' | 'gamespot' | 'metacritic'];
+  // OpenCritic is the default - always available if we have review data
+  if (source === 'opencritic') {
+    return {
+      score: reviewScoreData.score,
+      displayScore: Math.round(reviewScoreData.score).toString(),
+      sourceName: 'OpenCritic',
+      sourceKey: 'opencritic'
+    };
+  }
+
+  // Try to get the selected outlet score - no fallback if unavailable
+  if (reviewScoreData.outletScores) {
+    const outletScore = reviewScoreData.outletScores[source as 'ign' | 'gamespot'];
     if (outletScore && outletScore.score > 0) {
+      // Calculate display score based on original scale
+      // If scaleBase is 10 (IGN/GameSpot), divide by 10 to show "7.3" instead of "73"
+      // If scaleBase is 100 or not set, show as-is
+      const scaleBase = outletScore.scaleBase || 100;
+      const displayScore = scaleBase === 10
+        ? (outletScore.score / 10).toFixed(1)
+        : Math.round(outletScore.score).toString();
       return {
-        score: outletScore.score,
+        score: outletScore.score,  // Normalized score for color calculation
+        displayScore: displayScore,
         sourceName: outletScore.outletName,
-        sourceKey: source
+        sourceKey: source,
+        reviewUrl: outletScore.reviewUrl
       };
     }
   }
 
-  // Fall back to OpenCritic
-  return {
-    score: reviewScoreData.score,
-    sourceName: 'OpenCritic',
-    sourceKey: 'opencritic'
-  };
+  // Selected outlet not available - return null (don't show badge)
+  return null;
 }
 
 /**
  * Creates a review score badge element.
- * Shows the score from the user's selected source (OpenCritic, IGN, GameSpot, or Metacritic).
- * Falls back to OpenCritic if the selected source is not available.
+ * Shows the score from the user's selected source (OpenCritic, IGN, or GameSpot).
+ * Returns null if the selected source is not available (no fallback).
  */
-function createReviewScoreBadge(reviewScoreData: ReviewScoreData): HTMLElement {
-  const isClickable = reviewScoreData.openCriticId > 0;
+function createReviewScoreBadge(reviewScoreData: ReviewScoreData): HTMLElement | null {
   const displayInfo = getDisplayScoreInfo(reviewScoreData);
+
+  // If selected outlet is not available, don't show badge
+  if (!displayInfo) {
+    return null;
+  }
+
+  // Determine the URL to link to
+  // Use outlet's reviewUrl if available, otherwise fall back to OpenCritic game page
+  const reviewUrl = displayInfo.reviewUrl || reviewScoreData.openCriticUrl || null;
+  const isClickable = !!reviewUrl;
 
   const badge = document.createElement(isClickable ? 'a' : 'span') as HTMLAnchorElement | HTMLSpanElement;
   badge.className = 'scpw-review-score-badge';
 
   if (isClickable && badge instanceof HTMLAnchorElement) {
-    badge.href = `https://opencritic.com/game/${reviewScoreData.openCriticId}`;
+    badge.href = reviewUrl;
     badge.target = '_blank';
     badge.rel = 'noopener noreferrer';
   }
 
-  // Display the score from selected source
-  const score = Math.round(displayInfo.score);
-  badge.textContent = score.toString();
+  // Display the formatted score (e.g., "9.5" for IGN, "95" for OpenCritic)
+  badge.textContent = displayInfo.displayScore;
 
-  // Color based on tier (always use OpenCritic tier for consistency)
+  // Color based on normalized score (always 0-100 scale for consistent coloring)
   const tierColor = getTierColor(reviewScoreData.tier);
   badge.style.setProperty('--tier-color', tierColor);
 
   // Build tooltip
   const tooltipParts: string[] = [];
-  tooltipParts.push(`${displayInfo.sourceName}: ${score}`);
+  tooltipParts.push(`${displayInfo.sourceName}: ${displayInfo.displayScore}`);
 
   // Show other available scores in tooltip
   if (displayInfo.sourceKey !== 'opencritic') {
     tooltipParts.push(`OpenCritic: ${Math.round(reviewScoreData.score)}`);
   }
   if (reviewScoreData.outletScores) {
-    const outlets = ['ign', 'gamespot', 'metacritic'] as const;
+    const outlets = ['ign', 'gamespot'] as const;
     for (const outlet of outlets) {
       if (outlet === displayInfo.sourceKey) continue;
       const outletScore = reviewScoreData.outletScores[outlet];
       if (outletScore && outletScore.score > 0) {
-        tooltipParts.push(`${outletScore.outletName}: ${Math.round(outletScore.score)}`);
+        // Show score in original scale (divide by 10 for 10-point outlets)
+        const scaleBase = outletScore.scaleBase || 100;
+        const displayVal = scaleBase === 10
+          ? (outletScore.score / 10).toFixed(1)
+          : Math.round(outletScore.score).toString();
+        tooltipParts.push(`${outletScore.outletName}: ${displayVal}`);
       }
     }
   }
@@ -875,7 +928,9 @@ function createReviewScoreBadge(reviewScoreData: ReviewScoreData): HTMLElement {
     tooltipParts.push(`Based on ${reviewScoreData.numReviews} critic reviews`);
   }
   if (isClickable) {
-    tooltipParts.push('Click to view on OpenCritic');
+    // Tooltip should reflect actual destination: outlet's review if available, otherwise OpenCritic
+    const siteName = displayInfo.reviewUrl ? displayInfo.sourceName : 'OpenCritic';
+    tooltipParts.push(`Click to view on ${siteName}`);
   }
 
   const tooltip = tooltipParts.join('\n');
@@ -904,8 +959,10 @@ function createReviewScoreLoader(): HTMLElement {
  * Only shows icons for platforms where the game is available:
  * - available: Full opacity, clickable - opens store page
  * - unavailable/unknown: Hidden (not displayed)
+ *
+ * @param showLoaders - If false, don't show loading spinners (use for cache-hit renders)
  */
-function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
+function updateIconsWithData(container: HTMLElement, data: CacheEntry, showLoaders: boolean = true): void {
   const gameName = data.gameName || container.getAttribute('data-game-name') || '';
   const appid = container.getAttribute('data-appid');
   const enabledPlatforms = getEnabledPlatforms();
@@ -966,14 +1023,16 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
   const hltbData = hltbKnown && appid ? hltbDataByAppId.get(appid) : null;
   const hasHltbTime = hltbData && (hltbData.mainStory > 0 || hltbData.mainExtra > 0 || hltbData.completionist > 0);
   const showHltbBadge = userSettings.showHltb && hasHltbTime;
-  const showHltbLoader = userSettings.showHltb && !hltbKnown;
+  // Only show loader if showLoaders is true (i.e., network call is happening)
+  const showHltbLoader = showLoaders && userSettings.showHltb && !hltbKnown;
 
   // Get review score data if available
   const reviewScoreKnown = appid ? reviewScoreDataByAppId.has(appid) : false;
   const reviewScoreData = reviewScoreKnown && appid ? reviewScoreDataByAppId.get(appid) : null;
   const hasReviewScore = reviewScoreData && reviewScoreData.score > 0;
   const showReviewScoreBadge = userSettings.showReviewScores && hasReviewScore;
-  const showReviewScoreLoader = userSettings.showReviewScores && !reviewScoreKnown;
+  // Only show loader if showLoaders is true (i.e., network call is happening)
+  const showReviewScoreLoader = showLoaders && userSettings.showReviewScores && !reviewScoreKnown;
 
   // Only add separator and icons if we have visible icons, badges, or loaders
   if (iconsToAdd.length > 0 || showHltbBadge || showHltbLoader || showReviewScoreBadge || showReviewScoreLoader) {
@@ -994,9 +1053,12 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry): void {
     }
 
     // Add review score badge or loader after HLTB
+    // Badge is null if selected outlet (IGN/GameSpot) is not available for this game
     if (showReviewScoreBadge && reviewScoreData) {
       const reviewScoreBadge = createReviewScoreBadge(reviewScoreData);
-      container.appendChild(reviewScoreBadge);
+      if (reviewScoreBadge) {
+        container.appendChild(reviewScoreBadge);
+      }
     } else if (showReviewScoreLoader) {
       container.appendChild(createReviewScoreLoader());
     }
@@ -1248,7 +1310,7 @@ async function processPendingBatch(): Promise<void> {
 
       // Always call updateIconsWithData - it handles removing the loader
       // and will show Steam Deck icons if enabled and data is available
-      updateIconsWithData(container, minimalEntry);
+      updateIconsWithData(container, minimalEntry, false);  // No loaders - platforms disabled
     }
     return;
   }
@@ -1423,7 +1485,7 @@ async function processPendingHltbBatch(): Promise<void> {
           const cachedEntry = cachedEntriesByAppId.get(appid);
           if (cachedEntry) {
             for (const targetContainer of allContainersForAppid) {
-              updateIconsWithData(targetContainer, cachedEntry);
+              updateIconsWithData(targetContainer, cachedEntry, false);  // No loaders - data received
             }
 
             /* istanbul ignore if */
@@ -1495,10 +1557,15 @@ async function processPendingReviewScoreBatch(): Promise<void> {
     if (DEBUG) console.log(`${LOG_PREFIX} Review scores: Sending batch ${batchNum}/${totalBatches} (${games.length} games)`); /* istanbul ignore if */
 
     try {
-      const response = await sendMessageWithRetry<{ success: boolean; reviewScoresResults?: Record<string, ReviewScoreData | null> }>({
+      const response = await sendMessageWithRetry<{ success: boolean; reviewScoresResults?: Record<string, ReviewScoreData | null>; _diagnostic?: { total: number; cached: number; toQuery: number; apiCalled: boolean; apiResults: number; error: string | null } }>({
         type: 'GET_REVIEW_SCORES_BATCH',
         games
       });
+
+      // Log diagnostic info from background
+      if (DEBUG && response?._diagnostic) {
+        console.log(`${LOG_PREFIX} Review scores DIAGNOSTIC from background:`, JSON.stringify(response._diagnostic));
+      }
 
       if (response?.success && response.reviewScoresResults) {
         // Update review score data and re-render icons
@@ -1525,7 +1592,7 @@ async function processPendingReviewScoreBatch(): Promise<void> {
           const cachedEntry = cachedEntriesByAppId.get(appid);
           if (cachedEntry) {
             for (const targetContainer of allContainersForAppid) {
-              updateIconsWithData(targetContainer, cachedEntry);
+              updateIconsWithData(targetContainer, cachedEntry, false);  // No loaders - data received
             }
           }
         }
@@ -1735,7 +1802,7 @@ async function processItem(item: Element): Promise<void> {
 
   if (cachedEntry) {
     if (DEBUG) console.log(`${LOG_PREFIX} Using cached data for appid ${appId}`); /* istanbul ignore if */
-    updateIconsWithData(iconsContainer, cachedEntry);
+    updateIconsWithData(iconsContainer, cachedEntry, false);  // No loaders for cache hit
     const iconSummary = getRenderedIconSummary(iconsContainer);
     console.log(`${LOG_PREFIX} Rendered (cache-reuse): ${appId} - ${gameName} [icons: ${iconSummary}]`);
 
@@ -1744,6 +1811,7 @@ async function processItem(item: Element): Promise<void> {
     if (userSettings.showHltb && !hltbDataByAppId.has(appId)) {
       queueForHltbResolution(appId, englishName, iconsContainer);
     }
+    if (DEBUG) console.log(`${LOG_PREFIX} Review check for ${appId}: showReviewScores=${userSettings.showReviewScores}, inMap=${reviewScoreDataByAppId.has(appId)}, cachedHas=${!!cachedEntry.reviewScoreData}`); /* istanbul ignore if */
     if (userSettings.showReviewScores && !reviewScoreDataByAppId.has(appId)) {
       queueForReviewScoreResolution(appId, englishName, iconsContainer);
     }

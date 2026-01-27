@@ -1507,8 +1507,8 @@ describe('background.js', () => {
     beforeEach(() => {
       mockReviewScoresClient = {
         queryByGameName: jest.fn(),
-        batchQueryByGameNames: jest.fn().mockResolvedValue(
-          new Map([
+        batchQueryByGameNames: jest.fn().mockResolvedValue({
+          results: new Map([
             ['12345', {
               openCriticId: 7015,
               gameName: 'Game 1',
@@ -1521,8 +1521,9 @@ describe('background.js', () => {
               similarity: 1,
               data: { openCriticId: 7016, score: 75, tier: 'Strong', numReviews: 50, percentRecommended: 80 }
             }]
-          ])
-        )
+          ]),
+          failureReasons: {}
+        })
       };
       globalThis.SCPW_ReviewScoresClient = mockReviewScoresClient;
 
@@ -1614,9 +1615,9 @@ describe('background.js', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      // Should only query for uncached game
+      // Should only query for uncached game (includes openCriticId from Wikidata cache lookup)
       expect(mockReviewScoresClient.batchQueryByGameNames).toHaveBeenCalledWith([
-        { appid: '67890', gameName: 'Game 2' }
+        { appid: '67890', gameName: 'Game 2', openCriticId: null }
       ]);
     });
 
@@ -1632,13 +1633,15 @@ describe('background.js', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(sendResponse).toHaveBeenCalledWith({
-        success: true,
-        reviewScoresResults: {
-          '12345': expect.objectContaining({ score: 90 }),
-          '67890': expect.objectContaining({ score: 75 })
-        }
-      });
+      expect(sendResponse).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          reviewScoresResults: {
+            '12345': expect.objectContaining({ score: 90 }),
+            '67890': expect.objectContaining({ score: 75 })
+          }
+        })
+      );
     });
 
     it('should handle batch query errors', async () => {
@@ -1652,16 +1655,19 @@ describe('background.js', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(sendResponse).toHaveBeenCalledWith({
-        success: true,
-        reviewScoresResults: { '12345': null }
-      });
+      expect(sendResponse).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          reviewScoresResults: { '12345': null }
+        })
+      );
     });
 
     it('should handle null results from review scores', async () => {
-      mockReviewScoresClient.batchQueryByGameNames.mockResolvedValueOnce(
-        new Map([['12345', null]])
-      );
+      mockReviewScoresClient.batchQueryByGameNames.mockResolvedValueOnce({
+        results: new Map([['12345', null]]),
+        failureReasons: { '12345': 'no_search_results' }
+      });
 
       const sendResponse = jest.fn();
       messageHandler({
@@ -1671,18 +1677,21 @@ describe('background.js', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(sendResponse).toHaveBeenCalledWith({
-        success: true,
-        reviewScoresResults: { '12345': null }
-      });
+      expect(sendResponse).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          reviewScoresResults: { '12345': null }
+        })
+      );
     });
 
     it('should cache "not found" marker for games with no review score match', async () => {
       const cachedEntry = { appid: '12345', gameName: 'Unknown Game', reviewScoreData: null };
       mockCache.getFromCache.mockResolvedValue(cachedEntry);
-      mockReviewScoresClient.batchQueryByGameNames.mockResolvedValueOnce(
-        new Map([['12345', null]])
-      );
+      mockReviewScoresClient.batchQueryByGameNames.mockResolvedValueOnce({
+        results: new Map([['12345', null]]),
+        failureReasons: { '12345': 'no_search_results' }
+      });
 
       const sendResponse = jest.fn();
       messageHandler({
@@ -1703,7 +1712,9 @@ describe('background.js', () => {
       );
     });
 
-    it('should skip re-querying games with "not found" marker in cache', async () => {
+    it('should return null without re-querying when cache has "not found" marker', async () => {
+      // "Not found" markers should block re-querying - prevents unnecessary API calls
+      // (matches HLTB behavior)
       const notFoundMarker = {
         openCriticId: -1,
         score: 0,
@@ -1729,12 +1740,12 @@ describe('background.js', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      // Should only query for game without "not found" marker
+      // Should only query Game 2 - "not found" marker for Unknown Game should return null
       expect(mockReviewScoresClient.batchQueryByGameNames).toHaveBeenCalledWith([
-        { appid: '67890', gameName: 'Game 2' }
+        { appid: '67890', gameName: 'Game 2', openCriticId: null }
       ]);
 
-      // Response should include null for "not found" game
+      // Verify the response includes null for the "not found" game
       expect(sendResponse).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,

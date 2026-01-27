@@ -4,7 +4,7 @@
 
 **Steam Cross-Platform Wishlist** is a Chrome extension (Manifest V3) that displays platform availability icons (Nintendo Switch, PlayStation, Xbox, Steam Deck) and review scores on Steam wishlist pages using Wikidata, Steam's SSR data, and OpenCritic.
 
-**Version:** 0.7.0
+**Version:** 0.7.1
 **Status:** Production-ready
 **Tech Stack:** TypeScript, Chrome Extensions API (MV3), Jest
 

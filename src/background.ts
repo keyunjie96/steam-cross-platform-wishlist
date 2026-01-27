@@ -497,13 +497,63 @@ async function getBatchReviewScores(message: GetReviewScoresBatchRequest): Promi
   }
 
   // Query OpenCritic for uncached games
-  console.log(`${LOG_PREFIX} Review scores: ${games.length} total, ${games.length - uncached.length} cached, ${uncached.length} to query`);
-  if (uncached.length > 0) {
-    try {
-      const batchResults = await globalThis.SCPW_ReviewScoresClient.batchQueryByGameNames(uncached);
-      console.log(`${LOG_PREFIX} Review scores batch returned ${batchResults.size} results`);
+  // First, enrich uncached with openCriticId from Wikidata cache (if available)
+  const uncachedWithIds: Array<{ appid: string; gameName: string; openCriticId?: string | null }> = [];
+  for (const { appid, gameName } of uncached) {
+    const cached = await globalThis.SCPW_Cache.getFromCache(appid);
+    uncachedWithIds.push({
+      appid,
+      gameName,
+      openCriticId: cached?.openCriticId || null
+    });
+  }
 
-      for (const { appid } of uncached) {
+  const diagnostic = {
+    total: games.length,
+    cached: games.length - uncached.length,
+    toQuery: uncached.length,
+    withOpenCriticId: uncachedWithIds.filter(g => g.openCriticId).length,
+    apiCalled: false,
+    apiResults: 0,
+    nullResults: 0,
+    validResults: 0,
+    gameDetails: [] as Array<{ appid: string; gameName: string; hasResult: boolean; score?: number; failureReason?: string; hadOpenCriticId?: boolean }>,
+    failureReasons: {} as Record<string, string>,
+    error: null as string | null
+  };
+  console.log(`${LOG_PREFIX} Review scores: ${games.length} total, ${games.length - uncached.length} cached, ${uncached.length} to query (${diagnostic.withOpenCriticId} with OpenCritic ID from Wikidata)`);
+  if (uncachedWithIds.length > 0) {
+    try {
+      diagnostic.apiCalled = true;
+      const batchResponse = await globalThis.SCPW_ReviewScoresClient.batchQueryByGameNames(uncachedWithIds);
+      // Handle both old Map return (for cached code) and new { results, failureReasons } return
+      const batchResults: Map<string, { data: ReviewScoreData } | null> =
+        batchResponse instanceof Map ? batchResponse : batchResponse.results;
+      const failureReasons: Record<string, string> =
+        batchResponse instanceof Map ? {} : (batchResponse.failureReasons || {});
+
+      diagnostic.apiResults = batchResults.size;
+      diagnostic.failureReasons = failureReasons;
+
+      // Track details for each game
+      for (const { appid, gameName, openCriticId } of uncachedWithIds) {
+        const result = batchResults.get(appid);
+        const failureReason = failureReasons[appid];
+        if (result) {
+          diagnostic.validResults++;
+          diagnostic.gameDetails.push({ appid, gameName, hasResult: true, score: result.data.score, hadOpenCriticId: !!openCriticId });
+        } else {
+          diagnostic.nullResults++;
+          diagnostic.gameDetails.push({ appid, gameName, hasResult: false, failureReason, hadOpenCriticId: !!openCriticId });
+        }
+      }
+
+      console.log(`${LOG_PREFIX} Review scores batch returned ${batchResults.size} results (${diagnostic.validResults} valid, ${diagnostic.nullResults} null)`);
+      if (Object.keys(failureReasons).length > 0) {
+        console.log(`${LOG_PREFIX} Failure reasons:`, JSON.stringify(failureReasons));
+      }
+
+      for (const { appid } of uncachedWithIds) {
         const result = batchResults.get(appid);
 
         // Update cache
@@ -525,9 +575,10 @@ async function getBatchReviewScores(message: GetReviewScoresBatchRequest): Promi
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      diagnostic.error = errorMessage;
       console.warn(`${LOG_PREFIX} Review scores batch error:`, errorMessage);
       // Mark uncached as null
-      for (const { appid } of uncached) {
+      for (const { appid } of uncachedWithIds) {
         if (!(appid in reviewScoresResults)) {
           reviewScoresResults[appid] = null;
         }
@@ -535,9 +586,9 @@ async function getBatchReviewScores(message: GetReviewScoresBatchRequest): Promi
     }
   }
 
-  console.log(`${LOG_PREFIX} Review scores batch complete: ${Object.keys(reviewScoresResults).length} results`);
-  return { success: true, reviewScoresResults };
+  console.log(`${LOG_PREFIX} Review scores batch complete: ${Object.keys(reviewScoresResults).length} results, diagnostic:`, JSON.stringify(diagnostic));
+  return { success: true, reviewScoresResults, _diagnostic: diagnostic };
 }
 
 chrome.runtime.onMessage.addListener(handleMessage);
-console.log(`${LOG_PREFIX} Service worker initialized`);
+console.log(`${LOG_PREFIX} Service worker initialized (v0.7.1)`);

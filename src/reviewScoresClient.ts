@@ -13,7 +13,7 @@ import type { ReviewScoreData, ReviewScoreTier, ReviewScoreSearchResult, OutletS
 
 const OPENCRITIC_API_BASE = 'https://api.opencritic.com/api';
 const LOG_PREFIX = '[SCPW ReviewScores]';
-const DEBUG = false;
+const DEBUG = true;
 
 const REQUEST_DELAY_MS = 300;
 
@@ -34,8 +34,29 @@ async function rateLimit(): Promise<void> {
 function normalizeGameName(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-    .trim();
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Creates a URL slug from a game name for OpenCritic URLs.
+ * Example: "Elden Ring" -> "elden-ring"
+ */
+function slugifyGameName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')  // Remove special chars except spaces and hyphens
+    .replace(/\s+/g, '-')          // Replace spaces with hyphens
+    .replace(/-+/g, '-')           // Collapse multiple hyphens
+    .replace(/^-|-$/g, '');        // Trim leading/trailing hyphens
+}
+
+/**
+ * Constructs the full OpenCritic game page URL.
+ * Example: buildOpenCriticUrl(14607, "Elden Ring") -> "https://opencritic.com/game/14607/elden-ring"
+ */
+function buildOpenCriticUrl(gameId: number, gameName: string): string {
+  const slug = slugifyGameName(gameName);
+  return `https://opencritic.com/game/${gameId}/${slug}`;
 }
 
 /**
@@ -106,17 +127,20 @@ function getTierColor(tier: ReviewScoreTier): string {
   }
 }
 
+/** Maps normalized tier strings to ReviewScoreTier values */
+const TIER_MAP: Record<string, ReviewScoreTier> = {
+  mighty: 'Mighty',
+  strong: 'Strong',
+  fair: 'Fair',
+  weak: 'Weak'
+};
+
 /**
  * Converts OpenCritic tier string to our enum
  */
 function parseTier(tierStr: string | null | undefined): ReviewScoreTier {
   if (!tierStr) return 'Unknown';
-  const normalized = tierStr.toLowerCase();
-  if (normalized === 'mighty') return 'Mighty';
-  if (normalized === 'strong') return 'Strong';
-  if (normalized === 'fair') return 'Fair';
-  if (normalized === 'weak') return 'Weak';
-  return 'Unknown';
+  return TIER_MAP[tierStr.toLowerCase()] || 'Unknown';
 }
 
 /**
@@ -145,10 +169,12 @@ interface OpenCriticGameDetails {
  */
 interface OpenCriticReviewItem {
   id: number;
-  score: number;           // Outlet's score
-  npScore?: number;        // Normalized score (0-100)
-  scoreFormat?: {
-    displayScore?: string; // Original score format (e.g., "8.5/10")
+  score: number;           // Outlet's score (normalized to 0-100)
+  npScore?: number;        // OpenCritic normalized score for ranking
+  externalUrl?: string;    // Direct link to the review
+  ScoreFormat?: {
+    base?: number;         // Scale base (e.g., 10 for 0-10 scale, 100 for percentage)
+    shortName?: string;    // Format description (e.g., "x.x / 10.0")
   };
   Outlet?: {
     id: number;
@@ -159,53 +185,62 @@ interface OpenCriticReviewItem {
 /**
  * Outlet name mappings (OpenCritic uses specific names)
  */
-const OUTLET_MAPPINGS: Record<string, 'ign' | 'gamespot' | 'metacritic'> = {
+const OUTLET_MAPPINGS: Record<string, 'ign' | 'gamespot'> = {
   'IGN': 'ign',
   'GameSpot': 'gamespot',
-  'Metacritic': 'metacritic',
 };
+
+/**
+ * Search result with error tracking for debugging
+ */
+interface SearchResultWithError {
+  results: OpenCriticSearchItem[];
+  error?: string;
+}
 
 /**
  * Searches OpenCritic for a game by name
  */
-async function searchOpenCritic(gameName: string): Promise<OpenCriticSearchItem[]> {
+async function searchOpenCritic(gameName: string): Promise<SearchResultWithError> {
   try {
     const url = `${OPENCRITIC_API_BASE}/game/search?criteria=${encodeURIComponent(gameName)}`;
+    if (DEBUG) console.log(`${LOG_PREFIX} Fetching: ${url}`); /* istanbul ignore if */
     const response = await fetch(url, {
-      method: 'GET',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json, text/plain, */*',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       }
     });
 
     if (!response.ok) {
-      if (DEBUG) console.log(`${LOG_PREFIX} Search failed with status ${response.status}`); /* istanbul ignore if */
-      return [];
+      let errorBody = '';
+      try { errorBody = await response.text(); } catch { /* ignore */ }
+      if (DEBUG) console.log(`${LOG_PREFIX} Search failed: ${response.status} - ${errorBody}`); /* istanbul ignore if */
+      return { results: [], error: `HTTP ${response.status}: ${errorBody}` };
     }
 
     const results = await response.json();
-    if (!Array.isArray(results)) {
-      return [];
+    if (Array.isArray(results) && results.length > 0) {
+      return { results: results as OpenCriticSearchItem[] };
     }
-
-    return results as OpenCriticSearchItem[];
+    return { results: [] };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (DEBUG) console.log(`${LOG_PREFIX} Search error:`, errorMessage); /* istanbul ignore if */
-    return [];
+    return { results: [], error: errorMessage };
   }
 }
 
 /**
- * Gets detailed game info from OpenCritic
+ * Gets detailed game info from OpenCritic API
  */
 async function getGameDetails(gameId: number): Promise<OpenCriticGameDetails | null> {
   try {
     const url = `${OPENCRITIC_API_BASE}/game/${gameId}`;
+    if (DEBUG) console.log(`${LOG_PREFIX} Fetching details: ${url}`); /* istanbul ignore if */
     const response = await fetch(url, {
-      method: 'GET',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json, text/plain, */*',
       }
     });
 
@@ -215,7 +250,10 @@ async function getGameDetails(gameId: number): Promise<OpenCriticGameDetails | n
     }
 
     const data = await response.json();
-    return data as OpenCriticGameDetails;
+    if (data && data.topCriticScore !== undefined) {
+      return data as OpenCriticGameDetails;
+    }
+    return null;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (DEBUG) console.log(`${LOG_PREFIX} Game details error:`, errorMessage); /* istanbul ignore if */
@@ -229,10 +267,10 @@ async function getGameDetails(gameId: number): Promise<OpenCriticGameDetails | n
 async function getGameReviews(gameId: number): Promise<OpenCriticReviewItem[]> {
   try {
     const url = `${OPENCRITIC_API_BASE}/review/game/${gameId}`;
+    if (DEBUG) console.log(`${LOG_PREFIX} Fetching reviews: ${url}`); /* istanbul ignore if */
     const response = await fetch(url, {
-      method: 'GET',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json, text/plain, */*',
       }
     });
 
@@ -269,8 +307,8 @@ function extractOutletScores(reviews: OpenCriticReviewItem[]): ReviewScoreData['
     // Skip if we already have a score for this outlet (take first/most recent)
     if (outletScores[outletKey]) continue;
 
-    // Use normalized score (npScore) if available, otherwise use raw score
-    const score = review.npScore ?? review.score;
+    // Use the raw score (already normalized to 0-100 by OpenCritic)
+    const score = review.score;
     if (!score || score <= 0) continue;
 
     const outletScore: OutletScore = {
@@ -278,9 +316,14 @@ function extractOutletScores(reviews: OpenCriticReviewItem[]): ReviewScoreData['
       score: score,
     };
 
-    // Include original score format if available
-    if (review.scoreFormat?.displayScore) {
-      outletScore.originalScore = review.scoreFormat.displayScore;
+    // Include scale base if available (e.g., 10 for IGN's 0-10 scale)
+    if (review.ScoreFormat?.base) {
+      outletScore.scaleBase = review.ScoreFormat.base;
+    }
+
+    // Include review URL if available
+    if (review.externalUrl) {
+      outletScore.reviewUrl = review.externalUrl;
     }
 
     outletScores[outletKey] = outletScore;
@@ -292,27 +335,84 @@ function extractOutletScores(reviews: OpenCriticReviewItem[]): ReviewScoreData['
 }
 
 /**
- * Queries OpenCritic for review scores by game name.
+ * Query result with optional failure reason for debugging
+ */
+interface QueryResultWithReason {
+  result: ReviewScoreSearchResult | null;
+  failureReason?: string;
+}
+
+/**
+ * Queries OpenCritic using a known OpenCritic ID (from Wikidata).
+ * This bypasses the search endpoint which has Origin restrictions.
+ */
+async function queryByOpenCriticId(openCriticId: number, gameName: string): Promise<QueryResultWithReason> {
+  if (DEBUG) console.log(`${LOG_PREFIX} Direct query with OpenCritic ID ${openCriticId} for: ${gameName}`); /* istanbul ignore if */
+
+  await rateLimit();
+  const details = await getGameDetails(openCriticId);
+  if (!details) {
+    if (DEBUG) console.log(`${LOG_PREFIX} Failed to get details for ID: ${openCriticId}`); /* istanbul ignore if */
+    return { result: null, failureReason: `details_fetch_failed for id ${openCriticId}` };
+  }
+
+  if (details.topCriticScore <= 0) {
+    if (DEBUG) console.log(`${LOG_PREFIX} No score data for ID: ${openCriticId}`); /* istanbul ignore if */
+    return { result: null, failureReason: `no_score_data: topCriticScore=${details.topCriticScore}` };
+  }
+
+  // Get individual outlet reviews
+  await rateLimit();
+  const reviews = await getGameReviews(openCriticId);
+  const outletScores = extractOutletScores(reviews);
+
+  const result: ReviewScoreSearchResult = {
+    openCriticId: details.id,
+    gameName: details.name,
+    similarity: 1.0, // Direct ID match = perfect similarity
+    data: {
+      openCriticId: details.id,
+      openCriticUrl: buildOpenCriticUrl(details.id, details.name),
+      score: details.topCriticScore,
+      tier: parseTier(details.tier),
+      numReviews: details.numTopCriticReviews || 0,
+      percentRecommended: details.percentRecommended || 0,
+      outletScores
+    }
+  };
+
+  if (DEBUG) console.log(`${LOG_PREFIX} Direct query success: ${result.gameName}, score=${result.data.score}, url=${result.data.openCriticUrl}`); /* istanbul ignore if */
+  return { result };
+}
+
+/**
+ * Queries OpenCritic for review scores by game name (search-based).
+ * Note: The search endpoint requires specific Origin headers and may fail from extensions.
  *
  * @param gameName - The game name to search for (from Steam)
- * @returns ReviewScoreSearchResult if found with confidence, null otherwise
+ * @returns QueryResultWithReason containing result and optional failure reason
  */
-async function queryByGameName(gameName: string): Promise<ReviewScoreSearchResult | null> {
+async function queryByGameNameWithReason(gameName: string): Promise<QueryResultWithReason> {
   if (DEBUG) console.log(`${LOG_PREFIX} Searching for: ${gameName}`); /* istanbul ignore if */
 
   await rateLimit();
 
   // Search for the game
-  const searchResults = await searchOpenCritic(gameName);
-  if (searchResults.length === 0) {
-    if (DEBUG) console.log(`${LOG_PREFIX} No results for: ${gameName}`); /* istanbul ignore if */
-    return null;
+  const searchResponse = await searchOpenCritic(gameName);
+  if (searchResponse.error) {
+    if (DEBUG) console.log(`${LOG_PREFIX} Search error for ${gameName}: ${searchResponse.error}`); /* istanbul ignore if */
+    return { result: null, failureReason: `search_error: ${searchResponse.error}` };
   }
 
-  if (DEBUG) console.log(`${LOG_PREFIX} Got ${searchResults.length} results, first: ${searchResults[0].name}`); /* istanbul ignore if */
+  if (searchResponse.results.length === 0) {
+    if (DEBUG) console.log(`${LOG_PREFIX} No results for: ${gameName}`); /* istanbul ignore if */
+    return { result: null, failureReason: 'no_search_results' };
+  }
+
+  if (DEBUG) console.log(`${LOG_PREFIX} Got ${searchResponse.results.length} results, first: ${searchResponse.results[0].name}`); /* istanbul ignore if */
 
   // Calculate similarity scores and find best match
-  const candidates = searchResults.map(item => ({
+  const candidates = searchResponse.results.map(item => ({
     item,
     similarity: calculateSimilarity(gameName, item.name)
   }));
@@ -322,15 +422,20 @@ async function queryByGameName(gameName: string): Promise<ReviewScoreSearchResul
 
   if (best.similarity < 0.5) {
     if (DEBUG) console.log(`${LOG_PREFIX} Best match "${best.item.name}" too dissimilar (${(best.similarity * 100).toFixed(0)}%)`); /* istanbul ignore if */
-    return null;
+    return { result: null, failureReason: `similarity_too_low: ${(best.similarity * 100).toFixed(0)}% for "${best.item.name}"` };
   }
 
   // Get detailed info for the best match
   await rateLimit();
   const details = await getGameDetails(best.item.id);
-  if (!details || details.topCriticScore <= 0) {
+  if (!details) {
+    if (DEBUG) console.log(`${LOG_PREFIX} Failed to get details for: ${best.item.name}`); /* istanbul ignore if */
+    return { result: null, failureReason: `details_fetch_failed for id ${best.item.id}` };
+  }
+
+  if (details.topCriticScore <= 0) {
     if (DEBUG) console.log(`${LOG_PREFIX} No score data for: ${best.item.name}`); /* istanbul ignore if */
-    return null;
+    return { result: null, failureReason: `no_score_data: topCriticScore=${details.topCriticScore}` };
   }
 
   // Get individual outlet reviews
@@ -344,6 +449,7 @@ async function queryByGameName(gameName: string): Promise<ReviewScoreSearchResul
     similarity: best.similarity,
     data: {
       openCriticId: details.id,
+      openCriticUrl: buildOpenCriticUrl(details.id, details.name),
       score: details.topCriticScore,
       tier: parseTier(details.tier),
       numReviews: details.numTopCriticReviews || 0,
@@ -352,29 +458,71 @@ async function queryByGameName(gameName: string): Promise<ReviewScoreSearchResul
     }
   };
 
-  if (DEBUG) console.log(`${LOG_PREFIX} Best match: ${result.gameName} (${(best.similarity * 100).toFixed(0)}%), score=${result.data.score}, outlets: ${outletScores ? Object.keys(outletScores).join(', ') : 'none'}`); /* istanbul ignore if */
+  if (DEBUG) console.log(`${LOG_PREFIX} Best match: ${result.gameName} (${(best.similarity * 100).toFixed(0)}%), score=${result.data.score}, url=${result.data.openCriticUrl}, outlets: ${outletScores ? Object.keys(outletScores).join(', ') : 'none'}`); /* istanbul ignore if */
+  return { result };
+}
+
+/**
+ * Queries OpenCritic for review scores by game name.
+ *
+ * @param gameName - The game name to search for (from Steam)
+ * @returns ReviewScoreSearchResult if found with confidence, null otherwise
+ */
+async function queryByGameName(gameName: string): Promise<ReviewScoreSearchResult | null> {
+  const { result } = await queryByGameNameWithReason(gameName);
   return result;
 }
 
 /**
+ * Batch result with failure reasons for debugging
+ */
+interface BatchQueryResult {
+  results: Map<string, ReviewScoreSearchResult | null>;
+  failureReasons: Record<string, string>;
+}
+
+/**
  * Batch queries OpenCritic for multiple games.
- * Note: OpenCritic API doesn't support batch queries, so this runs sequentially with rate limiting.
+ * When openCriticId is provided (from Wikidata), uses direct API call.
+ * Otherwise falls back to search (which may fail due to Origin restrictions).
  */
 async function batchQueryByGameNames(
-  games: Array<{ appid: string; gameName: string }>
-): Promise<Map<string, ReviewScoreSearchResult | null>> {
+  games: Array<{ appid: string; gameName: string; openCriticId?: string | null }>
+): Promise<BatchQueryResult> {
   const results = new Map<string, ReviewScoreSearchResult | null>();
+  const failureReasons: Record<string, string> = {};
 
-  for (const { appid, gameName } of games) {
+  for (const { appid, gameName, openCriticId } of games) {
     try {
-      const result = await queryByGameName(gameName);
+      let queryResult: QueryResultWithReason;
+
+      // If we have an OpenCritic ID from Wikidata, use direct API call (bypasses search)
+      if (openCriticId) {
+        const numericId = parseInt(openCriticId, 10);
+        if (!isNaN(numericId) && numericId > 0) {
+          if (DEBUG) console.log(`${LOG_PREFIX} Using direct ID ${numericId} for ${gameName}`); /* istanbul ignore if */
+          queryResult = await queryByOpenCriticId(numericId, gameName);
+        } else {
+          queryResult = await queryByGameNameWithReason(gameName);
+        }
+      } else {
+        // No OpenCritic ID - try search (will likely fail with HTTP 400)
+        queryResult = await queryByGameNameWithReason(gameName);
+      }
+
+      const { result, failureReason } = queryResult;
       results.set(appid, result);
-    } catch {
+      if (failureReason) {
+        failureReasons[appid] = failureReason;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       results.set(appid, null);
+      failureReasons[appid] = `exception: ${errorMessage}`;
     }
   }
 
-  return results;
+  return { results, failureReasons };
 }
 
 // Export for service worker
@@ -384,7 +532,9 @@ globalThis.SCPW_ReviewScoresClient = {
   normalizeGameName,
   calculateSimilarity,
   formatScore,
-  getTierColor
+  getTierColor,
+  slugifyGameName,
+  buildOpenCriticUrl
 };
 
 // Also export for module imports in tests
@@ -397,5 +547,7 @@ export {
   getTierColor,
   parseTier,
   getGameReviews,
-  extractOutletScores
+  extractOutletScores,
+  slugifyGameName,
+  buildOpenCriticUrl
 };

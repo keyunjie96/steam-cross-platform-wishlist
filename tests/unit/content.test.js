@@ -2124,11 +2124,18 @@ describe('content.js', () => {
   describe('lightCleanup (preserves icons on URL change)', () => {
     beforeEach(() => {
       // Clear any existing state
-      const { injectedAppIds, processedAppIds, pendingItems, getPendingHltbItems } = globalThis.SCPW_ContentTestExports;
+      const {
+        injectedAppIds,
+        processedAppIds,
+        pendingItems,
+        getPendingHltbItems,
+        getPendingReviewScoreItems
+      } = globalThis.SCPW_ContentTestExports;
       injectedAppIds.clear();
       processedAppIds.clear();
       pendingItems.clear();
       getPendingHltbItems().clear();
+      getPendingReviewScoreItems().clear();
     });
 
     it('should preserve resolved icon containers in DOM (not pending)', () => {
@@ -2249,6 +2256,40 @@ describe('content.js', () => {
       expect(getPendingHltbItems().size).toBe(0);
       // HLTB loaders SHOULD be removed (containers kept for platform icons)
       expect(document.querySelectorAll('.scpw-hltb-loader').length).toBe(0);
+      // Containers SHOULD still exist (platform icons may be resolved)
+      expect(document.querySelectorAll('.scpw-platforms').length).toBe(2);
+    });
+
+    it('should clear pendingReviewScoreItems map and remove review score loaders', () => {
+      const { lightCleanup, getPendingReviewScoreItems } = globalThis.SCPW_ContentTestExports;
+
+      // Create containers with review score loaders
+      const c1 = document.createElement('span');
+      c1.className = 'scpw-platforms';
+      const loader1 = document.createElement('span');
+      loader1.className = 'scpw-review-score-loader';
+      c1.appendChild(loader1);
+      document.body.appendChild(c1);
+
+      const c2 = document.createElement('span');
+      c2.className = 'scpw-platforms';
+      const loader2 = document.createElement('span');
+      loader2.className = 'scpw-review-score-loader';
+      c2.appendChild(loader2);
+      document.body.appendChild(c2);
+
+      // Simulate pending review score items
+      getPendingReviewScoreItems().set('333', { gameName: 'Game 3', container: c1 });
+      getPendingReviewScoreItems().set('444', { gameName: 'Game 4', container: c2 });
+      expect(getPendingReviewScoreItems().size).toBe(2);
+      expect(document.querySelectorAll('.scpw-review-score-loader').length).toBe(2);
+
+      lightCleanup();
+
+      // Pending review score items SHOULD be cleared
+      expect(getPendingReviewScoreItems().size).toBe(0);
+      // Review score loaders SHOULD be removed (containers kept for platform icons)
+      expect(document.querySelectorAll('.scpw-review-score-loader').length).toBe(0);
       // Containers SHOULD still exist (platform icons may be resolved)
       expect(document.querySelectorAll('.scpw-platforms').length).toBe(2);
     });
@@ -7011,7 +7052,7 @@ describe('content.js', () => {
   });
 
   describe('restoreHltbDataFromEntry', () => {
-    it('should set null for hltbId === -1 marker', () => {
+    it('should NOT store entry for hltbId === -1 marker (allows re-query)', () => {
       const { getHltbDataByAppId, restoreHltbDataFromEntry } = globalThis.SCPW_ContentTestExports;
       getHltbDataByAppId().clear();
 
@@ -7030,8 +7071,8 @@ describe('content.js', () => {
       // Call the actual function
       restoreHltbDataFromEntry(appid, entry);
 
-      // Should be null since hltbId === -1
-      expect(getHltbDataByAppId().get('11111')).toBeNull();
+      // Should NOT be in map - "not found" markers are skipped to allow re-query
+      expect(getHltbDataByAppId().has('11111')).toBe(false);
 
       getHltbDataByAppId().clear();
     });
@@ -7186,17 +7227,43 @@ describe('content.js', () => {
     });
 
     it('should clear all pending maps and timers', () => {
-      const { clearPendingTimersAndBatches, pendingItems, getPendingHltbItems, createIconsContainer } = globalThis.SCPW_ContentTestExports;
+      const {
+        clearPendingTimersAndBatches,
+        pendingItems,
+        getPendingHltbItems,
+        getPendingReviewScoreItems,
+        createIconsContainer
+      } = globalThis.SCPW_ContentTestExports;
 
       // Add some pending items
       const container = createIconsContainer('55555', 'Pending Game');
       pendingItems.set('55555', { gameName: 'Pending Game', container });
       getPendingHltbItems().set('55555', { gameName: 'Pending Game', container });
+      getPendingReviewScoreItems().set('55555', { gameName: 'Pending Game', container });
 
       clearPendingTimersAndBatches();
 
       expect(pendingItems.size).toBe(0);
       expect(getPendingHltbItems().size).toBe(0);
+      expect(getPendingReviewScoreItems().size).toBe(0);
+    });
+
+    it('should clear review score debounce timer when set', () => {
+      const {
+        clearPendingTimersAndBatches,
+        setReviewScoreBatchDebounceTimer,
+        getReviewScoreBatchDebounceTimer
+      } = globalThis.SCPW_ContentTestExports;
+
+      const timerId = setTimeout(() => {}, 1000);
+      setReviewScoreBatchDebounceTimer(timerId);
+
+      expect(getReviewScoreBatchDebounceTimer()).toBe(timerId);
+
+      clearPendingTimersAndBatches();
+
+      expect(getReviewScoreBatchDebounceTimer()).toBeNull();
+      clearTimeout(timerId);
     });
   });
 
@@ -7962,7 +8029,7 @@ describe('content.js', () => {
       expect(getHltbDataByAppId().get('12345').hltbId).toBe(999);
     });
 
-    it('should set null when hltbId is -1 (searched but not found)', () => {
+    it('should NOT store when hltbId is -1 (allows re-query for not-found games)', () => {
       const { restoreHltbDataFromEntry, getHltbDataByAppId } = globalThis.SCPW_ContentTestExports;
 
       getHltbDataByAppId().clear();
@@ -7982,9 +8049,8 @@ describe('content.js', () => {
 
       restoreHltbDataFromEntry('67890', entry);
 
-      // Should have set null (not the hltbData object)
-      expect(getHltbDataByAppId().has('67890')).toBe(true);
-      expect(getHltbDataByAppId().get('67890')).toBeNull();
+      // Should NOT be in map - allows games to be re-queried when HLTB adds them
+      expect(getHltbDataByAppId().has('67890')).toBe(false);
     });
   });
 
@@ -8295,6 +8361,73 @@ describe('content.js', () => {
     });
   });
 
+  describe('restoreReviewScoreDataFromEntry', () => {
+    beforeEach(() => {
+      const { getReviewScoreDataByAppId } = globalThis.SCPW_ContentTestExports;
+      getReviewScoreDataByAppId().clear();
+    });
+
+    it('should skip storing "not found" markers (openCriticId === -1)', () => {
+      const { restoreReviewScoreDataFromEntry, getReviewScoreDataByAppId } = globalThis.SCPW_ContentTestExports;
+
+      restoreReviewScoreDataFromEntry('11111', {
+        reviewScoreData: { openCriticId: -1, score: 0, tier: 'Unknown', numReviews: 0, percentRecommended: 0 }
+      });
+
+      expect(getReviewScoreDataByAppId().has('11111')).toBe(false);
+    });
+
+    it('should store valid review score data when not already present', () => {
+      const { restoreReviewScoreDataFromEntry, getReviewScoreDataByAppId } = globalThis.SCPW_ContentTestExports;
+
+      const reviewScoreData = {
+        openCriticId: 2222,
+        score: 87,
+        tier: 'Strong',
+        numReviews: 40,
+        percentRecommended: 92
+      };
+
+      restoreReviewScoreDataFromEntry('22222', { reviewScoreData });
+
+      expect(getReviewScoreDataByAppId().get('22222')).toEqual(reviewScoreData);
+    });
+
+    it('should not overwrite existing review score data', () => {
+      const { restoreReviewScoreDataFromEntry, getReviewScoreDataByAppId } = globalThis.SCPW_ContentTestExports;
+
+      const existing = { openCriticId: 3333, score: 80, tier: 'Fair', numReviews: 10, percentRecommended: 50 };
+      getReviewScoreDataByAppId().set('33333', existing);
+
+      restoreReviewScoreDataFromEntry('33333', {
+        reviewScoreData: { openCriticId: 9999, score: 99, tier: 'Mighty', numReviews: 99, percentRecommended: 99 }
+      });
+
+      expect(getReviewScoreDataByAppId().get('33333')).toEqual(existing);
+    });
+
+    it('should return early when entry has no reviewScoreData', () => {
+      const { restoreReviewScoreDataFromEntry, getReviewScoreDataByAppId } = globalThis.SCPW_ContentTestExports;
+
+      restoreReviewScoreDataFromEntry('44444', { appid: '44444', gameName: 'No Review Data' });
+
+      expect(getReviewScoreDataByAppId().has('44444')).toBe(false);
+    });
+  });
+
+  describe('getTierColor (review scores)', () => {
+    it.each([
+      ['Mighty', '#66cc33'],
+      ['Strong', '#99cc33'],
+      ['Fair', '#ffcc33'],
+      ['Weak', '#ff6633'],
+      ['Unknown', '#888888'],
+    ])('should return the correct color for %s', (tier, expected) => {
+      const { getTierColor } = globalThis.SCPW_ContentTestExports;
+      expect(getTierColor(tier)).toBe(expected);
+    });
+  });
+
   describe('getDisplayScoreInfo', () => {
     it('should return OpenCritic score when source is opencritic', () => {
       const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
@@ -8341,7 +8474,7 @@ describe('content.js', () => {
 
     it('should fall back to OpenCritic when selected outlet is not available', () => {
       const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
-      setUserSettings({ reviewScoreSource: 'metacritic' });
+      setUserSettings({ reviewScoreSource: 'gamespot' });
 
       const reviewScoreData = {
         openCriticId: 123,
@@ -8354,13 +8487,12 @@ describe('content.js', () => {
         }
       };
 
+      // When selected outlet is not available, return null (no fallback to OpenCritic)
       const result = getDisplayScoreInfo(reviewScoreData);
-      expect(result.score).toBe(85);
-      expect(result.sourceName).toBe('OpenCritic');
-      expect(result.sourceKey).toBe('opencritic');
+      expect(result).toBeNull();
     });
 
-    it('should fall back to OpenCritic when outletScores is undefined', () => {
+    it('should return null when outletScores is undefined', () => {
       const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
       setUserSettings({ reviewScoreSource: 'ign' });
 
@@ -8372,13 +8504,12 @@ describe('content.js', () => {
         percentRecommended: 90
       };
 
+      // When selected outlet is not available, return null (no fallback to OpenCritic)
       const result = getDisplayScoreInfo(reviewScoreData);
-      expect(result.score).toBe(85);
-      expect(result.sourceName).toBe('OpenCritic');
-      expect(result.sourceKey).toBe('opencritic');
+      expect(result).toBeNull();
     });
 
-    it('should fall back to OpenCritic when outlet score is 0', () => {
+    it('should return null when outlet score is 0', () => {
       const { getDisplayScoreInfo, setUserSettings } = globalThis.SCPW_ContentTestExports;
       setUserSettings({ reviewScoreSource: 'ign' });
 
@@ -8393,10 +8524,9 @@ describe('content.js', () => {
         }
       };
 
+      // When selected outlet has 0 score, treat as unavailable and return null
       const result = getDisplayScoreInfo(reviewScoreData);
-      expect(result.score).toBe(85);
-      expect(result.sourceName).toBe('OpenCritic');
-      expect(result.sourceKey).toBe('opencritic');
+      expect(result).toBeNull();
     });
 
     it('should use default reviewScoreSource when not set', () => {
@@ -8440,11 +8570,12 @@ describe('content.js', () => {
       expect(badge.getAttribute('title')).toContain('OpenCritic: 85');
     });
 
-    it('should create clickable badge when openCriticId is valid', () => {
+    it('should create clickable badge when openCriticUrl is provided', () => {
       const { createReviewScoreBadge } = globalThis.SCPW_ContentTestExports;
 
       const reviewScoreData = {
         openCriticId: 123,
+        openCriticUrl: 'https://opencritic.com/game/123/test-game',
         score: 85,
         tier: 'Strong',
         numReviews: 50,
@@ -8453,7 +8584,7 @@ describe('content.js', () => {
 
       const badge = createReviewScoreBadge(reviewScoreData);
       expect(badge.tagName.toLowerCase()).toBe('a');
-      expect(badge.getAttribute('href')).toBe('https://opencritic.com/game/123');
+      expect(badge.getAttribute('href')).toBe('https://opencritic.com/game/123/test-game');
     });
 
     it('should create non-clickable badge when openCriticId is 0', () => {
@@ -8492,6 +8623,49 @@ describe('content.js', () => {
       expect(badge.getAttribute('title')).toContain('OpenCritic: 85');
     });
 
+    it('should link to outlet reviewUrl when IGN is selected and has reviewUrl', () => {
+      const { createReviewScoreBadge, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: true, reviewScoreSource: 'ign' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 80, scaleBase: 10, reviewUrl: 'https://www.ign.com/articles/elden-ring-review' }
+        }
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      expect(badge.tagName.toLowerCase()).toBe('a');
+      expect(badge.getAttribute('href')).toBe('https://www.ign.com/articles/elden-ring-review');
+      expect(badge.getAttribute('title')).toContain('Click to view on IGN');
+    });
+
+    it('should fall back to OpenCritic URL when IGN is selected but has no reviewUrl', () => {
+      const { createReviewScoreBadge, setUserSettings } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: true, reviewScoreSource: 'ign' });
+
+      const reviewScoreData = {
+        openCriticId: 123,
+        openCriticUrl: 'https://opencritic.com/game/123/test-game',  // Proper URL with slug
+        score: 85,
+        tier: 'Strong',
+        numReviews: 50,
+        percentRecommended: 90,
+        outletScores: {
+          ign: { outletName: 'IGN', score: 80, scaleBase: 10 }  // No reviewUrl
+        }
+      };
+
+      const badge = createReviewScoreBadge(reviewScoreData);
+      expect(badge.tagName.toLowerCase()).toBe('a');
+      expect(badge.getAttribute('href')).toBe('https://opencritic.com/game/123/test-game');
+      expect(badge.getAttribute('title')).toContain('Click to view on OpenCritic');
+    });
+
     it('should show all available outlet scores in tooltip', () => {
       const { createReviewScoreBadge, setUserSettings } = globalThis.SCPW_ContentTestExports;
       setUserSettings({ showReviewScores: true, reviewScoreSource: 'opencritic' });
@@ -8503,18 +8677,16 @@ describe('content.js', () => {
         numReviews: 50,
         percentRecommended: 90,
         outletScores: {
-          ign: { outletName: 'IGN', score: 80 },
-          gamespot: { outletName: 'GameSpot', score: 75 },
-          metacritic: { outletName: 'Metacritic', score: 82 }
+          ign: { outletName: 'IGN', score: 80, scaleBase: 10 },
+          gamespot: { outletName: 'GameSpot', score: 75, scaleBase: 10 }
         }
       };
 
       const badge = createReviewScoreBadge(reviewScoreData);
       const tooltip = badge.getAttribute('title');
       expect(tooltip).toContain('OpenCritic: 85');
-      expect(tooltip).toContain('IGN: 80');
-      expect(tooltip).toContain('GameSpot: 75');
-      expect(tooltip).toContain('Metacritic: 82');
+      expect(tooltip).toContain('IGN: 8.0');  // Displayed in original 10-point scale
+      expect(tooltip).toContain('GameSpot: 7.5');  // Displayed in original 10-point scale
     });
 
     it('should skip outlet scores with 0 value in tooltip', () => {
@@ -8681,6 +8853,244 @@ describe('content.js', () => {
       // Should not show badge (no score) and not show loader (data is known)
       expect(container.querySelector('.scpw-review-score-badge')).toBeNull();
       expect(container.querySelector('.scpw-review-score-loader')).toBeNull();
+
+      container.remove();
+    });
+  });
+
+  describe('processPendingReviewScoreBatch', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      const {
+        getPendingReviewScoreItems,
+        getReviewScoreDataByAppId,
+        getCachedEntriesByAppId,
+        setUserSettings
+      } = globalThis.SCPW_ContentTestExports;
+
+      getPendingReviewScoreItems().clear();
+      getReviewScoreDataByAppId().clear();
+      getCachedEntriesByAppId().clear();
+      setUserSettings({
+        showNintendo: true,
+        showPlaystation: true,
+        showXbox: true,
+        showSteamDeck: false,
+        showHltb: false,
+        showReviewScores: true,
+        reviewScoreSource: 'opencritic'
+      });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+      const {
+        getPendingReviewScoreItems,
+        getReviewScoreDataByAppId,
+        getCachedEntriesByAppId,
+        setUserSettings
+      } = globalThis.SCPW_ContentTestExports;
+
+      getPendingReviewScoreItems().clear();
+      getReviewScoreDataByAppId().clear();
+      getCachedEntriesByAppId().clear();
+      setUserSettings({
+        showNintendo: true,
+        showPlaystation: true,
+        showXbox: true,
+        showSteamDeck: true,
+        showHltb: true,
+        showReviewScores: true
+      });
+    });
+
+    it('should return early if pendingReviewScoreItems is empty', async () => {
+      const { processPendingReviewScoreBatch, getPendingReviewScoreItems } = globalThis.SCPW_ContentTestExports;
+      getPendingReviewScoreItems().clear();
+
+      await processPendingReviewScoreBatch();
+
+      expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'GET_REVIEW_SCORES_BATCH' })
+      );
+    });
+
+    it('should return early if showReviewScores is disabled', async () => {
+      const {
+        processPendingReviewScoreBatch,
+        getPendingReviewScoreItems,
+        setUserSettings,
+        createIconsContainer
+      } = globalThis.SCPW_ContentTestExports;
+      setUserSettings({ showReviewScores: false });
+
+      const container = createIconsContainer('77770', 'Disabled Review Scores');
+      getPendingReviewScoreItems().set('77770', { gameName: 'Disabled Review Scores', container });
+
+      await processPendingReviewScoreBatch();
+
+      expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'GET_REVIEW_SCORES_BATCH' })
+      );
+    });
+
+    it('should process pending review scores and update the DOM when cached data exists', async () => {
+      const {
+        processPendingReviewScoreBatch,
+        getPendingReviewScoreItems,
+        getReviewScoreDataByAppId,
+        getCachedEntriesByAppId,
+        createIconsContainer
+      } = globalThis.SCPW_ContentTestExports;
+
+      const appid = '77771';
+      const container = createIconsContainer(appid, 'Review Score Game');
+      document.body.appendChild(container);
+
+      getPendingReviewScoreItems().set(appid, { gameName: 'Review Score Game', container });
+      getCachedEntriesByAppId().set(appid, {
+        gameName: 'Review Score Game',
+        platforms: { nintendo: { status: 'available', storeUrl: null } }
+      });
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        reviewScoresResults: {
+          [appid]: {
+            openCriticId: 1234,
+            score: 91,
+            tier: 'Mighty',
+            numReviews: 80,
+            percentRecommended: 96
+          }
+        },
+        _diagnostic: { total: 1, cached: 0, toQuery: 1, apiCalled: true, apiResults: 1, error: null }
+      });
+
+      await processPendingReviewScoreBatch();
+
+      expect(getReviewScoreDataByAppId().get(appid)?.score).toBe(91);
+      expect(container.querySelector('.scpw-review-score-badge')).not.toBeNull();
+
+      container.remove();
+    });
+
+    it('should handle results when no containers are found in the DOM', async () => {
+      const {
+        processPendingReviewScoreBatch,
+        getPendingReviewScoreItems,
+        getReviewScoreDataByAppId,
+        createIconsContainer
+      } = globalThis.SCPW_ContentTestExports;
+
+      const appid = '77772';
+      const container = createIconsContainer(appid, 'Detached Container Game');
+      // Intentionally do not append to the DOM
+
+      getPendingReviewScoreItems().set(appid, { gameName: 'Detached Container Game', container });
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        reviewScoresResults: {
+          [appid]: {
+            openCriticId: 5678,
+            score: 82,
+            tier: 'Strong',
+            numReviews: 20,
+            percentRecommended: 88
+          }
+        }
+      });
+
+      await processPendingReviewScoreBatch();
+
+      expect(getReviewScoreDataByAppId().get(appid)?.score).toBe(82);
+    });
+
+    it('should handle batch errors gracefully', async () => {
+      const { processPendingReviewScoreBatch, getPendingReviewScoreItems, createIconsContainer } = globalThis.SCPW_ContentTestExports;
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const container = createIconsContainer('77773', 'Review Error Game');
+      getPendingReviewScoreItems().set('77773', { gameName: 'Review Error Game', container });
+
+      chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Review score network error'));
+
+      await processPendingReviewScoreBatch();
+
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('queueForReviewScoreResolution', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      const {
+        getPendingReviewScoreItems,
+        getReviewScoreDataByAppId,
+        getCachedEntriesByAppId,
+        setUserSettings
+      } = globalThis.SCPW_ContentTestExports;
+
+      getPendingReviewScoreItems().clear();
+      getReviewScoreDataByAppId().clear();
+      getCachedEntriesByAppId().clear();
+      setUserSettings({
+        showNintendo: true,
+        showSteamDeck: false,
+        showHltb: false,
+        showReviewScores: true,
+        reviewScoreSource: 'opencritic'
+      });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should enqueue a review score request and process it after the debounce delay', async () => {
+      const {
+        queueForReviewScoreResolution,
+        getPendingReviewScoreItems,
+        getReviewScoreDataByAppId,
+        getCachedEntriesByAppId,
+        createIconsContainer,
+        REVIEW_SCORE_BATCH_DEBOUNCE_MS
+      } = globalThis.SCPW_ContentTestExports;
+
+      const appid = '77774';
+      const container = createIconsContainer(appid, 'Queued Review Game');
+      document.body.appendChild(container);
+
+      getCachedEntriesByAppId().set(appid, {
+        gameName: 'Queued Review Game',
+        platforms: { nintendo: { status: 'available', storeUrl: null } }
+      });
+
+      chrome.runtime.sendMessage.mockResolvedValueOnce({
+        success: true,
+        reviewScoresResults: {
+          [appid]: {
+            openCriticId: 2468,
+            score: 86,
+            tier: 'Strong',
+            numReviews: 30,
+            percentRecommended: 90
+          }
+        }
+      });
+
+      queueForReviewScoreResolution(appid, 'Queued Review Game', container);
+      expect(getPendingReviewScoreItems().has(appid)).toBe(true);
+
+      jest.advanceTimersByTime(REVIEW_SCORE_BATCH_DEBOUNCE_MS);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(getPendingReviewScoreItems().size).toBe(0);
+      expect(getReviewScoreDataByAppId().get(appid)?.score).toBe(86);
+      expect(container.querySelector('.scpw-review-score-badge')).not.toBeNull();
 
       container.remove();
     });

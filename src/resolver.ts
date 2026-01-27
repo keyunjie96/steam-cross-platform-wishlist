@@ -69,7 +69,7 @@ function createEmptyWikidataResult(gameName: string): WikidataResult {
   return {
     found: false,
     platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
-    storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null },
+    storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null, openCriticId: null },
     wikidataId: null,
     gameName
   };
@@ -198,6 +198,7 @@ async function wikidataResultToCacheEntry(appid: string, gameName: string, wikid
     platforms,
     source: wikidataResult.found ? 'wikidata' : 'fallback',
     wikidataId: wikidataResult.wikidataId,
+    openCriticId: wikidataResult.storeIds?.openCriticId || null,
     resolvedAt: Date.now(),
     ttlDays: 7,
     cacheVersion: CACHE_VERSION

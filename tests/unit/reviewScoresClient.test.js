@@ -16,13 +16,28 @@ function createOpenCriticFetchMock(options = {}) {
     gameReviews = [],
     searchStatus = 200,
     detailsStatus = 200,
-    reviewsStatus = 200
+    reviewsStatus = 200,
+    scrapeSearchResults = [],
+    scrapeGameDetails = null,
+    scrapeSearchStatus = 200,
+    scrapeDetailsStatus = 200,
+    scrapeSearchHtml = null,
+    scrapeGameHtml = null
   } = options;
 
   // Mock headers object
   const mockHeaders = {
     get: () => 'application/json'
   };
+  const mockHtmlHeaders = {
+    get: () => 'text/html'
+  };
+
+  const slugify = (name) => name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 
   return jest.fn().mockImplementation((url) => {
     // Search endpoint
@@ -59,6 +74,42 @@ function createOpenCriticFetchMock(options = {}) {
         status: 200,
         headers: mockHeaders,
         json: () => Promise.resolve(gameDetails)
+      });
+    }
+    // OpenCritic browse page scrape fallback
+    if (url.includes('opencritic.com/browse/all')) {
+      if (scrapeSearchStatus !== 200) {
+        return Promise.resolve({ ok: false, status: scrapeSearchStatus, headers: mockHtmlHeaders });
+      }
+
+      const linksHtml = scrapeSearchResults
+        .map(({ id, name, slug }) => `<a href="/game/${id}/${slug || slugify(name)}">${name}</a>`)
+        .join('');
+      const html = scrapeSearchHtml ?? `<html><body>${linksHtml}</body></html>`;
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: mockHtmlHeaders,
+        text: () => Promise.resolve(html)
+      });
+    }
+    // OpenCritic game page scrape fallback
+    if (url.includes('opencritic.com/game/')) {
+      if (scrapeDetailsStatus !== 200) {
+        return Promise.resolve({ ok: false, status: scrapeDetailsStatus, headers: mockHtmlHeaders });
+      }
+
+      const nextDataHtml = scrapeGameDetails
+        ? `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { game: scrapeGameDetails } } })}</script>`
+        : '';
+      const html = scrapeGameHtml ?? `<html><body>${nextDataHtml}</body></html>`;
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: mockHtmlHeaders,
+        text: () => Promise.resolve(html)
       });
     }
     // Unknown endpoint
@@ -154,6 +205,49 @@ describe('reviewScoresClient.js', () => {
 
     it('should handle empty string', () => {
       expect(ReviewScoresClient.normalizeGameName('')).toBe('');
+    });
+  });
+
+  describe('slugifyGameName', () => {
+    it('should convert to lowercase and replace spaces with hyphens', () => {
+      expect(ReviewScoresClient.slugifyGameName('Elden Ring')).toBe('elden-ring');
+    });
+
+    it('should remove special characters but keep hyphens', () => {
+      expect(ReviewScoresClient.slugifyGameName('The Witcher 3: Wild Hunt')).toBe('the-witcher-3-wild-hunt');
+    });
+
+    it('should collapse multiple spaces into single hyphen', () => {
+      expect(ReviewScoresClient.slugifyGameName('Hollow   Knight')).toBe('hollow-knight');
+    });
+
+    it('should trim leading and trailing hyphens', () => {
+      expect(ReviewScoresClient.slugifyGameName(' - Test Game - ')).toBe('test-game');
+    });
+
+    it('should handle empty string', () => {
+      expect(ReviewScoresClient.slugifyGameName('')).toBe('');
+    });
+
+    it('should handle complex game names', () => {
+      expect(ReviewScoresClient.slugifyGameName("Baldur's Gate 3")).toBe('baldurs-gate-3');
+    });
+  });
+
+  describe('buildOpenCriticUrl', () => {
+    it('should construct valid OpenCritic URL with slug', () => {
+      expect(ReviewScoresClient.buildOpenCriticUrl(14607, 'Elden Ring'))
+        .toBe('https://opencritic.com/game/14607/elden-ring');
+    });
+
+    it('should handle complex game names', () => {
+      expect(ReviewScoresClient.buildOpenCriticUrl(12607, "Baldur's Gate 3"))
+        .toBe('https://opencritic.com/game/12607/baldurs-gate-3');
+    });
+
+    it('should handle game names with colons', () => {
+      expect(ReviewScoresClient.buildOpenCriticUrl(123, 'The Witcher 3: Wild Hunt'))
+        .toBe('https://opencritic.com/game/123/the-witcher-3-wild-hunt');
     });
   });
 
@@ -368,11 +462,127 @@ describe('reviewScoresClient.js', () => {
     }, 15000);
   });
 
+  describe('direct OpenCritic ID queries', () => {
+    it('should use direct ID query when openCriticId is provided', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        // Search endpoint will fail (simulating API auth requirement)
+        searchStatus: 400,
+        // But direct game endpoint works
+        gameDetails: {
+          id: 7015,
+          name: 'Hollow Knight',
+          topCriticScore: 90,
+          tier: 'Mighty',
+          numTopCriticReviews: 75,
+          percentRecommended: 95
+        }
+      });
+
+      const games = [{ appid: '367520', gameName: 'Hollow Knight', openCriticId: '7015' }];
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('367520')).not.toBeNull();
+      expect(results.get('367520').openCriticId).toBe(7015);
+      expect(results.get('367520').data.score).toBe(90);
+      expect(results.get('367520').data.tier).toBe('Mighty');
+    }, 15000);
+
+    it('should fall back to search when openCriticId is not provided', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchStatus: 400
+      });
+
+      const games = [{ appid: '123', gameName: 'Test Game' }];
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('123')).toBeNull();
+      expect(failureReasons['123']).toMatch(/search_error/);
+    }, 15000);
+
+    it('should handle invalid openCriticId gracefully', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        }
+      });
+
+      const games = [{ appid: '123', gameName: 'Test Game', openCriticId: 'invalid' }];
+      const { results } = await ReviewScoresClient.batchQueryByGameNames(games);
+      // Falls back to search with invalid ID
+      expect(results.get('123')).not.toBeNull();
+    }, 15000);
+
+    it('should handle null openCriticId', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        searchResults: [{ id: 123, name: 'Test Game' }],
+        gameDetails: {
+          id: 123,
+          name: 'Test Game',
+          topCriticScore: 85,
+          tier: 'Strong',
+          numTopCriticReviews: 50
+        }
+      });
+
+      const games = [{ appid: '123', gameName: 'Test Game', openCriticId: null }];
+      const { results } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('123')).not.toBeNull();
+    }, 15000);
+
+    it('should return null when direct ID query finds no score', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        gameDetails: {
+          id: 7015,
+          name: 'Hollow Knight',
+          topCriticScore: 0, // No score
+          tier: 'Unknown',
+          numTopCriticReviews: 0
+        }
+      });
+
+      const games = [{ appid: '367520', gameName: 'Hollow Knight', openCriticId: '7015' }];
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('367520')).toBeNull();
+      expect(failureReasons['367520']).toMatch(/no_score_data/);
+    }, 15000);
+
+    it('should return null when direct ID query fails to fetch details', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        detailsStatus: 404
+      });
+
+      const games = [{ appid: '367520', gameName: 'Hollow Knight', openCriticId: '7015' }];
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('367520')).toBeNull();
+      expect(failureReasons['367520']).toMatch(/details_fetch_failed/);
+    }, 15000);
+
+    it('should set similarity to 1.0 for direct ID queries', async () => {
+      globalThis.fetch = createOpenCriticFetchMock({
+        gameDetails: {
+          id: 7015,
+          name: 'Hollow Knight',
+          topCriticScore: 90,
+          tier: 'Mighty',
+          numTopCriticReviews: 75
+        }
+      });
+
+      const games = [{ appid: '367520', gameName: 'Hollow Knight', openCriticId: '7015' }];
+      const { results } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('367520').similarity).toBe(1.0);
+    }, 15000);
+  });
+
   describe('batchQueryByGameNames', () => {
     it('should return empty map for empty games array', async () => {
-      const result = await ReviewScoresClient.batchQueryByGameNames([]);
-      expect(result).toBeInstanceOf(Map);
-      expect(result.size).toBe(0);
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames([]);
+      expect(results).toBeInstanceOf(Map);
+      expect(results.size).toBe(0);
+      expect(failureReasons).toEqual({});
     });
 
     it('should return results for multiple games', async () => {
@@ -392,23 +602,26 @@ describe('reviewScoresClient.js', () => {
         { appid: '456', gameName: 'Test Game' }
       ];
 
-      const result = await ReviewScoresClient.batchQueryByGameNames(games);
-      expect(result).toBeInstanceOf(Map);
-      expect(result.size).toBe(2);
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results).toBeInstanceOf(Map);
+      expect(results.size).toBe(2);
     }, 30000);
 
     it('should handle null results for games not found', async () => {
       globalThis.fetch = createOpenCriticFetchMock({ searchResults: [] });
       const games = [{ appid: '999', gameName: 'Nonexistent Game' }];
-      const result = await ReviewScoresClient.batchQueryByGameNames(games);
-      expect(result.get('999')).toBeNull();
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('999')).toBeNull();
+      expect(failureReasons['999']).toBe('no_search_results');
     }, 15000);
 
     it('should catch and return null for individual game errors', async () => {
       globalThis.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
       const games = [{ appid: '123', gameName: 'Test Game' }];
-      const result = await ReviewScoresClient.batchQueryByGameNames(games);
-      expect(result.get('123')).toBeNull();
+      const { results, failureReasons } = await ReviewScoresClient.batchQueryByGameNames(games);
+      expect(results.get('123')).toBeNull();
+      // Failure could be in searchOpenCritic (search_error) or batchQuery (exception)
+      expect(failureReasons['123']).toMatch(/Exception|exception|search_error/);
     }, 15000);
   });
 
@@ -443,9 +656,8 @@ describe('reviewScoresClient.js', () => {
           numTopCriticReviews: 50
         },
         gameReviews: [
-          { id: 1, score: 85, npScore: 85, Outlet: { id: 1, name: 'IGN' }, scoreFormat: { displayScore: '8.5/10' } },
-          { id: 2, score: 80, npScore: 80, Outlet: { id: 2, name: 'GameSpot' } },
-          { id: 3, score: 82, npScore: 82, Outlet: { id: 3, name: 'Metacritic' } }
+          { id: 1, score: 85, npScore: 85, Outlet: { id: 1, name: 'IGN' }, ScoreFormat: { base: 10 }, externalUrl: 'https://ign.com/review' },
+          { id: 2, score: 80, npScore: 80, Outlet: { id: 2, name: 'GameSpot' }, ScoreFormat: { base: 10 } }
         ]
       });
 
@@ -454,11 +666,10 @@ describe('reviewScoresClient.js', () => {
       expect(result.data.outletScores).toBeDefined();
       expect(result.data.outletScores.ign).toBeDefined();
       expect(result.data.outletScores.ign.score).toBe(85);
-      expect(result.data.outletScores.ign.originalScore).toBe('8.5/10');
+      expect(result.data.outletScores.ign.scaleBase).toBe(10);
+      expect(result.data.outletScores.ign.reviewUrl).toBe('https://ign.com/review');
       expect(result.data.outletScores.gamespot).toBeDefined();
       expect(result.data.outletScores.gamespot.score).toBe(80);
-      expect(result.data.outletScores.metacritic).toBeDefined();
-      expect(result.data.outletScores.metacritic.score).toBe(82);
     }, 15000);
 
     it('should handle reviews with no Outlet', async () => {

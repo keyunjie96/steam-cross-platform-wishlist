@@ -14,7 +14,17 @@
 
 ## Bugs (Necessity: 8)
 
-*No pending bugs.*
+### BUG-5: OpenCritic API requires authentication
+**Priority:** P1 (Blocking for FEAT-10)
+**Files:** `src/reviewScoresClient.ts`
+**Issue:** OpenCritic API now returns 400 "API key is required" for all unauthenticated requests. This breaks the review scores feature completely.
+**Discovered:** 2026-01-27 during end-to-end testing
+**Evidence:** `curl "https://api.opencritic.com/api/game/search?criteria=Elden%20Ring"` returns `{"message":"API key is required. Email developers@opencritic.com for more info"}`
+**Options:**
+1. Email developers@opencritic.com to request API key
+2. Find alternative data source (Metacritic direct, IGDB, etc.)
+3. Scrape OpenCritic website (not recommended - fragile)
+4. Disable review scores feature until resolved
 
 ---
 
@@ -59,6 +69,18 @@
 4. Display score badge/tooltip in icon row (similar to HLTB badge)
 5. Add user preference toggle in options
 **Risk:** High - Metacritic has strict anti-scraping. OpenCritic is more accessible. IGN/GameSpot lack public APIs. Name matching is fuzzy. Consider OpenCritic as primary source (has aggregated scores).
+
+### FEAT-11: Export cached entries
+**Priority:** P2 (Medium Value)
+**Files:** `src/options.ts`, `src/options.html`, `src/background.ts`
+**Issue:** Users want to export cached game data for backup, analysis, or sharing.
+**Fix:**
+1. Add "Export Cache" button to options page
+2. Add message handler in background.ts for GET_CACHE_EXPORT
+3. Format cache entries as JSON with metadata (timestamp, version)
+4. Include all fields: appid, gameName, platforms, HLTB data, review scores
+5. Trigger browser download with timestamp filename (e.g., `scpw-cache-2024-01-26.json`)
+**Risk:** Low - simple file generation and download. Consider adding import functionality for completeness.
 
 ### FEAT-8: Firefox/Edge browser support
 **Priority:** P3 (Lower Priority)
@@ -156,5 +178,6 @@ Features below were evaluated and declined because established extensions (Augme
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
 | FEAT-10 | Review Scores | 6 | 5 | 30 | Medium |
+| FEAT-11 | Export Cache | 5 | 9 | 45 | Low |
 | FEAT-8 | Firefox/Edge | 5 | 6 | 30 | Medium |
 | FEAT-9 | ChromeOS/ProtonDB | 4 | 5 | 20 | Medium |

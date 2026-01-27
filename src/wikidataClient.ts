@@ -46,6 +46,7 @@ const PROPERTIES: Record<string, string> = {
   PS_STORE_CONCEPT: 'P12332',
   MS_STORE_ID: 'P5885',
   PURE_XBOX_ID: 'P12737',
+  OPENCRITIC_ID: 'P2864',  // OpenCritic game ID for review scores
 };
 
 const SPARQL_SELECT_FIELDS = `
@@ -55,7 +56,8 @@ const SPARQL_SELECT_FIELDS = `
   (SAMPLE(?appStoreId) AS ?appStore) (SAMPLE(?playStoreId) AS ?playStore)
   (SAMPLE(?switchTitleId) AS ?switchTitle) (SAMPLE(?eshopEuId) AS ?eshopEu) (SAMPLE(?eshopUsId) AS ?eshopUs)
   (SAMPLE(?psStoreEuId) AS ?psStoreEu) (SAMPLE(?psStoreNaId) AS ?psStoreNa) (SAMPLE(?psStoreConceptId) AS ?psStoreConcept)
-  (SAMPLE(?msStoreId) AS ?msStore) (SAMPLE(?pureXboxId) AS ?pureXbox)`;
+  (SAMPLE(?msStoreId) AS ?msStore) (SAMPLE(?pureXboxId) AS ?pureXbox)
+  (SAMPLE(?openCriticId) AS ?openCritic)`;
 
 const SPARQL_OPTIONAL_CLAUSES = `
   OPTIONAL { ?game wdt:${PROPERTIES.PLATFORM} ?platform . BIND(STRAFTER(STR(?platform), "entity/") AS ?platformQID) }
@@ -74,6 +76,7 @@ const SPARQL_OPTIONAL_CLAUSES = `
   OPTIONAL { ?game wdt:${PROPERTIES.PS_STORE_CONCEPT} ?psStoreConceptId . }
   OPTIONAL { ?game wdt:${PROPERTIES.MS_STORE_ID} ?msStoreId . }
   OPTIONAL { ?game wdt:${PROPERTIES.PURE_XBOX_ID} ?pureXboxId . }
+  OPTIONAL { ?game wdt:${PROPERTIES.OPENCRITIC_ID} ?openCriticId . }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }`;
 
 const PLATFORM_STORE_ID_MAP: Record<string, keyof WikidataStoreIds> = {
@@ -133,7 +136,7 @@ const EMPTY_RESULT: WikidataResult = {
   gameName: '',
   found: false,
   platforms: { nintendo: false, playstation: false, xbox: false, steamdeck: false },
-  storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null }
+  storeIds: { eshop: null, psStore: null, xbox: null, gog: null, epic: null, appStore: null, playStore: null, openCriticId: null }
 };
 
 function createEmptyResult(): WikidataResult {
@@ -159,6 +162,7 @@ interface SparqlBinding {
   epic?: { value: string };
   appStore?: { value: string };
   playStore?: { value: string };
+  openCritic?: { value: string };
 }
 
 interface SparqlResponse {
@@ -207,7 +211,8 @@ function parseBindingToResult(binding: SparqlBinding): WikidataResult {
       gog: binding.gog?.value || null,
       epic: binding.epic?.value || null,
       appStore: binding.appStore?.value || null,
-      playStore: binding.playStore?.value || null
+      playStore: binding.playStore?.value || null,
+      openCriticId: binding.openCritic?.value || null
     }
   };
 }

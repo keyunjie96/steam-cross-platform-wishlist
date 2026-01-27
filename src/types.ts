@@ -13,7 +13,7 @@ export type PlatformStatus = 'available' | 'unavailable' | 'unknown';
 export type HltbDisplayStat = 'mainStory' | 'mainExtra' | 'completionist';
 
 // Review score source options
-export type ReviewScoreSource = 'opencritic' | 'ign' | 'gamespot' | 'metacritic';
+export type ReviewScoreSource = 'opencritic' | 'ign' | 'gamespot';
 
 // ============================================================================
 // Cache Constants - SINGLE SOURCE OF TRUTH
@@ -26,7 +26,7 @@ export type ReviewScoreSource = 'opencritic' | 'ign' | 'gamespot' | 'metacritic'
  * IMPORTANT: This constant is shared across content script and service worker.
  * Both cache.ts (service worker) and content.ts (content script) import this value.
  */
-export const CACHE_VERSION = 1;
+export const CACHE_VERSION = 4;  // Bumped to add openCriticUrl to review scores
 
 // ============================================================================
 // User Settings - SINGLE SOURCE OF TRUTH
@@ -123,6 +123,7 @@ export interface CacheEntry {
   platforms: Record<Platform, PlatformData>;
   source?: DataSource;
   wikidataId?: string | null;
+  openCriticId?: string | null;  // OpenCritic game ID from Wikidata for direct API access
   hltbData?: HltbData | null;  // Optional HLTB completion time data
   reviewScoreData?: ReviewScoreData | null;  // Optional review score data
   resolvedAt: number;
@@ -417,6 +418,7 @@ declare global {
   var SCPW_UserSettings: {
     DEFAULT_USER_SETTINGS: UserSettings;
     SETTING_CHECKBOX_IDS: Partial<Record<keyof UserSettings, string>>;
+    SETTING_SELECT_IDS: Partial<Record<keyof UserSettings, SelectElementConfig>>;
     USER_SETTING_KEYS: Array<keyof UserSettings>;
   };
 }
@@ -430,6 +432,7 @@ export interface WikidataStoreIds {
   epic: string | null;
   appStore: string | null;
   playStore: string | null;
+  openCriticId: string | null;  // OpenCritic game ID (P2864) for direct API access
 }
 
 export interface WikidataResult {
@@ -470,12 +473,14 @@ export interface HltbSearchResult {
 export interface OutletScore {
   outletName: string;       // Display name of the outlet
   score: number;            // Outlet's score (normalized 0-100)
-  originalScore?: string;   // Original score format (e.g., "8.5/10", "4/5")
+  scaleBase?: number;       // Original scale base (e.g., 10 for 0-10 scale)
+  reviewUrl?: string;       // Direct URL to the outlet's review
 }
 
 // Review Scores types (OpenCritic)
 export interface ReviewScoreData {
   openCriticId: number;     // OpenCritic game ID for linking
+  openCriticUrl?: string;   // Full URL to OpenCritic game page (e.g., /game/14607/elden-ring)
   score: number;            // Top Critic Average score (0-100)
   tier: ReviewScoreTier;    // Mighty, Strong, Fair, Weak
   numReviews: number;       // Number of critic reviews
@@ -484,7 +489,6 @@ export interface ReviewScoreData {
   outletScores?: {
     ign?: OutletScore;
     gamespot?: OutletScore;
-    metacritic?: OutletScore;
   };
 }
 
