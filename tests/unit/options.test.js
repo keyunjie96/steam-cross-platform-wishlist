@@ -17,6 +17,8 @@ describe('options.js', () => {
   let showSteamDeckCheckbox;
   let showHltbCheckbox;
   let hltbDisplayStatSelect;
+  let showReviewScoresCheckbox;
+  let reviewScoreSourceSelect;
 
   beforeEach(() => {
     jest.resetModules();
@@ -95,6 +97,21 @@ describe('options.js', () => {
     hltbDisplayStatSelect.appendChild(defaultOption);
     document.body.appendChild(hltbDisplayStatSelect);
 
+    showReviewScoresCheckbox = document.createElement('input');
+    showReviewScoresCheckbox.type = 'checkbox';
+    showReviewScoresCheckbox.id = 'show-review-scores';
+    showReviewScoresCheckbox.checked = true;
+    document.body.appendChild(showReviewScoresCheckbox);
+
+    reviewScoreSourceSelect = document.createElement('select');
+    reviewScoreSourceSelect.id = 'review-score-source';
+    reviewScoreSourceSelect.hidden = true;
+    const openCriticOption = document.createElement('option');
+    openCriticOption.value = 'opencritic';
+    openCriticOption.textContent = 'OpenCritic';
+    reviewScoreSourceSelect.appendChild(openCriticOption);
+    document.body.appendChild(reviewScoreSourceSelect);
+
     // Mock chrome.runtime.sendMessage
     chrome.runtime.sendMessage.mockClear();
     chrome.runtime.sendMessage.mockResolvedValue({
@@ -120,16 +137,29 @@ describe('options.js', () => {
         showXbox: true,
         showSteamDeck: true,
         showHltb: true,
-        hltbDisplayStat: 'mainStory'
+        hltbDisplayStat: 'mainStory',
+        showReviewScores: true,
+        reviewScoreSource: 'opencritic'
       },
       SETTING_CHECKBOX_IDS: {
         showNintendo: 'show-nintendo',
         showPlaystation: 'show-playstation',
         showXbox: 'show-xbox',
         showSteamDeck: 'show-steamdeck',
-        showHltb: 'show-hltb'
+        showHltb: 'show-hltb',
+        showReviewScores: 'show-review-scores'
       },
-      USER_SETTING_KEYS: ['showNintendo', 'showPlaystation', 'showXbox', 'showSteamDeck', 'showHltb']
+      SETTING_SELECT_IDS: {
+        hltbDisplayStat: {
+          elementId: 'hltb-display-stat',
+          visibilityKey: 'showHltb'
+        },
+        reviewScoreSource: {
+          elementId: 'review-score-source',
+          visibilityKey: 'showReviewScores'
+        }
+      },
+      USER_SETTING_KEYS: ['showNintendo', 'showPlaystation', 'showXbox', 'showSteamDeck', 'showHltb', 'hltbDisplayStat', 'showReviewScores', 'reviewScoreSource']
     };
 
     // Load options.js
@@ -536,7 +566,7 @@ describe('options.js', () => {
     it('should set checkbox to saved value when loading settings', async () => {
       // Set up mock before re-requiring the module
       chrome.storage.sync.get.mockResolvedValue({
-        scpwSettings: { showNintendo: false, showPlaystation: true, showXbox: false, showSteamDeck: false }
+        scpwSettings: { showNintendo: false, showPlaystation: true, showXbox: false, showSteamDeck: false, showHltb: true, hltbDisplayStat: 'mainStory', showReviewScores: true, reviewScoreSource: 'opencritic' }
       });
 
       // Re-require to test fresh load with saved settings
@@ -583,7 +613,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false, showHltb: true, hltbDisplayStat: 'mainStory' }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: false, showHltb: true, hltbDisplayStat: 'mainStory', showReviewScores: true, reviewScoreSource: 'opencritic' }
       });
     });
 
@@ -594,7 +624,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        scpwSettings: { showNintendo: false, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
+        scpwSettings: { showNintendo: false, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory', showReviewScores: true, reviewScoreSource: 'opencritic' }
       });
     });
 
@@ -605,7 +635,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        scpwSettings: { showNintendo: true, showPlaystation: false, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
+        scpwSettings: { showNintendo: true, showPlaystation: false, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory', showReviewScores: true, reviewScoreSource: 'opencritic' }
       });
     });
 
@@ -616,7 +646,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: false, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: false, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory', showReviewScores: true, reviewScoreSource: 'opencritic' }
       });
     });
 
@@ -627,7 +657,7 @@ describe('options.js', () => {
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
-        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory' }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: true, hltbDisplayStat: 'mainStory', showReviewScores: true, reviewScoreSource: 'opencritic' }
       });
     });
 
@@ -788,7 +818,7 @@ describe('options.js', () => {
 
       // Mock storage to return showHltb: false so loadSettings sets checkbox to unchecked
       chrome.storage.sync.get.mockResolvedValueOnce({
-        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: false }
+        scpwSettings: { showNintendo: true, showPlaystation: true, showXbox: true, showSteamDeck: true, showHltb: false, hltbDisplayStat: 'mainStory', showReviewScores: true, reviewScoreSource: 'opencritic' }
       });
 
       // Re-require to reinitialize with our DOM
@@ -828,19 +858,25 @@ describe('options.js', () => {
     });
 
     it('should toggle hltb-row class when HLTB checkbox changes with hltb-row element', async () => {
+      // Remove existing checkbox first (to avoid duplicate IDs)
+      if (showHltbCheckbox && showHltbCheckbox.parentNode) {
+        showHltbCheckbox.parentNode.removeChild(showHltbCheckbox);
+      }
+
       // Create the hltb-row element with the exact selector the code looks for:
       // .toggle-item.has-inline-option[data-platform="hltb"]
       const hltbRow = document.createElement('div');
       hltbRow.className = 'toggle-item has-inline-option';
       hltbRow.setAttribute('data-platform', 'hltb');
-      document.body.appendChild(hltbRow);
 
-      // Also need to recreate showHltbCheckbox for the reinit
+      // Recreate showHltbCheckbox INSIDE the row (to match production HTML structure)
       showHltbCheckbox = document.createElement('input');
       showHltbCheckbox.type = 'checkbox';
       showHltbCheckbox.id = 'show-hltb';
       showHltbCheckbox.checked = true;
-      document.body.appendChild(showHltbCheckbox);
+      hltbRow.appendChild(showHltbCheckbox);
+
+      document.body.appendChild(hltbRow);
 
       // Re-require to reinitialize with our DOM
       jest.resetModules();

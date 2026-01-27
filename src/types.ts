@@ -82,6 +82,27 @@ export const SETTING_CHECKBOX_IDS: Partial<Record<keyof UserSettings, string>> =
 } as Partial<Record<keyof UserSettings, string>>;
 
 /**
+ * Mapping from select setting keys to their element IDs and associated checkbox keys.
+ * This enables generic handling of dropdown selects in options pages.
+ * The visibilityKey indicates which checkbox controls this select's visibility.
+ */
+export interface SelectElementConfig {
+  elementId: string;
+  visibilityKey: keyof UserSettings;
+}
+
+export const SETTING_SELECT_IDS: Partial<Record<keyof UserSettings, SelectElementConfig>> = {
+  hltbDisplayStat: {
+    elementId: 'hltb-display-stat',
+    visibilityKey: 'showHltb'
+  },
+  reviewScoreSource: {
+    elementId: 'review-score-source',
+    visibilityKey: 'showReviewScores'
+  }
+};
+
+/**
  * Array of all setting keys for iteration.
  * Derived from UserSettings to ensure type safety.
  */
@@ -485,6 +506,7 @@ if (!globalThis.SCPW_UserSettings) {
   globalThis.SCPW_UserSettings = {
     DEFAULT_USER_SETTINGS,
     SETTING_CHECKBOX_IDS,
+    SETTING_SELECT_IDS,
     USER_SETTING_KEYS
   };
 }

@@ -286,6 +286,17 @@
     .platform-toggle.disabled {
       opacity: 0.5;
     }
+
+    /* Dim unchecked toggles for visual feedback */
+    .platform-toggle:has(input:not(:checked)) {
+      opacity: 0.6;
+    }
+
+    .platform-toggle:has(input:checked) {
+      opacity: 1;
+      border-color: rgba(74, 163, 255, 0.32);
+      box-shadow: 0 0 0 2px rgba(74, 163, 255, 0.10);
+    }
   </style>
 </head>
 <body class="is-loading">
@@ -329,6 +340,10 @@
       <label class="platform-toggle span-2">
         <input type="checkbox" id="show-hltb">
         <span>HLTB</span>
+      </label>
+      <label class="platform-toggle span-2">
+        <input type="checkbox" id="show-review-scores">
+        <span>Review Scores</span>
       </label>
     </div>
   </div>

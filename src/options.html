@@ -271,6 +271,12 @@
       filter: saturate(0.7) brightness(0.9);
     }
 
+    /* Dim all non-Steam Deck toggle icons when inactive */
+    .toggle-item:not(.active):not([data-platform="steamdeck"]) .toggle-icon {
+      opacity: 0.5;
+      filter: saturate(0.5);
+    }
+
     /* Steam Deck icon tile: dark premium grey with subtle gradient */
     .toggle-item[data-platform="steamdeck"] .toggle-icon {
       background:
