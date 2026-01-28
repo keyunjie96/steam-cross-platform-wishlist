@@ -62,6 +62,8 @@ function clearPendingTimersAndBatches(): void {
   pendingItems.clear();
   pendingHltbItems.clear();
   pendingReviewScoreItems.clear();
+  inFlightHltbAppIds.clear();
+  inFlightReviewScoreAppIds.clear();
 }
 
 /**
@@ -211,6 +213,12 @@ const REVIEW_SCORE_BATCH_DEBOUNCE_MS = 300;
 
 /** Max games per review score batch */
 const REVIEW_SCORE_MAX_BATCH_SIZE = 5;
+
+/** Track appids with in-flight HLTB requests (not just pending/queued) */
+const inFlightHltbAppIds = new Set<string>();
+
+/** Track appids with in-flight review score requests (not just pending/queued) */
+const inFlightReviewScoreAppIds = new Set<string>();
 
 /** Steam Deck refresh scheduling */
 const STEAM_DECK_REFRESH_DELAYS_MS = [800, 2000, 5000, 10000];
@@ -1023,16 +1031,20 @@ function updateIconsWithData(container: HTMLElement, data: CacheEntry, showLoade
   const hltbData = hltbKnown && appid ? hltbDataByAppId.get(appid) : null;
   const hasHltbTime = hltbData && (hltbData.mainStory > 0 || hltbData.mainExtra > 0 || hltbData.completionist > 0);
   const showHltbBadge = userSettings.showHltb && hasHltbTime;
-  // Only show loader if showLoaders is true (i.e., network call is happening)
-  const showHltbLoader = showLoaders && userSettings.showHltb && !hltbKnown;
+  // Show loader if: enabled AND not known AND (initial load OR request in-flight)
+  // This prevents loader from disappearing when review scores complete but HLTB is still loading
+  const hltbInFlight = appid ? inFlightHltbAppIds.has(appid) : false;
+  const showHltbLoader = userSettings.showHltb && !hltbKnown && (showLoaders || hltbInFlight);
 
   // Get review score data if available
   const reviewScoreKnown = appid ? reviewScoreDataByAppId.has(appid) : false;
   const reviewScoreData = reviewScoreKnown && appid ? reviewScoreDataByAppId.get(appid) : null;
   const hasReviewScore = reviewScoreData && reviewScoreData.score > 0;
   const showReviewScoreBadge = userSettings.showReviewScores && hasReviewScore;
-  // Only show loader if showLoaders is true (i.e., network call is happening)
-  const showReviewScoreLoader = showLoaders && userSettings.showReviewScores && !reviewScoreKnown;
+  // Show loader if: enabled AND not known AND (initial load OR request in-flight)
+  // This prevents loader from disappearing when HLTB completes but review scores still loading
+  const reviewScoreInFlight = appid ? inFlightReviewScoreAppIds.has(appid) : false;
+  const showReviewScoreLoader = userSettings.showReviewScores && !reviewScoreKnown && (showLoaders || reviewScoreInFlight);
 
   // Only add separator and icons if we have visible icons, badges, or loaders
   if (iconsToAdd.length > 0 || showHltbBadge || showHltbLoader || showReviewScoreBadge || showReviewScoreLoader) {
@@ -1446,6 +1458,11 @@ async function processPendingHltbBatch(): Promise<void> {
   pendingHltbItems.clear();
   hltbBatchDebounceTimer = null;
 
+  // Mark all games as in-flight (used to keep loaders visible during re-renders)
+  for (const { appid } of allGames) {
+    inFlightHltbAppIds.add(appid);
+  }
+
   if (DEBUG) console.log(`${LOG_PREFIX} HLTB: Processing ${allGames.length} games`); /* istanbul ignore if */
 
   for (let i = 0; i < allGames.length; i += HLTB_MAX_BATCH_SIZE) {
@@ -1471,8 +1488,9 @@ async function processPendingHltbBatch(): Promise<void> {
 
           if (DEBUG) console.log(`${LOG_PREFIX} HLTB result: ${appid} - ${gameName} => mainStory=${hltbData?.mainStory || 0}, hltbId=${hltbData?.hltbId || 0}`); /* istanbul ignore if */
 
-          // Store HLTB data
+          // Store HLTB data and mark as no longer in-flight
           hltbDataByAppId.set(appid, hltbData);
+          inFlightHltbAppIds.delete(appid);
 
           // Find ALL containers for this appid (React virtualization may have re-rendered)
           const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
@@ -1548,6 +1566,11 @@ async function processPendingReviewScoreBatch(): Promise<void> {
   pendingReviewScoreItems.clear();
   reviewScoreBatchDebounceTimer = null;
 
+  // Mark all games as in-flight (used to keep loaders visible during re-renders)
+  for (const { appid } of allGames) {
+    inFlightReviewScoreAppIds.add(appid);
+  }
+
   if (DEBUG) console.log(`${LOG_PREFIX} Review scores: Processing ${allGames.length} games`); /* istanbul ignore if */
 
   for (let i = 0; i < allGames.length; i += REVIEW_SCORE_MAX_BATCH_SIZE) {
@@ -1578,8 +1601,9 @@ async function processPendingReviewScoreBatch(): Promise<void> {
 
           if (DEBUG) console.log(`${LOG_PREFIX} Review scores result: ${appid} - ${gameName} => score=${reviewScoreData?.score || 0}, tier=${reviewScoreData?.tier || 'Unknown'}`); /* istanbul ignore if */
 
-          // Store review score data
+          // Store review score data and mark as no longer in-flight
           reviewScoreDataByAppId.set(appid, reviewScoreData);
+          inFlightReviewScoreAppIds.delete(appid);
 
           // Find ALL containers for this appid (React virtualization may have re-rendered)
           const allContainersForAppid = document.querySelectorAll<HTMLElement>(`.scpw-platforms[data-appid="${appid}"]`);
@@ -2056,6 +2080,9 @@ if (typeof globalThis !== 'undefined') {
     restoreReviewScoreDataFromEntry,
     // Steam Deck refresh helpers
     getSteamDeckRefreshInFlight: () => steamDeckRefreshInFlight,
-    setSteamDeckRefreshInFlight: (val: boolean) => { steamDeckRefreshInFlight = val; }
+    setSteamDeckRefreshInFlight: (val: boolean) => { steamDeckRefreshInFlight = val; },
+    // In-flight tracking for loader visibility fix
+    getInFlightHltbAppIds: () => inFlightHltbAppIds,
+    getInFlightReviewScoreAppIds: () => inFlightReviewScoreAppIds
   };
 }

@@ -138,6 +138,44 @@ function cleanGameNameForSearch(name: string): string {
 }
 
 /**
+ * Generates alternative search names for games by inserting colons at word boundaries.
+ * HLTB often uses colons (e.g., "Assassin's Creed: Unity") where Steam doesn't.
+ * This is fully generic - no hardcoded game names or patterns.
+ *
+ * Tries inserting a colon after the 2nd, 3rd, etc. word to find the format HLTB expects.
+ * Limited to 3 alternatives to avoid excessive API calls.
+ */
+function generateSearchAlternatives(name: string): string[] {
+  const alternatives: string[] = [name];
+
+  // Skip if already has a colon
+  if (name.includes(':')) {
+    return alternatives;
+  }
+
+  // Split into words
+  const words = name.split(/\s+/);
+
+  // Need at least 3 words to insert a colon meaningfully
+  // (at least 2 words before colon and 1 after)
+  if (words.length < 3) {
+    return alternatives;
+  }
+
+  // Try inserting colon after 2nd word, then 3rd word (most common patterns)
+  // Limit to 2 alternatives to minimize API calls
+  const maxColonPositions = Math.min(words.length - 1, 3);
+
+  for (let i = 2; i <= maxColonPositions; i++) {
+    const beforeColon = words.slice(0, i).join(' ');
+    const afterColon = words.slice(i).join(' ');
+    alternatives.push(`${beforeColon}: ${afterColon}`);
+  }
+
+  return alternatives;
+}
+
+/**
  * Calculates similarity between two strings (0-1)
  * Uses Jaccard similarity on character n-grams
  */
@@ -246,29 +284,9 @@ async function getAuthToken(): Promise<string | null> {
 }
 
 /**
- * Searches HLTB for a game directly via fetch
+ * Performs a single HLTB API search for a given name
  */
-async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSearchResult | null> {
-  // Ensure header rules are registered
-  await registerHeaderRules();
-
-  // Clean the game name by removing edition suffixes (HLTB search is strict)
-  const searchName = cleanGameNameForSearch(gameName);
-
-  /* istanbul ignore if */
-  if (HLTB_DEBUG) {
-    console.log(`${HLTB_LOG_PREFIX} Searching for: ${gameName}`);
-    if (searchName !== gameName) {
-      console.log(`${HLTB_LOG_PREFIX} Cleaned name: ${searchName}`);
-    }
-  }
-
-  const authToken = await getAuthToken();
-  if (!authToken) {
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Failed to get auth token`); /* istanbul ignore if */
-    return null;
-  }
-
+async function performHltbSearch(searchName: string, authToken: string): Promise<{ data: GameData[] } | null> {
   try {
     const response = await fetch(`${HLTB_BASE_URL}/api/search`, {
       method: 'POST',
@@ -284,79 +302,126 @@ async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSe
       return null;
     }
 
-    const result = await response.json();
-    if (!result.data || result.data.length === 0) {
-      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} No results for: ${searchName}`); /* istanbul ignore if */
-      return null;
-    }
-
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Got ${result.data.length} results, first: ${result.data[0].game_name}`); /* istanbul ignore if */
-
-    // Check for exact Steam ID match first
-    if (steamAppId) {
-      const steamIdNum = parseInt(steamAppId, 10);
-      const exactMatch = result.data.find((g: { profile_steam: number }) => g.profile_steam === steamIdNum);
-      if (exactMatch) {
-        if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Exact Steam ID match: ${exactMatch.game_name}`); /* istanbul ignore if */
-        return {
-          hltbId: exactMatch.game_id,
-          gameName: exactMatch.game_name,
-          similarity: 1,
-          data: {
-            hltbId: exactMatch.game_id,
-            mainStory: secondsToHours(exactMatch.comp_main),
-            mainExtra: secondsToHours(exactMatch.comp_plus),
-            completionist: secondsToHours(exactMatch.comp_100),
-            allStyles: secondsToHours(exactMatch.comp_all),
-            steamId: exactMatch.profile_steam > 0 ? exactMatch.profile_steam : null
-          }
-        };
-      }
-    }
-
-    // Fuzzy match
-    interface GameData {
-      game_id: number;
-      game_name: string;
-      comp_main: number;
-      comp_plus: number;
-      comp_100: number;
-      comp_all: number;
-      profile_steam: number;
-    }
-    const candidates = result.data.map((g: GameData) => ({
-      similarity: calculateSimilarity(gameName, g.game_name),
-      result: {
-        hltbId: g.game_id,
-        gameName: g.game_name,
-        similarity: 0, // Will be set below
-        data: {
-          hltbId: g.game_id,
-          mainStory: secondsToHours(g.comp_main),
-          mainExtra: secondsToHours(g.comp_plus),
-          completionist: secondsToHours(g.comp_100),
-          allStyles: secondsToHours(g.comp_all),
-          steamId: g.profile_steam > 0 ? g.profile_steam : null
-        }
-      }
-    }));
-
-    candidates.sort((a: { similarity: number }, b: { similarity: number }) => b.similarity - a.similarity);
-    const best = candidates[0];
-
-    if (best.similarity < 0.5) {
-      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match "${best.result.gameName}" too dissimilar (${(best.similarity * 100).toFixed(0)}%)`); /* istanbul ignore if */
-      return null;
-    }
-
-    best.result.similarity = best.similarity;
-    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match: ${best.result.gameName} (${(best.similarity * 100).toFixed(0)}%), mainStory=${best.result.data.mainStory}h`); /* istanbul ignore if */
-    return best.result;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`${HLTB_LOG_PREFIX} Search error:`, errorMessage);
+    return await response.json();
+  } catch {
     return null;
   }
+}
+
+interface GameData {
+  game_id: number;
+  game_name: string;
+  comp_main: number;
+  comp_plus: number;
+  comp_100: number;
+  comp_all: number;
+  profile_steam: number;
+}
+
+/**
+ * Searches HLTB for a game directly via fetch.
+ * Tries alternative search names (e.g., with/without colon) if the first search fails.
+ */
+async function searchHltb(gameName: string, steamAppId?: string): Promise<HltbSearchResult | null> {
+  // Ensure header rules are registered
+  await registerHeaderRules();
+
+  // Clean the game name by removing edition suffixes (HLTB search is strict)
+  const cleanedName = cleanGameNameForSearch(gameName);
+
+  // Generate alternative search names (e.g., "Assassin's Creed Unity" → "Assassin's Creed: Unity")
+  const searchAlternatives = generateSearchAlternatives(cleanedName);
+
+  /* istanbul ignore if */
+  if (HLTB_DEBUG) {
+    console.log(`${HLTB_LOG_PREFIX} Searching for: ${gameName}`);
+    if (cleanedName !== gameName) {
+      console.log(`${HLTB_LOG_PREFIX} Cleaned name: ${cleanedName}`);
+    }
+    if (searchAlternatives.length > 1) {
+      console.log(`${HLTB_LOG_PREFIX} Will try alternatives: ${searchAlternatives.join(', ')}`);
+    }
+  }
+
+  const authToken = await getAuthToken();
+  if (!authToken) {
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Failed to get auth token`); /* istanbul ignore if */
+    return null;
+  }
+
+  // Try each search alternative until we get results
+  let result: { data: GameData[] } | null = null;
+  let usedSearchName = cleanedName;
+
+  for (const searchName of searchAlternatives) {
+    result = await performHltbSearch(searchName, authToken);
+    if (result?.data && result.data.length > 0) {
+      usedSearchName = searchName;
+      if (HLTB_DEBUG && searchName !== cleanedName) {
+        console.log(`${HLTB_LOG_PREFIX} Found results using alternative: ${searchName}`);
+      }
+      break;
+    }
+  }
+
+  if (!result?.data || result.data.length === 0) {
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} No results for: ${cleanedName} (tried ${searchAlternatives.length} alternatives)`); /* istanbul ignore if */
+    return null;
+  }
+
+  if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Got ${result.data.length} results, first: ${result.data[0].game_name}`); /* istanbul ignore if */
+
+  // Check for exact Steam ID match first
+  if (steamAppId) {
+    const steamIdNum = parseInt(steamAppId, 10);
+    const exactMatch = result.data.find((g: GameData) => g.profile_steam === steamIdNum);
+    if (exactMatch) {
+      if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Exact Steam ID match: ${exactMatch.game_name}`); /* istanbul ignore if */
+      return {
+        hltbId: exactMatch.game_id,
+        gameName: exactMatch.game_name,
+        similarity: 1,
+        data: {
+          hltbId: exactMatch.game_id,
+          mainStory: secondsToHours(exactMatch.comp_main),
+          mainExtra: secondsToHours(exactMatch.comp_plus),
+          completionist: secondsToHours(exactMatch.comp_100),
+          allStyles: secondsToHours(exactMatch.comp_all),
+          steamId: exactMatch.profile_steam > 0 ? exactMatch.profile_steam : null
+        }
+      };
+    }
+  }
+
+  // Fuzzy match
+  const candidates = result.data.map((g: GameData) => ({
+    similarity: calculateSimilarity(gameName, g.game_name),
+    result: {
+      hltbId: g.game_id,
+      gameName: g.game_name,
+      similarity: 0, // Will be set below
+      data: {
+        hltbId: g.game_id,
+        mainStory: secondsToHours(g.comp_main),
+        mainExtra: secondsToHours(g.comp_plus),
+        completionist: secondsToHours(g.comp_100),
+        allStyles: secondsToHours(g.comp_all),
+        steamId: g.profile_steam > 0 ? g.profile_steam : null
+      }
+    }
+  }));
+
+  candidates.sort((a: { similarity: number }, b: { similarity: number }) => b.similarity - a.similarity);
+  const best = candidates[0];
+
+  if (best.similarity < 0.5) {
+    if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match "${best.result.gameName}" too dissimilar (${(best.similarity * 100).toFixed(0)}%)`); /* istanbul ignore if */
+    return null;
+  }
+
+  best.result.similarity = best.similarity;
+  if (HLTB_DEBUG) console.log(`${HLTB_LOG_PREFIX} Best match: ${best.result.gameName} (${(best.similarity * 100).toFixed(0)}%), mainStory=${best.result.data.mainStory}h`); /* istanbul ignore if */
+  return best.result;
 }
 
 /**
@@ -403,6 +468,7 @@ globalThis.SCPW_HltbClient = {
   normalizeGameName,
   calculateSimilarity,
   cleanGameNameForSearch,
+  generateSearchAlternatives,
   registerHeaderRules
 };
 
@@ -414,5 +480,6 @@ export {
   normalizeGameName,
   calculateSimilarity,
   cleanGameNameForSearch,
+  generateSearchAlternatives,
   registerHeaderRules
 };

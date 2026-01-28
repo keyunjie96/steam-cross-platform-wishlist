@@ -231,6 +231,41 @@ describe('hltbClient.js', () => {
     });
   });
 
+  describe('generateSearchAlternatives', () => {
+    it('should export generateSearchAlternatives', () => {
+      expect(HltbClient.generateSearchAlternatives).toBeInstanceOf(Function);
+    });
+
+    it('should return only original name when it already contains a colon', () => {
+      const result = HltbClient.generateSearchAlternatives("Assassin's Creed: Unity");
+      expect(result).toEqual(["Assassin's Creed: Unity"]);
+    });
+
+    it('should return only original name when fewer than 3 words', () => {
+      expect(HltbClient.generateSearchAlternatives('Hollow Knight')).toEqual(['Hollow Knight']);
+      expect(HltbClient.generateSearchAlternatives('Celeste')).toEqual(['Celeste']);
+    });
+
+    it('should generate alternatives with colons for 3+ word names', () => {
+      const result = HltbClient.generateSearchAlternatives("Assassin's Creed Unity");
+      expect(result).toContain("Assassin's Creed Unity");
+      expect(result).toContain("Assassin's Creed: Unity");
+    });
+
+    it('should generate multiple alternatives for names with 4+ words', () => {
+      const result = HltbClient.generateSearchAlternatives('Call of Duty Warzone');
+      expect(result).toContain('Call of Duty Warzone');
+      expect(result).toContain('Call of: Duty Warzone');
+      expect(result).toContain('Call of Duty: Warzone');
+    });
+
+    it('should limit alternatives to avoid excessive API calls', () => {
+      const result = HltbClient.generateSearchAlternatives('One Two Three Four Five Six');
+      // Original + max 2 alternatives
+      expect(result.length).toBeLessThanOrEqual(4);
+    });
+  });
+
   describe('queryByGameName', () => {
     // Mock fetch for API calls
     let originalFetch;
