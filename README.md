@@ -56,8 +56,8 @@ When HLTB breaks, times disappear but platform icons still work.
 
 ```
 ┌─────────────┐  message   ┌─────────────┐
-│   content   │ ────────►  │  background │
-│   script    │ ◄──────── │   worker    │
+│   content   │ ─────────► │  background │
+│   script    │ ◄───────── │   worker    │
 └──────┬──────┘  response  └──────┬──────┘
        │                          │
        ▼                          ▼
@@ -65,9 +65,9 @@ When HLTB breaks, times disappear but platform icons still work.
   + page script            │   resolver  │
   (SSR data)               └──────┬──────┘
                                   │
-                    ┌─────────────┼─────────────┐
-                    ▼             ▼             ▼
-                 cache       wikidata        hltb
+                    ┌─────────────┼──────────────┐
+                    ▼             ▼              ▼
+                 cache       wikidata     review scores
 ```
 
 See [CLAUDE.md](CLAUDE.md) for full architecture details and dev workflow.
