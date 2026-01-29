@@ -92,6 +92,13 @@ npm run typecheck           # Type check without emitting (uses tsc)
 
 Note: esbuild compiles each file as a self-contained IIFE for Chrome extension compatibility.
 
+### Packaging for Release
+```bash
+bash scripts/package.sh     # Build + create zip for Chrome Web Store & GitHub release
+```
+
+**IMPORTANT:** Always use `scripts/package.sh` to create release zips. Never manually zip files — the script reads `manifest.json` to include exactly the right files (HTML, CSS, JS, icons) and excludes source maps and dev assets. Manual zipping risks missing files like `src/popup.html`.
+
 ### Running Tests
 ```bash
 npm test                    # All tests
