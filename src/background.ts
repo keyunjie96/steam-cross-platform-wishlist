@@ -570,4 +570,4 @@ async function getBatchReviewScores(message: GetReviewScoresBatchRequest): Promi
 }
 
 chrome.runtime.onMessage.addListener(handleMessage);
-console.log(`${LOG_PREFIX} Service worker initialized (v0.8.0)`);
+console.log(`${LOG_PREFIX} Service worker initialized (v0.7.2)`);
