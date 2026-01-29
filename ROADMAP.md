@@ -14,17 +14,7 @@
 
 ## Bugs (Necessity: 8)
 
-### BUG-5: OpenCritic API requires authentication
-**Priority:** P1 (Blocking for FEAT-10)
-**Files:** `src/reviewScoresClient.ts`
-**Issue:** OpenCritic API now returns 400 "API key is required" for all unauthenticated requests. This breaks the review scores feature completely.
-**Discovered:** 2026-01-27 during end-to-end testing
-**Evidence:** `curl "https://api.opencritic.com/api/game/search?criteria=Elden%20Ring"` returns `{"message":"API key is required. Email developers@opencritic.com for more info"}`
-**Options:**
-1. Email developers@opencritic.com to request API key
-2. Find alternative data source (Metacritic direct, IGDB, etc.)
-3. Scrape OpenCritic website (not recommended - fragile)
-4. Disable review scores feature until resolved
+*No pending bugs.*
 
 ---
 
@@ -53,34 +43,6 @@
 3. Show icon in content.js based on ProtonDB tier
 4. Consider caching with appropriate TTL
 **Risk:** Medium - ProtonDB API is unofficial but stable. Tier colors may conflict with existing dimmed/available styling.
-
-### FEAT-10: Review scores (IGN, GameSpot, Metacritic)
-**Priority:** P2 (Medium Value)
-**Files:** New `src/reviewScoresClient.ts`, `src/content.ts`, `src/types.ts`, `src/background.ts`
-**Issue:** Users want review scores to help prioritize their wishlist purchases.
-**Data sources:**
-- Metacritic: `https://www.metacritic.com/search/game/<name>/results` (web scraping required)
-- OpenCritic: `https://api.opencritic.com/api/game/search?criteria=<name>` (public API)
-- IGN/GameSpot: No public APIs (may require web scraping or alternative sources)
-**Fix:**
-1. Create `src/reviewScoresClient.ts` with `queryReviewScores()` function
-2. Add review score types to types.ts (metacritic, opencritic scores)
-3. Add message handler in background.ts for GET_REVIEW_SCORES
-4. Display score badge/tooltip in icon row (similar to HLTB badge)
-5. Add user preference toggle in options
-**Risk:** High - Metacritic has strict anti-scraping. OpenCritic is more accessible. IGN/GameSpot lack public APIs. Name matching is fuzzy. Consider OpenCritic as primary source (has aggregated scores).
-
-### FEAT-11: Export cached entries
-**Priority:** P2 (Medium Value)
-**Files:** `src/options.ts`, `src/options.html`, `src/background.ts`
-**Issue:** Users want to export cached game data for backup, analysis, or sharing.
-**Fix:**
-1. Add "Export Cache" button to options page
-2. Add message handler in background.ts for GET_CACHE_EXPORT
-3. Format cache entries as JSON with metadata (timestamp, version)
-4. Include all fields: appid, gameName, platforms, HLTB data, review scores
-5. Trigger browser download with timestamp filename (e.g., `swp-cache-2024-01-26.json`)
-**Risk:** Low - simple file generation and download. Consider adding import functionality for completeness.
 
 ### FEAT-8: Firefox/Edge browser support
 **Priority:** P3 (Lower Priority)
@@ -170,6 +132,10 @@ Features below were evaluated and declined because established extensions (Augme
 - [x] MISSING-1: Extension icons for Chrome Web Store (16x16, 48x48, 128x128 PNG icons created)
 - [x] MISSING-2: Popup UI (quick-access popup with cache stats and platform toggles)
 - [x] UX-2: Fix icon blinking on URL change (replaced cleanupAllIcons with lightCleanup to preserve icons in DOM during React SPA navigation)
+- [x] REBRAND-1: Rename from "Steam Cross-Platform Wishlist" to "Steam Wishlist Plus" (name, log prefix SCPW→SWP, globalThis namespace, messaging, docs, marketing, all 50 files updated)
+- [x] FEAT-10: Review scores (OpenCritic integration via Wikidata ID lookup)
+- [x] FEAT-11: Export cached entries (JSON export from options page)
+- [x] BUG-5: OpenCritic API authentication (resolved as part of FEAT-10 via Wikidata ID direct lookup)
 
 ---
 
@@ -177,7 +143,5 @@ Features below were evaluated and declined because established extensions (Augme
 
 | ID | Item | Necessity | Confidence | Score | Effort |
 |----|------|-----------|------------|-------|--------|
-| FEAT-10 | Review Scores | 6 | 5 | 30 | Medium |
-| FEAT-11 | Export Cache | 5 | 9 | 45 | Low |
 | FEAT-8 | Firefox/Edge | 5 | 6 | 30 | Medium |
 | FEAT-9 | ChromeOS/ProtonDB | 4 | 5 | 20 | Medium |
