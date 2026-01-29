@@ -44,10 +44,7 @@ jobs:
     name: Integration Tests (Wikidata)
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft != true
-    # External API tests (HLTB, Wikidata, OpenCritic) flake due to
-    # rate limiting, bot detection, and transient 502s. They should
-    # not block PRs — unit tests are the quality gate.
-    continue-on-error: true
+    # Integration tests can be slower due to rate limiting
     timeout-minutes: 10
 
     steps:
