@@ -27,7 +27,7 @@
 
     body {
       font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
-      width: 280px;
+      width: 296px;
       margin: 0;
       padding: 16px;
       background: linear-gradient(to bottom, var(--bg-0) 0%, var(--bg-1) 100%);
@@ -35,6 +35,7 @@
       line-height: 1.5;
     }
 
+    /* Header with gear icon */
     .header {
       display: flex;
       align-items: center;
@@ -63,11 +64,43 @@
       font-size: 14px;
       font-weight: 600;
       margin: 0;
+      flex: 1;
     }
 
+    .settings-btn {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      transition: color 0.15s, background-color 0.15s;
+    }
+
+    .settings-btn:hover {
+      color: var(--text);
+      background: var(--card-bg-hover);
+    }
+
+    .settings-btn:focus-visible {
+      outline: 2px solid var(--accent-ring);
+      outline-offset: 2px;
+    }
+
+    .settings-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Stats */
     .stats {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       margin-bottom: 16px;
     }
 
@@ -94,59 +127,117 @@
       margin-top: 2px;
     }
 
-    .actions {
-      display: flex;
-      gap: 8px;
+    /* Section groups */
+    .section-group {
+      margin-bottom: 14px;
     }
 
-    button {
-      flex: 1;
-      padding: 8px 12px;
+    .section-title {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .platform-toggles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .platform-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
+      padding: 8px 10px;
       cursor: pointer;
-      transition: background-color 0.15s, opacity 0.15s;
+      transition: background-color 0.15s, border-color 0.15s;
+      font-size: 12px;
+      color: var(--text);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
-    button:disabled {
+    .platform-toggle:hover {
+      background: var(--card-bg-hover);
+      border-color: var(--card-border-hover);
+    }
+
+    .platform-toggle input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .platform-toggle span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .platform-toggle:focus-within,
+    button:focus-visible {
+      outline: 2px solid var(--accent-ring);
+      outline-offset: 2px;
+    }
+
+    .platform-toggle,
+    button {
+      user-select: none;
+    }
+
+    /* Dim unchecked toggles */
+    .platform-toggle:has(input:not(:checked)) {
       opacity: 0.6;
-      cursor: not-allowed;
     }
 
-    .btn-secondary {
-      background: rgba(103, 193, 245, 0.20);
-      color: #67c1f5;
+    .platform-toggle:has(input:checked) {
+      opacity: 1;
+      border-color: rgba(74, 163, 255, 0.32);
+      box-shadow: 0 0 0 2px rgba(74, 163, 255, 0.10);
     }
 
-    .btn-secondary:hover:not(:disabled) {
-      background: rgba(103, 193, 245, 0.30);
+    .platform-toggle.disabled {
+      opacity: 0.5;
     }
 
+    /* Clear Cache button */
     .btn-danger {
-      border-color: var(--danger-border);
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--danger-border);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
       background: var(--danger-bg);
       color: #ffffff;
+      transition: background-color 0.15s, opacity 0.15s;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .btn-danger:hover:not(:disabled) {
       background: var(--danger-bg-hover);
     }
 
+    .btn-danger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Status */
     .status {
       padding: 8px 12px;
       border-radius: 8px;
-      margin-top: 12px;
+      margin-top: 10px;
       font-size: 12px;
       display: none;
-    }
-
-    .platform-toggle,
-    button,
-    .footer a {
-      user-select: none;
     }
 
     .status.success {
@@ -161,19 +252,6 @@
       background: #461e1e;
       color: #f87171;
       border: 1px solid #dc2626;
-    }
-
-    .footer {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--card-border);
-      text-align: center;
-    }
-
-    .footer a {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 12px;
     }
 
     .loading {
@@ -194,108 +272,25 @@
 
     /* Prevent flicker: hide content until JS loads settings */
     body.is-loading .stats,
-    body.is-loading .platforms,
-    body.is-loading .actions,
-    body.is-loading .footer {
+    body.is-loading .section-group,
+    body.is-loading .btn-danger,
+    body.is-loading .status {
       opacity: 0;
     }
 
     body:not(.is-loading) .stats,
-    body:not(.is-loading) .platforms,
-    body:not(.is-loading) .actions {
+    body:not(.is-loading) .section-group,
+    body:not(.is-loading) .btn-danger {
       opacity: 1;
       transition: opacity 0.15s ease-in;
     }
 
-    .platforms {
-      margin-bottom: 16px;
-    }
-
-    .platforms-title {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .platform-toggles {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .platform-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 9px 10px;
-      cursor: pointer;
-      transition: background-color 0.15s, border-color 0.15s;
-      font-size: 12px;
-      color: var(--text);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    }
-
-    .platform-toggle:hover {
-      background: var(--card-bg-hover);
-      border-color: var(--card-border-hover);
-    }
-
-    .platform-toggle input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      margin: 0;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-
-    .platform-toggle.span-2 {
-      grid-column: 1 / -1;
-    }
-
-    .platform-toggle span {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .platform-toggle:focus-within,
-    button:focus-visible,
-    .footer a:focus-visible {
-      outline: 2px solid var(--accent-ring);
-      outline-offset: 2px;
-    }
-
-    .footer a {
-      display: inline-block;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-    }
-
-    .footer a:hover {
-      background: var(--card-bg-hover);
-    }
-
-    .platform-toggle.disabled {
-      opacity: 0.5;
-    }
-
-    /* Dim unchecked toggles for visual feedback */
-    .platform-toggle:has(input:not(:checked)) {
-      opacity: 0.6;
-    }
-
-    .platform-toggle:has(input:checked) {
-      opacity: 1;
-      border-color: rgba(74, 163, 255, 0.32);
-      box-shadow: 0 0 0 2px rgba(74, 163, 255, 0.10);
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
@@ -305,6 +300,12 @@
       <img src="../assets/icons/icon128.png" alt="Extension icon">
     </div>
     <h1>Steam Cross-Platform Wishlist</h1>
+    <button type="button" class="settings-btn" id="settings-btn" aria-label="Open settings" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
   </div>
 
   <div class="stats">
@@ -318,8 +319,8 @@
     </div>
   </div>
 
-  <div class="platforms">
-    <div class="platforms-title">Show Platforms</div>
+  <div class="section-group">
+    <div class="section-title">Platforms</div>
     <div class="platform-toggles">
       <label class="platform-toggle">
         <input type="checkbox" id="show-nintendo">
@@ -337,27 +338,26 @@
         <input type="checkbox" id="show-steamdeck">
         <span>Deck</span>
       </label>
-      <label class="platform-toggle span-2">
+    </div>
+  </div>
+
+  <div class="section-group">
+    <div class="section-title">Game Info</div>
+    <div class="platform-toggles">
+      <label class="platform-toggle">
         <input type="checkbox" id="show-hltb">
-        <span>HLTB</span>
+        <span>Play Time</span>
       </label>
-      <label class="platform-toggle span-2">
+      <label class="platform-toggle">
         <input type="checkbox" id="show-review-scores">
-        <span>Review Scores</span>
+        <span>Reviews</span>
       </label>
     </div>
   </div>
 
-  <div class="actions">
-    <button type="button" class="btn-secondary" id="refresh-btn" aria-label="Refresh cache statistics">Refresh</button>
-    <button type="button" class="btn-danger" id="clear-btn" aria-label="Clear all cached data">Clear Cache</button>
-  </div>
+  <button type="button" class="btn-danger" id="clear-btn" aria-label="Clear all cached data">Clear Cache</button>
 
   <div id="status" class="status" role="alert" aria-live="polite"></div>
-
-  <div class="footer">
-    <a href="#" id="options-link">Open Settings</a>
-  </div>
 
   <script src="../dist/types.js"></script>
   <script src="../dist/popup.js"></script>
