@@ -128,6 +128,10 @@ function handleMessage(
       handleAsync(() => handleClearCache(), sendResponse, { success: false });
       return true;
 
+    case 'GET_CACHE_EXPORT':
+      handleAsync(() => handleGetCacheExport(), sendResponse, { success: false });
+      return true;
+
     case 'GET_HLTB_DATA':
       handleAsync(() => getHltbData(message as GetHltbDataRequest), sendResponse, { success: false, data: null });
       return true;
@@ -238,6 +242,14 @@ async function handleClearCache(): Promise<{ success: boolean }> {
   await globalThis.SCPW_Cache.clearCache();
   console.log(`${LOG_PREFIX} Cache cleared`);
   return { success: true };
+}
+
+/**
+ * Gets all cache entries for export
+ */
+async function handleGetCacheExport(): Promise<AsyncResponse> {
+  const entries = await globalThis.SCPW_Cache.getAllCacheEntries();
+  return { success: true, data: entries as unknown as CacheEntry };
 }
 
 /**
@@ -558,4 +570,4 @@ async function getBatchReviewScores(message: GetReviewScoresBatchRequest): Promi
 }
 
 chrome.runtime.onMessage.addListener(handleMessage);
-console.log(`${LOG_PREFIX} Service worker initialized (v0.7.1)`);
+console.log(`${LOG_PREFIX} Service worker initialized (v0.7.2)`);

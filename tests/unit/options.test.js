@@ -11,6 +11,7 @@ describe('options.js', () => {
   let cacheAgeEl;
   let refreshStatsBtn;
   let clearCacheBtn;
+  let exportCacheBtn;
   let showNintendoCheckbox;
   let showPlaystationCheckbox;
   let showXboxCheckbox;
@@ -56,6 +57,11 @@ describe('options.js', () => {
     clearCacheBtn.id = 'clear-cache-btn';
     clearCacheBtn.textContent = 'Clear Cache';
     document.body.appendChild(clearCacheBtn);
+
+    exportCacheBtn = document.createElement('button');
+    exportCacheBtn.id = 'export-cache-btn';
+    exportCacheBtn.textContent = 'Export Cache';
+    document.body.appendChild(exportCacheBtn);
 
     showNintendoCheckbox = document.createElement('input');
     showNintendoCheckbox.type = 'checkbox';
@@ -550,6 +556,98 @@ describe('options.js', () => {
       // After completion, original text should be restored
       expect(clearCacheBtn.innerHTML).toBe(originalHtml);
       expect(clearCacheBtn.disabled).toBe(false);
+    });
+  });
+
+  describe('exportCache', () => {
+    beforeEach(() => {
+      // Mock URL.createObjectURL and URL.revokeObjectURL
+      global.URL.createObjectURL = jest.fn().mockReturnValue('blob:test-url');
+      global.URL.revokeObjectURL = jest.fn();
+      // Mock chrome.runtime.getManifest
+      chrome.runtime.getManifest = jest.fn().mockReturnValue({ version: '0.8.0' });
+    });
+
+    it('should request cache export and trigger download', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const entries = [
+        { appid: '123', gameName: 'Game A', resolvedAt: Date.now(), ttlDays: 7 }
+      ];
+      chrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true, count: 1, oldestEntry: Date.now() }) // init GET_CACHE_STATS
+        .mockResolvedValueOnce({ success: true, data: entries }); // GET_CACHE_EXPORT
+
+      // Re-init to register event listeners
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Click the export button
+      const clickSpy = jest.fn();
+      jest.spyOn(document, 'createElement').mockImplementation((tag) => {
+        const el = document.createElement.wrappedMethod
+          ? document.createElement.wrappedMethod.call(document, tag)
+          : Object.getPrototypeOf(document).createElement.call(document, tag);
+        if (tag === 'a') {
+          el.click = clickSpy;
+        }
+        return el;
+      });
+
+      exportCacheBtn.click();
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'GET_CACHE_EXPORT' });
+
+      // Restore
+      document.createElement.mockRestore?.();
+    });
+
+    it('should show error when export fails', async () => {
+      chrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true, count: 0, oldestEntry: null }) // init
+        .mockResolvedValueOnce({ success: false }); // GET_CACHE_EXPORT fails
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      exportCacheBtn.click();
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheStatusEl.textContent).toBe('Failed to export cache.');
+      expect(cacheStatusEl.className).toContain('error');
+    });
+
+    it('should show error when export throws', async () => {
+      chrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true, count: 0, oldestEntry: null }) // init
+        .mockRejectedValueOnce(new Error('Network error')); // GET_CACHE_EXPORT throws
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      exportCacheBtn.click();
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(cacheStatusEl.textContent).toBe('Failed to export cache.');
+    });
+
+    it('should show loading state during export', async () => {
+      chrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true, count: 0, oldestEntry: null }) // init
+        .mockImplementationOnce(() => {
+          // Check loading state while request is pending
+          expect(exportCacheBtn.disabled).toBe(true);
+          return Promise.resolve({ success: true, data: [] });
+        });
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await jest.advanceTimersByTimeAsync(0);
+
+      exportCacheBtn.click();
+      await jest.advanceTimersByTimeAsync(0);
+
+      // After completion, button should be re-enabled
+      expect(exportCacheBtn.disabled).toBe(false);
     });
   });
 

@@ -9,7 +9,6 @@
       /* Steam-inspired color palette */
       --bg-body: #1b2838;
       --bg-card: #16202d;
-      --bg-card-light: #1e2c3a;
       --bg-input: #32404f;
       --bg-hover: rgba(255, 255, 255, 0.075);
 
@@ -24,8 +23,6 @@
 
       /* Unified accent - all switches use this */
       --accent: #4aa3ff;
-      --accent-hover: #6bb5ff;
-      --accent-soft: rgba(74, 163, 255, 0.15);
 
       /* Platform colors - icons only */
       --nintendo: #e60012;
@@ -118,7 +115,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       overflow: hidden;
     }
 
@@ -129,7 +126,13 @@
       align-items: center;
       justify-content: space-between;
       cursor: default;
+      border-left: 3px solid var(--text-muted);
     }
+
+    .section[data-section="platforms"] .section-header { border-left-color: var(--accent); }
+    .section[data-section="game-info"] .section-header { border-left-color: var(--hltb); }
+    .section[data-section="cache"] .section-header { border-left-color: var(--text-muted); }
+    .section[data-section="about"] .section-header { border-left-color: var(--border-color); }
 
     .section-header h2 {
       font-size: 11px;
@@ -175,7 +178,7 @@
     }
 
     .section-body {
-      padding: 14px 16px;
+      padding: 12px 16px;
     }
 
     .section-desc {
@@ -508,6 +511,10 @@
       background: rgba(192, 48, 48, 0.5);
     }
 
+    .btn-full-width {
+      margin-top: 10px;
+    }
+
     button svg {
       width: 16px;
       height: 16px;
@@ -575,7 +582,7 @@
     .section-divider {
       height: 1px;
       background: var(--border-subtle);
-      margin: 8px 0;
+      margin: 12px 0;
     }
 
     /* Loading state */
@@ -651,13 +658,13 @@
       </div>
       <div class="header-text">
         <h1>Steam Cross-Platform Wishlist</h1>
-        <div class="version">Version 0.7.1</div>
+        <div class="version">Version 0.7.2</div>
       </div>
     </header>
 
-    <section class="section">
+    <section class="section" data-section="platforms">
       <div class="section-header">
-        <h2>Console Platforms</h2>
+        <h2>Platforms</h2>
       </div>
       <div class="section-body">
         <p class="section-desc">Show game availability on other platforms</p>
@@ -707,12 +714,12 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" data-section="game-info">
       <div class="section-header">
-        <h2>Steam Deck & Game Info</h2>
+        <h2>Game Info</h2>
       </div>
       <div class="section-body">
-        <p class="section-desc">Compatibility and playtime information</p>
+        <p class="section-desc">Compatibility, playtime, and review information</p>
         <div class="toggle-list">
           <label class="toggle-item" data-platform="steamdeck">
             <div class="toggle-icon steamdeck-icon">
@@ -736,8 +743,6 @@
               <span class="slider"></span>
             </div>
           </label>
-
-          <div class="section-divider"></div>
 
           <div class="toggle-item has-inline-option" data-platform="hltb">
             <label class="toggle-icon" for="show-hltb">
@@ -781,7 +786,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" data-section="cache">
       <div class="section-header">
         <h2>Cache</h2>
       </div>
@@ -804,26 +809,34 @@
             </svg>
             Refresh
           </button>
-          <button type="button" class="btn-danger" id="clear-cache-btn">
+          <button type="button" class="btn-secondary" id="export-cache-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Clear Cache
+            Export
           </button>
         </div>
+        <button type="button" class="btn-danger btn-full-width" id="clear-cache-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          Clear Cache
+        </button>
         <div id="cache-status" class="status" aria-live="polite"></div>
       </div>
     </section>
 
-    <section class="section collapsed" data-collapsible>
+    <section class="section collapsed" data-collapsible data-section="about">
       <div class="section-header">
-        <button type="button" class="collapse-btn" aria-expanded="false" aria-controls="privacy-body">
-          <h2>Privacy</h2>
+        <button type="button" class="collapse-btn" aria-expanded="false" aria-controls="about-body">
+          <h2>About</h2>
           <span class="collapse-icon" aria-hidden="true">▶</span>
         </button>
       </div>
-      <div class="section-body" id="privacy-body" hidden>
+      <div class="section-body" id="about-body" hidden>
         <div class="info-box">
           <strong>Your data stays local</strong>
           <ul>
@@ -833,17 +846,7 @@
             <li>Zero analytics or telemetry</li>
           </ul>
         </div>
-      </div>
-    </section>
-
-    <section class="section collapsed" data-collapsible>
-      <div class="section-header">
-        <button type="button" class="collapse-btn" aria-expanded="false" aria-controls="sources-body">
-          <h2>Data Sources</h2>
-          <span class="collapse-icon" aria-hidden="true">▶</span>
-        </button>
-      </div>
-      <div class="section-body" id="sources-body" hidden>
+        <div class="section-divider"></div>
         <div class="info-box">
           <strong>Powered by open data</strong>
           <p style="margin-top: 6px;">

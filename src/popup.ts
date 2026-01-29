@@ -18,9 +18,8 @@ const { DEFAULT_USER_SETTINGS, SETTING_CHECKBOX_IDS, USER_SETTING_KEYS } = globa
 const statusEl = document.getElementById('status') as HTMLElement;
 const cacheCountEl = document.getElementById('cache-count') as HTMLElement;
 const cacheAgeEl = document.getElementById('cache-age') as HTMLElement;
-const refreshBtn = document.getElementById('refresh-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
-const optionsLink = document.getElementById('options-link') as HTMLAnchorElement;
+const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
 
 // Dynamic checkbox map - populated from SETTING_CHECKBOX_IDS
 const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
@@ -62,13 +61,16 @@ function showStatus(message: string, type: 'success' | 'error'): void {
 }
 
 /**
- * Sets loading state on a button
+ * Sets loading state on a button using safe DOM methods
  */
 function setButtonLoading(button: HTMLButtonElement, loading: boolean): void {
   button.disabled = loading;
   if (loading) {
     button.dataset.originalText = button.textContent || '';
-    button.innerHTML = '<span class="loading"></span>';
+    button.textContent = '';
+    const spinner = document.createElement('span');
+    spinner.className = 'loading';
+    button.appendChild(spinner);
   } else if (button.dataset.originalText) {
     button.textContent = button.dataset.originalText;
   }
@@ -84,8 +86,6 @@ interface CacheStatsResponse {
  * Loads and displays cache statistics
  */
 async function loadCacheStats(): Promise<void> {
-  setButtonLoading(refreshBtn, true);
-
   try {
     const response = await chrome.runtime.sendMessage({ type: 'GET_CACHE_STATS' }) as CacheStatsResponse;
 
@@ -99,8 +99,6 @@ async function loadCacheStats(): Promise<void> {
     console.error(`${LOG_PREFIX} Error loading cache stats:`, error);
     cacheCountEl.textContent = '?';
     cacheAgeEl.textContent = '?';
-  } finally {
-    setButtonLoading(refreshBtn, false);
   }
 }
 
@@ -139,8 +137,7 @@ async function clearCache(): Promise<void> {
 /**
  * Opens the options page
  */
-function openOptionsPage(event: Event): void {
-  event.preventDefault();
+function openOptionsPage(): void {
   chrome.runtime.openOptionsPage();
 }
 
@@ -208,13 +205,11 @@ async function saveSettings(): Promise<void> {
  * Initialize the popup
  */
 async function initializePopup(): Promise<void> {
-  // Set up event listeners for buttons and links
-  refreshBtn.addEventListener('click', loadCacheStats);
+  // Set up event listeners
   clearBtn.addEventListener('click', clearCache);
-  optionsLink.addEventListener('click', openOptionsPage);
+  settingsBtn.addEventListener('click', openOptionsPage);
 
   // Dynamically add event listeners to all setting checkboxes
-  // This automatically includes any new settings added to SETTING_CHECKBOX_IDS
   for (const key of USER_SETTING_KEYS) {
     const checkbox = checkboxes.get(key);
     if (checkbox) {

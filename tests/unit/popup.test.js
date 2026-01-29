@@ -6,9 +6,8 @@ describe('popup.js', () => {
   let statusEl;
   let cacheCountEl;
   let cacheAgeEl;
-  let refreshBtn;
   let clearBtn;
-  let optionsLink;
+  let settingsBtn;
   let showNintendoCheckbox;
   let showPlaystationCheckbox;
   let showXboxCheckbox;
@@ -38,21 +37,15 @@ describe('popup.js', () => {
     cacheAgeEl.textContent = '-';
     document.body.appendChild(cacheAgeEl);
 
-    refreshBtn = document.createElement('button');
-    refreshBtn.id = 'refresh-btn';
-    refreshBtn.textContent = 'Refresh';
-    document.body.appendChild(refreshBtn);
-
     clearBtn = document.createElement('button');
     clearBtn.id = 'clear-btn';
     clearBtn.textContent = 'Clear Cache';
     document.body.appendChild(clearBtn);
 
-    optionsLink = document.createElement('a');
-    optionsLink.id = 'options-link';
-    optionsLink.href = '#';
-    optionsLink.textContent = 'Open Settings';
-    document.body.appendChild(optionsLink);
+    settingsBtn = document.createElement('button');
+    settingsBtn.id = 'settings-btn';
+    settingsBtn.textContent = '';
+    document.body.appendChild(settingsBtn);
 
     // Platform toggle checkboxes
     const createToggle = (id) => {
@@ -146,24 +139,19 @@ describe('popup.js', () => {
       expect(statusEl).toBeTruthy();
       expect(cacheCountEl).toBeTruthy();
       expect(cacheAgeEl).toBeTruthy();
-      expect(refreshBtn).toBeTruthy();
       expect(clearBtn).toBeTruthy();
-      expect(optionsLink).toBeTruthy();
-    });
-
-    it('should add click listener to refresh button', () => {
-      expect(refreshBtn.onclick !== null || refreshBtn.addEventListener).toBeTruthy();
+      expect(settingsBtn).toBeTruthy();
     });
 
     it('should add click listener to clear button', () => {
       expect(clearBtn.onclick !== null || clearBtn.addEventListener).toBeTruthy();
     });
 
-    it('should add click listener to options link', () => {
-      expect(optionsLink.onclick !== null || optionsLink.addEventListener).toBeTruthy();
+    it('should add click listener to settings button', () => {
+      expect(settingsBtn.onclick !== null || settingsBtn.addEventListener).toBeTruthy();
     });
 
-    it('should load cache stats on DOMContentLoaded', async () => {
+    it('should load cache stats on init', async () => {
       document.dispatchEvent(new Event('DOMContentLoaded'));
 
       await jest.advanceTimersByTimeAsync(0);
@@ -175,25 +163,15 @@ describe('popup.js', () => {
   });
 
   describe('loadCacheStats', () => {
-    it('should request cache stats from background', async () => {
-      refreshBtn.click();
-
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
-        type: 'GET_CACHE_STATS'
-      });
-    });
-
-    it('should display cache count', async () => {
+    it('should display cache count on init', async () => {
       chrome.runtime.sendMessage.mockResolvedValueOnce({
         success: true,
         count: 25,
         oldestEntry: Date.now()
       });
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheCountEl.textContent).toBe('25');
@@ -208,8 +186,8 @@ describe('popup.js', () => {
         oldestEntry: oneDayAgo
       });
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toMatch(/1d 2h/);
@@ -224,8 +202,8 @@ describe('popup.js', () => {
         oldestEntry: hoursAgo
       });
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toBe('5h');
@@ -240,8 +218,8 @@ describe('popup.js', () => {
         oldestEntry: recentTime
       });
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toBe('<1h');
@@ -254,8 +232,8 @@ describe('popup.js', () => {
         oldestEntry: null
       });
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheAgeEl.textContent).toBe('-');
@@ -264,8 +242,8 @@ describe('popup.js', () => {
     it('should display question marks on error', async () => {
       chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Network error'));
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheCountEl.textContent).toBe('?');
@@ -282,8 +260,8 @@ describe('popup.js', () => {
         oldestEntry: Date.now()
       });
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheCountEl.textContent).toBe('original');
@@ -296,62 +274,12 @@ describe('popup.js', () => {
 
       chrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
 
-      refreshBtn.click();
-
+      jest.resetModules();
+      require('../../dist/popup.js');
       await jest.advanceTimersByTimeAsync(0);
 
       expect(cacheCountEl.textContent).toBe('original');
       expect(cacheAgeEl.textContent).toBe('original');
-    });
-
-    it('should disable refresh button while loading', async () => {
-      let resolveMessage;
-      const messagePromise = new Promise(resolve => {
-        resolveMessage = resolve;
-      });
-      chrome.runtime.sendMessage.mockReturnValueOnce(messagePromise);
-
-      refreshBtn.click();
-
-      expect(refreshBtn.disabled).toBe(true);
-
-      resolveMessage({ success: true, count: 5, oldestEntry: Date.now() });
-
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(refreshBtn.disabled).toBe(false);
-    });
-
-    it('should show loading indicator while loading', async () => {
-      let resolveMessage;
-      const messagePromise = new Promise(resolve => {
-        resolveMessage = resolve;
-      });
-      chrome.runtime.sendMessage.mockReturnValueOnce(messagePromise);
-
-      refreshBtn.click();
-
-      expect(refreshBtn.querySelector('.loading')).toBeTruthy();
-
-      resolveMessage({ success: true, count: 5, oldestEntry: Date.now() });
-
-      await jest.advanceTimersByTimeAsync(0);
-    });
-
-    it('should restore original button text after loading', async () => {
-      const originalText = refreshBtn.textContent;
-
-      chrome.runtime.sendMessage.mockResolvedValueOnce({
-        success: true,
-        count: 5,
-        oldestEntry: Date.now()
-      });
-
-      refreshBtn.click();
-
-      await jest.advanceTimersByTimeAsync(0);
-
-      expect(refreshBtn.textContent).toBe(originalText);
     });
   });
 
@@ -500,21 +428,12 @@ describe('popup.js', () => {
   });
 
   describe('openOptionsPage', () => {
-    it('should call chrome.runtime.openOptionsPage when options link clicked', async () => {
-      optionsLink.click();
+    it('should call chrome.runtime.openOptionsPage when settings button clicked', async () => {
+      settingsBtn.click();
 
       await jest.advanceTimersByTimeAsync(0);
 
       expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
-    });
-
-    it('should prevent default link behavior', async () => {
-      const event = new MouseEvent('click', { bubbles: true, cancelable: true });
-      const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
-
-      optionsLink.dispatchEvent(event);
-
-      expect(preventDefaultSpy).toHaveBeenCalled();
     });
   });
 

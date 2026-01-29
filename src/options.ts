@@ -21,6 +21,7 @@ let cacheCountEl: HTMLElement;
 let cacheAgeEl: HTMLElement;
 let refreshStatsBtn: HTMLButtonElement;
 let clearCacheBtn: HTMLButtonElement;
+let exportCacheBtn: HTMLButtonElement;
 
 // Dynamic checkbox map - populated from SETTING_CHECKBOX_IDS
 const checkboxes = new Map<keyof UserSettings, HTMLInputElement | null>();
@@ -251,6 +252,53 @@ async function clearCache(): Promise<void> {
   }
 }
 
+interface CacheExportResponse {
+  success: boolean;
+  data?: unknown;
+}
+
+/**
+ * Exports all cache entries as a JSON file download
+ */
+async function exportCache(): Promise<void> {
+  setButtonLoading(exportCacheBtn, true);
+
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_CACHE_EXPORT' }) as CacheExportResponse;
+
+    if (!response?.success || !response.data) {
+      showCacheStatus('Failed to export cache.', 'error');
+      return;
+    }
+
+    const entries = response.data as Array<Record<string, unknown>>;
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      version: chrome.runtime.getManifest().version,
+      entryCount: entries.length,
+      entries
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const date = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `scpw-cache-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showCacheStatus(`Exported ${entries.length} cached entries.`, 'success');
+  } catch (error) {
+    console.error(`${LOG_PREFIX} Error exporting cache:`, error);
+    showCacheStatus('Failed to export cache.', 'error');
+  } finally {
+    setButtonLoading(exportCacheBtn, false);
+  }
+}
+
 /**
  * Initializes collapsible sections (CSP-compliant, no inline onclick)
  */
@@ -290,6 +338,7 @@ function initializePage(): void {
   cacheAgeEl = document.getElementById('cache-age') as HTMLElement;
   refreshStatsBtn = document.getElementById('refresh-stats-btn') as HTMLButtonElement;
   clearCacheBtn = document.getElementById('clear-cache-btn') as HTMLButtonElement;
+  exportCacheBtn = document.getElementById('export-cache-btn') as HTMLButtonElement;
 
   // Dynamically populate checkbox map and add event listeners
   // This automatically includes any new settings added to SETTING_CHECKBOX_IDS
@@ -334,6 +383,7 @@ function initializePage(): void {
   // Event Listeners for buttons
   refreshStatsBtn.addEventListener('click', loadCacheStats);
   clearCacheBtn.addEventListener('click', clearCache);
+  exportCacheBtn.addEventListener('click', exportCache);
 
   // Load initial data, then reveal UI
   Promise.all([loadCacheStats(), loadSettings()]).then(() => {

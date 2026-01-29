@@ -210,6 +210,16 @@ async function getCacheStats(): Promise<{ count: number; oldestEntry: number | n
   };
 }
 
+/**
+ * Gets all cache entries for export
+ */
+async function getAllCacheEntries(): Promise<CacheEntry[]> {
+  const allData = await chrome.storage.local.get(null);
+  return Object.entries(allData)
+    .filter(([key]) => key.startsWith(CACHE_KEY_PREFIX))
+    .map(([, entry]) => entry as CacheEntry);
+}
+
 // Export for service worker
 globalThis.SCPW_Cache = {
   getFromCache,
@@ -218,6 +228,7 @@ globalThis.SCPW_Cache = {
   getOrCreatePlatformData,
   clearCache,
   getCacheStats,
+  getAllCacheEntries,
   isCacheValid,
   MANUAL_OVERRIDES,
   PLATFORMS
@@ -231,6 +242,7 @@ export {
   getOrCreatePlatformData,
   clearCache,
   getCacheStats,
+  getAllCacheEntries,
   isCacheValid,
   MANUAL_OVERRIDES,
   PLATFORMS,

@@ -619,6 +619,45 @@ describe('background.js', () => {
     });
   });
 
+  describe('GET_CACHE_EXPORT', () => {
+    it('should return true for async response', () => {
+      mockCache.getAllCacheEntries = jest.fn().mockResolvedValue([]);
+      const sendResponse = jest.fn();
+      const result = messageHandler({ type: 'GET_CACHE_EXPORT' }, {}, sendResponse);
+      expect(result).toBe(true);
+    });
+
+    it('should call getAllCacheEntries and return entries', async () => {
+      const entries = [
+        { appid: '123', gameName: 'Game A', resolvedAt: Date.now(), ttlDays: 7 },
+        { appid: '456', gameName: 'Game B', resolvedAt: Date.now(), ttlDays: 7 }
+      ];
+      mockCache.getAllCacheEntries = jest.fn().mockResolvedValue(entries);
+
+      const sendResponse = jest.fn();
+      messageHandler({ type: 'GET_CACHE_EXPORT' }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(mockCache.getAllCacheEntries).toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        data: entries
+      });
+    });
+
+    it('should handle errors', async () => {
+      mockCache.getAllCacheEntries = jest.fn().mockRejectedValue(new Error('Export failed'));
+
+      const sendResponse = jest.fn();
+      messageHandler({ type: 'GET_CACHE_EXPORT' }, {}, sendResponse);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(sendResponse).toHaveBeenCalledWith({ success: false });
+    });
+  });
+
   describe('GET_HLTB_DATA', () => {
     let mockHltbClient;
 

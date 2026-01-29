@@ -172,6 +172,10 @@ export interface ClearCacheRequest {
   type: 'CLEAR_CACHE';
 }
 
+export interface GetCacheExportRequest {
+  type: 'GET_CACHE_EXPORT';
+}
+
 export interface GetHltbDataRequest {
   type: 'GET_HLTB_DATA';
   appid: string;
@@ -224,6 +228,7 @@ export type ExtensionMessage =
   | UpdateCacheRequest
   | GetCacheStatsRequest
   | ClearCacheRequest
+  | GetCacheExportRequest
   | GetHltbDataRequest
   | GetHltbDataBatchRequest
   | GetReviewScoresRequest
@@ -260,6 +265,7 @@ declare global {
       getOrCreatePlatformData: (appid: string, gameName: string) => Promise<{ entry: CacheEntry; fromCache: boolean }>;
       clearCache: () => Promise<void>;
       getCacheStats: () => Promise<{ count: number; oldestEntry: number | null }>;
+      getAllCacheEntries: () => Promise<CacheEntry[]>;
       isCacheValid: (entry: CacheEntry) => boolean;
       MANUAL_OVERRIDES: Record<string, Record<Platform, PlatformStatus>>;
       PLATFORMS: Platform[];
