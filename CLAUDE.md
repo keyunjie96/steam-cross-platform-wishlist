@@ -300,14 +300,23 @@ When an external API (like HLTB) stops working:
 - Uses an undocumented API that changes periodically
 - Requires auth token from `/api/search/init?t=<timestamp>`
 - Search endpoint: POST `/api/search` (not `/api/s/`)
+- **Important:** Search API blocks non-browser requests (bot detection). Only works from real browser context (extension, Playwright). Node.js/undici requests get 404.
 - Request body must include nested objects: `rangeTime`, `gameplay`, `rangeYear`, `users`, `lists`
 - `searchTerms` must be `["Full Game Name"]` (single element), NOT split by spaces
 - Response times are in **seconds**, divide by 3600 for hours
+- Search alternatives: HLTB uses colons in series names (e.g., "Assassin's Creed: Unity"). The extension auto-tries colon variations at word boundaries.
+
+**OpenCritic:**
+- Search endpoint (`/api/game/search`) now requires an API key
+- Game details endpoint (`/api/game/<id>`) still works without authentication
+- The extension uses direct ID lookup via OpenCritic IDs from Wikidata, bypassing the search endpoint
+- Review endpoint (`/api/review/game/<id>`) works without authentication
 
 **Wikidata:**
 - SPARQL queries are stable and well-documented
 - Rate limit: 500ms between requests
 - Can be tested directly via browser fetch
+- Provides OpenCritic IDs (P2864) for direct game lookup
 
 ### Manual Extension Testing
 
